@@ -29,6 +29,8 @@ SESSION_TTL = timedelta(minutes=15)
 OTP_TTL = timedelta(minutes=5)
 OTP_MAX_ATTEMPTS = 3
 OTP_DIGITS = 6
+LOGIN_WINDOW = timedelta(minutes=15)
+MAX_CHALLENGES_PER_WINDOW = 3  # per document; with 3 attempts each, at most 9 guesses per 15 minutes
 CLOCK_SKEW = timedelta(seconds=30)
 TOKEN_VERSION = 1
 
@@ -122,25 +124,43 @@ class IdentityService:
         self._challenges: dict[str, _Challenge] = {}
         self._revoked: set[str] = set()
         self._seen_requests: dict[str, set[str]] = {}
+        self._recent_logins: dict[str, list[datetime]] = {}
 
     # ---- step 1: the document number only starts a challenge ------------------------------------------
     def start_login(self, document_number: str) -> LoginChallenge:
         now = self._clock()
-        entry = self._directory.lookup_by_document(normalize_document(document_number))
+        self._prune(now)
+        document = normalize_document(document_number)
+        entry = self._directory.lookup_by_document(document)
         destination = None
-        if entry and entry.customer_status in self.ACTIVE_STATUSES:
+        if entry and entry.customer_status in self.ACTIVE_STATUSES and not self._throttled(document, now):
             destination = entry.mobile_phone or entry.email
         challenge_id = secrets.token_urlsafe(16)
-        code_digest = None
-        if destination:
-            code = f"{secrets.randbelow(10 ** OTP_DIGITS):0{OTP_DIGITS}d}"
-            code_digest = self._otp.digest([challenge_id, code])
+        # The code and its digest are computed on every path so timing does not reveal whether the document
+        # exists; only a real destination receives the code. A throttled document silently gets no code.
+        code = f"{secrets.randbelow(10 ** OTP_DIGITS):0{OTP_DIGITS}d}"
+        code_digest = self._otp.digest([challenge_id, code]) if destination else None
+        if not destination:
+            self._otp.digest([challenge_id, "dummy"])
+        else:
             self.channel.send(entry.customer_id, destination, f"Cautela: tu codigo es {code}. Vence en 5 minutos.")
         self._challenges[challenge_id] = _Challenge(
             customer_id=entry.customer_id if destination else None, code_digest=code_digest,
             expires_at=now + OTP_TTL,
         )
         return LoginChallenge(challenge_id, "registered_channel", now + OTP_TTL)
+
+    def _throttled(self, document: str, now: datetime) -> bool:
+        """Cap challenges per document so the 6-digit code cannot be brute-forced across fresh challenges."""
+        recent = [t for t in self._recent_logins.get(document, []) if now - t < LOGIN_WINDOW]
+        throttled = len(recent) >= MAX_CHALLENGES_PER_WINDOW
+        self._recent_logins[document] = recent if throttled else [*recent, now]
+        return throttled
+
+    def _prune(self, now: datetime) -> None:
+        """Drop expired challenges so the in-memory store stays bounded."""
+        for key in [k for k, c in self._challenges.items() if now > c.expires_at]:
+            del self._challenges[key]
 
     # ---- step 2: the second factor ----------------------------------------------------------------------
     def verify_otp(self, challenge_id: str, code: str) -> SessionGrant:

@@ -185,3 +185,20 @@ def test_exported_tool_schema_is_up_to_date(name):
     path = OUT_DIR / f"{name}.json"
     assert path.exists(), "run: uv run python -m agent.tools.export_schemas"
     assert path.read_text(encoding="utf-8") == render(name)
+
+
+def test_customer_name_is_masked_in_stored_statement_and_audit(rig, people, purchases):
+    alice = rig.login(people["alice"])
+    last = people["alice"]["last_name"]
+    result = rig.confirm_and_call("open_dispute_case", _open_args(_small_purchase(purchases)["transaction_id"],
+                                                                  statement=f"La compra no la hizo {last}"), alice)
+    assert last not in rig.cases.read_case(result.data["case_id"])["statement_masked"]
+    assert all(last not in str(r.masked_args) for r in rig.audit.records())
+
+
+def test_concurrent_duplicate_inserts_resolve_to_one_row(rig, people):
+    row = {"block_id": "BLK-A", "customer_id": people["alice"]["customer_id"], "product_id": "P-RACE",
+           "reason": "suspected_fraud", "created_at": rig.clock().replace(tzinfo=None), "trace_id": "t"}
+    assert rig.cases._insert("card_blocks", row)
+    assert not rig.cases._insert("card_blocks", {**row, "block_id": "BLK-B"})  # the loser of a race
+    assert rig.cases.active_block("P-RACE")["block_id"] == "BLK-A"

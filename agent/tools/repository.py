@@ -103,8 +103,8 @@ CREATE TABLE IF NOT EXISTS sandbox.dispute_cases (
     trace_id VARCHAR, UNIQUE (customer_id, idempotency_key)
 );
 CREATE TABLE IF NOT EXISTS sandbox.card_blocks (
-    block_id VARCHAR PRIMARY KEY, customer_id VARCHAR NOT NULL, product_id VARCHAR NOT NULL, reason VARCHAR,
-    created_at TIMESTAMP NOT NULL, trace_id VARCHAR
+    block_id VARCHAR PRIMARY KEY, customer_id VARCHAR NOT NULL, product_id VARCHAR NOT NULL UNIQUE,
+    reason VARCHAR, created_at TIMESTAMP NOT NULL, trace_id VARCHAR
 );
 """
 
@@ -144,6 +144,16 @@ class CaseStore:
         return self._one("SELECT * FROM sandbox.card_blocks WHERE product_id = ? ORDER BY created_at LIMIT 1",
                          [product_id])
 
+    def _insert(self, table: str, row: dict[str, Any]) -> bool:
+        """Insert on a fresh cursor. False when a unique constraint shows a concurrent writer won the race."""
+        cols = list(row)
+        try:
+            self._con.cursor().execute(f"INSERT INTO sandbox.{table} ({', '.join(cols)}) VALUES "
+                                       f"({', '.join('?' for _ in cols)})", [row[c] for c in cols])
+        except duckdb.ConstraintException:
+            return False
+        return True
+
     # ---- faultable operations ---------------------------------------------------------------------------
     def insert_case(self, row: dict[str, Any]) -> dict[str, Any]:
         """Insert unless the idempotency key exists (a retry after a timeout must not duplicate)."""
@@ -152,10 +162,8 @@ class CaseStore:
         if existing:
             return existing
         row = {**row, "case_id": row.get("case_id") or "CASE-" + secrets.token_hex(6).upper()}
-        if mode is not FaultMode.LOST_WRITE:
-            cols = list(row)
-            self._con.execute(f"INSERT INTO sandbox.dispute_cases ({', '.join(cols)}) VALUES "
-                              f"({', '.join('?' for _ in cols)})", [row[c] for c in cols])
+        if mode is not FaultMode.LOST_WRITE and not self._insert("dispute_cases", row):
+            return self.find_by_idempotency(row["customer_id"], row["idempotency_key"]) or row
         return row
 
     def read_case(self, case_id: str) -> dict[str, Any] | None:
@@ -169,10 +177,8 @@ class CaseStore:
         if existing:
             return existing
         row = {**row, "block_id": "BLK-" + secrets.token_hex(6).upper()}
-        if mode is not FaultMode.LOST_WRITE:
-            cols = list(row)
-            self._con.execute(f"INSERT INTO sandbox.card_blocks ({', '.join(cols)}) VALUES "
-                              f"({', '.join('?' for _ in cols)})", [row[c] for c in cols])
+        if mode is not FaultMode.LOST_WRITE and not self._insert("card_blocks", row):
+            return self.active_block(row["product_id"]) or row
         return row
 
     def read_block(self, product_id: str) -> dict[str, Any] | None:

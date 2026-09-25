@@ -18,7 +18,7 @@ from typing import Any
 from agent.clock import Clock, system_clock
 from agent.security.audit import AuditLog, new_trace_id
 from agent.security.permissions import ConfirmationChallenge, ConfirmationService, GuardDenied, PermissionGuard
-from agent.security.session import AuthError, IdentityService, LoginChallenge, SessionGrant
+from agent.security.session import AuthError, IdentityService, LoginChallenge, Session, SessionGrant
 from agent.security.signing import Signer
 from agent.tools.contracts import ERROR_CODES, ToolError, ToolResult
 from agent.tools.faults import RetriesExhausted, RetryPolicy
@@ -43,6 +43,7 @@ class ToolService:
         self.confirmations = ConfirmationService(secret, clock)
         self.guard = PermissionGuard(identity, repo, cases, self.confirmations, clock)
         self.security_flags: dict[str, set[str]] = {}
+        self._names: dict[str, tuple[str, ...]] = {}
 
     # ---- login, audited -------------------------------------------------------------------------------
     def start_login(self, document_number: str, trace_id: str | None = None) -> LoginChallenge:
@@ -74,10 +75,10 @@ class ToolService:
             _, parsed, decision = self.guard.preconditions(tool, args, session, self._flags(session.session_id))
         except GuardDenied as exc:
             return self._denied(trace_id, tool, args, exc, session_token)
-        challenge = self.confirmations.issue(session, tool, parsed)
+        challenge = self.confirmations.issue(session, tool, parsed, self.customer_names(session))
         self.audit.record(trace_id=trace_id, step="confirmation.issue", tool=tool, args=dict(args),
                           outcome="issued", rule_ids=decision.rule_ids if decision else (),
-                          customer_ref=session.customer_ref)
+                          customer_ref=session.customer_ref, known_names=self.customer_names(session))
         return challenge
 
     # ---- tool calls -----------------------------------------------------------------------------------
@@ -93,15 +94,18 @@ class ToolService:
         rule_ids = auth.policy.rule_ids if auth.policy else []
         self.audit.record(trace_id=trace_id, step="guard", tool=tool, args=dict(args), outcome="allowed",
                           rule_ids=rule_ids, customer_ref=session.customer_ref,
-                          reason="confirmed" if auth.confirmation_id else None)
+                          reason="confirmed" if auth.confirmation_id else None,
+                          known_names=self.customer_names(session))
         ctx = ToolContext(repo=self.repo, cases=self.cases, session=session, clock=self.clock, trace_id=trace_id,
                           digests=self._digests, retry=self.retry, sleep=self.sleep, ranker=self.ranker,
-                          security_flags=frozenset(self._flags(session.session_id)))
+                          security_flags=frozenset(self._flags(session.session_id)),
+                          known_names=self.customer_names(session))
         result = self._run(ctx, auth.spec, auth.args, tool, rule_ids)
         self.audit.record(trace_id=trace_id, step="tool", tool=tool, args=dict(args),
                           outcome=self._outcome(result), reason=result.error.code if result.error else None,
                           rule_ids=rule_ids, latency_ms=(time.perf_counter() - start) * 1000,
-                          customer_ref=session.customer_ref, attempts=result.attempts)
+                          customer_ref=session.customer_ref, attempts=result.attempts,
+                          known_names=self.customer_names(session))
         return result
 
     def _run(self, ctx: ToolContext, spec, args, tool: str, rule_ids: list[str]) -> ToolResult:
@@ -126,23 +130,33 @@ class ToolService:
             return ToolResult(**base, ok=True, data=output.data, verification="verified", attempts=ctx.attempts)
         return ToolResult(**base, ok=True, data=output.model_dump(mode="json"), attempts=ctx.attempts)
 
+    def customer_names(self, session: Session) -> tuple[str, ...]:
+        """The session customer's own names, used to mask them in free text (audit, confirmations, handoffs)."""
+        if session.session_id not in self._names:
+            customer = self.repo.get_customer(session.customer_id, faulted=False) or {}
+            parts = [customer.get("first_name"), customer.get("last_name")]
+            self._names[session.session_id] = tuple(
+                p for part in parts if part for p in {str(part), *str(part).split()} if len(p) >= 3)
+        return self._names[session.session_id]
+
     # ---- helpers --------------------------------------------------------------------------------------
     def _flags(self, session_id: str) -> set[str]:
         return self.security_flags.setdefault(session_id, set())
 
     def _denied(self, trace_id: str, tool: str, args: Mapping[str, Any], exc: GuardDenied,
                 session_token: str) -> ToolResult:
-        customer_ref = None
+        customer_ref, names = None, ()
         try:
             session = self.identity.validate(session_token)
-            customer_ref = session.customer_ref
+            customer_ref, names = session.customer_ref, self.customer_names(session)
             if exc.security_flag:
                 self._flags(session.session_id).add(exc.security_flag)
         except AuthError:
             pass
         raw = dict(args) if isinstance(args, Mapping) else {"unparsed": str(args)[:200]}
         self.audit.record(trace_id=trace_id, step="guard", tool=tool, args=raw,
-                          outcome="denied", reason=exc.reason, rule_ids=exc.rule_ids, customer_ref=customer_ref)
+                          outcome="denied", reason=exc.reason, rule_ids=exc.rule_ids, customer_ref=customer_ref,
+                          known_names=names)
         security = exc.security_flag is not None
         return ToolResult(trace_id=trace_id, tool=tool, ok=False, rule_ids=exc.rule_ids,
                           error=ToolError(code=exc.code, message=ERROR_CODES.get(exc.code, exc.code)),

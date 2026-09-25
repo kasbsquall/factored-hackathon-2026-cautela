@@ -192,3 +192,17 @@ def test_secret_loader_reads_env_file(monkeypatch, tmp_path):
     env = tmp_path / ".env"
     env.write_text("SESSION_SECRET=" + "k" * 40 + "\n", encoding="utf-8")
     assert load_secret(env) == b"k" * 40
+
+
+def test_fresh_challenges_are_throttled_per_document(idp, clock):
+    from agent.security.session import MAX_CHALLENGES_PER_WINDOW
+    for _ in range(MAX_CHALLENGES_PER_WINDOW):
+        idp.start_login(DOC)
+    sent = len(idp.channel.outbox)
+    blocked = idp.start_login(DOC)  # same response shape, but no code is sent
+    assert len(idp.channel.outbox) == sent and blocked.channel_hint == "registered_channel"
+    with pytest.raises(AuthError):
+        idp.verify_otp(blocked.challenge_id, idp.channel.last_code_for("C000001"))
+    clock.advance(minutes=16)
+    idp.start_login(DOC)
+    assert len(idp.channel.outbox) == sent + 1

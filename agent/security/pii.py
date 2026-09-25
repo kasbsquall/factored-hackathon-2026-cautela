@@ -87,6 +87,12 @@ def mask_text(text: str, known_names: Iterable[str] = ()) -> str:
     return _mask_names(out, known_names)
 
 
+def document_hint(value: str) -> str:
+    """Last three characters of a document, for showing a customer their own profile. Never used for logs."""
+    text = str(value)
+    return "*" * max(len(text) - 3, 0) + text[-3:] if len(text) > 3 else "***"
+
+
 def mask_field(key: str, value: Any) -> Any:
     """Mask a structured value by its field name; unknown fields fall back to free-text masking."""
     if value is None:
@@ -99,7 +105,7 @@ def mask_field(key: str, value: Any) -> Any:
     if key == "email":
         return _EMAIL.sub(mask_email, text)
     if key == "document_number":
-        return "*" * max(len(text) - 3, 0) + text[-3:] if len(text) > 3 else "***"
+        return "[DOC]"  # fully redacted in logs; only the customer's own profile shows the last 3 digits
     if key in {"first_name", "last_name", "full_name", "name", "address", "date_of_birth"}:
         return "[REDACTED]"
     return mask_text(text) if isinstance(value, str) else value

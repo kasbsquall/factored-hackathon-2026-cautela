@@ -28,7 +28,7 @@ def test_case_file_is_well_formed():
         assert c["label_source"] == "team_generated"
         assert c["category"] in CATEGORIES
         assert c["expected"]["unauthorized_disclosure"] is False and c["expected"]["unauthorized_action"] is False
-        assert "—" not in c["text"]
+        assert chr(0x2014) not in c["text"]  # no em dashes in team-written text
     assert {c["category"] for c in CASES} == CATEGORIES
 
 

@@ -46,7 +46,7 @@ def test_mask_mapping_keeps_record_ids_and_masks_sensitive_keys():
     masked = mask_mapping({"transaction_id": "TX00000012", "document_number": "1023456789",
                            "customer_statement": "mi correo es ana@x.example", "nested": {"mobile_phone": "3001234567"}})
     assert masked["transaction_id"] == "TX00000012"
-    assert masked["document_number"] == "*******789"
+    assert masked["document_number"] == "[DOC]"
     assert "ana@" not in masked["customer_statement"]
     assert masked["nested"]["mobile_phone"] == "******67"
 
@@ -67,6 +67,7 @@ def test_audit_record_stores_masked_args_and_keyed_hash_only(tmp_path, clock):
                      args={"document_number": "1023456789", "note": "tarjeta 4111111111111234"})
     raw = (tmp_path / "audit-2026-06-01.jsonl").read_text(encoding="utf-8")
     assert "1023456789" not in raw and "4111111111111234" not in raw
+    assert "789" not in raw.replace(rec.args_hash, "").replace(rec.record_hash, "")  # not even the last digits
     assert rec.args_hash and len(rec.args_hash) == 64
     other = AuditLog(secrets.token_bytes(48), None, clock)
     assert other.record(trace_id="t", step="s", outcome="o", args={"document_number": "1023456789"}).args_hash \

@@ -70,18 +70,20 @@ class ConfirmationService:
     def __init__(self, secret: bytes, clock: Clock) -> None:
         self._signer = Signer(secret, "confirmation")
         self._clock = clock
-        self._consumed: set[str] = set()
+        self._consumed: dict[str, float] = {}  # confirmation id -> expiry, pruned once expired
 
     def _args_digest(self, tool: str, args: BaseModel) -> str:
         return self._signer.digest({"tool": tool, "args": args.model_dump(mode="json")})
 
-    def issue(self, session: Session, tool: str, args: BaseModel) -> ConfirmationChallenge:
+    def issue(self, session: Session, tool: str, args: BaseModel,
+              known_names: Iterable[str] = ()) -> ConfirmationChallenge:
         now = self._clock()
         cid = secrets.token_urlsafe(12)
         expires = now + CONFIRMATION_TTL
         token = self._signer.sign({"cid": cid, "sid": session.session_id, "tool": tool,
                                    "args": self._args_digest(tool, args), "exp": int(expires.timestamp())})
-        return ConfirmationChallenge(cid, token, tool, mask_mapping(args.model_dump(mode="json")), expires)
+        return ConfirmationChallenge(cid, token, tool, mask_mapping(args.model_dump(mode="json"), known_names),
+                                     expires)
 
     def consume(self, session: Session, tool: str, args: BaseModel, token: str) -> str:
         payload = self._signer.verify(token)
@@ -97,7 +99,9 @@ class ConfirmationService:
         for failed, reason in checks:
             if failed:
                 raise GuardDenied("confirmation_invalid", reason)
-        self._consumed.add(payload["cid"])
+        now = self._clock().timestamp()
+        self._consumed = {cid: exp for cid, exp in self._consumed.items() if exp > now}
+        self._consumed[payload["cid"]] = float(payload["exp"])
         return payload["cid"]
 
 

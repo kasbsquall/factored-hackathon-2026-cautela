@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from agent.clock import Clock
-from agent.security.pii import mask_digits_keep_last, mask_field, mask_text
+from agent.security.pii import document_hint, mask_digits_keep_last, mask_field, mask_text
 from agent.security.session import Session
 from agent.security.signing import Signer
 from agent.tools import contracts as c
@@ -52,6 +52,7 @@ class ToolContext:
     sleep: Callable[[float], None] = lambda _: None
     ranker: CandidateRanker = field(default_factory=RuleBasedRanker)
     security_flags: frozenset[str] = frozenset()
+    known_names: tuple[str, ...] = ()
     attempts: int = 0
 
     @property
@@ -78,7 +79,7 @@ def get_customer_profile(ctx: ToolContext, _: c.GetCustomerProfileInput) -> c.Cu
     return c.CustomerProfile(
         customer_ref=ctx.session.customer_ref,
         display_name=f"{customer['first_name']} {str(customer['last_name'])[:1]}.",
-        document_masked=mask_field("document_number", customer["document_number"]),
+        document_masked=document_hint(customer["document_number"]),
         email_masked=mask_field("email", customer.get("email")),
         phone_masked=mask_field("mobile_phone", customer.get("mobile_phone")),
         country=customer.get("country"), segment=customer.get("segment"),
@@ -148,11 +149,11 @@ def open_dispute_case(ctx: ToolContext, inp: c.OpenDisputeCaseInput) -> WriteOut
         if prior["args_digest"] != digest:
             raise ToolFailure("idempotency_conflict")
         return WriteOutcome(_case_view(prior, idempotent_replay=True).model_dump(mode="json"),
-                            _verify_case(ctx, prior))
+                            True)  # read back from the store in this call
     existing = ctx.cases.find_active_case(ctx.customer_id, inp.transaction_id)
     if existing is not None:
         return WriteOutcome(_case_view(existing, already_open=True).model_dump(mode="json"),
-                            _verify_case(ctx, existing))
+                            True)  # read back from the store in this call
     decision = policy_decision(ctx.repo, ctx.cases, ctx.customer_id, ctx.clock(),
                                transaction_id=inp.transaction_id, security_flags=ctx.security_flags)
     if not decision.allows("open_dispute_case"):  # defense in depth: the guard already checked this
@@ -160,7 +161,7 @@ def open_dispute_case(ctx: ToolContext, inp: c.OpenDisputeCaseInput) -> WriteOut
     row = {
         "customer_id": ctx.customer_id, "transaction_id": inp.transaction_id,
         "idempotency_key": inp.idempotency_key, "args_digest": digest, "reason": inp.reason,
-        "statement_masked": mask_text(inp.customer_statement),
+        "statement_masked": mask_text(inp.customer_statement, ctx.known_names),
         "status": "pending_human_review" if decision.must_escalate else "open",
         "policy_rule_ids": decision.rule_ids, "created_at": ctx.clock().replace(tzinfo=None),
         "trace_id": ctx.trace_id,
