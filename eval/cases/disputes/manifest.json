@@ -43,11 +43,11 @@
     "val": 754
   },
   "customers_loaded": 14640,
-  "data_version": "7d4d22c3837a267c",
+  "data_version": "0189e386ce7fe882",
   "file_sha256": {
-    "test": "d2bd58329e4b5cba8627a0ccb347e12e0ec342f9a6b07aeadafd2cae362018d6",
-    "train": "27c85dbf245ba2f5cd0773011208c8736b0311f9973164be080b04ea05712e00",
-    "val": "08217defb819732fb79db9a22896ee3e3699b402477394f83f1b8884f5df3b8b"
+    "test": "68f99bca2d4ece3062e7c596223359e9e806a6612c6705fd5526bf7f5e30c5e2",
+    "train": "66a087dc598dac292e42dfc2a0fd4871206ac654bd4e6297151f4020075926c6",
+    "val": "671292db687f941f27752a48f2e37c43094c7d568ce669c6536a0ca37156c771"
   },
   "label_note": "Labels are valid by construction: see ml/DATASHEET.md.",
   "load_stats": {
@@ -101,19 +101,19 @@
   },
   "skipped_customers": {
     "test": {
-      "ambiguous": 100,
-      "match": 251,
-      "no_match": 84
+      "ambiguous": 103,
+      "match": 247,
+      "no_match": 85
     },
     "train": {
-      "ambiguous": 129,
-      "match": 329,
-      "no_match": 101
+      "ambiguous": 141,
+      "match": 333,
+      "no_match": 96
     },
     "val": {
-      "ambiguous": 55,
-      "match": 160,
-      "no_match": 50
+      "ambiguous": 63,
+      "match": 149,
+      "no_match": 54
     }
   },
   "source_fingerprint": "2882468849ed2794"

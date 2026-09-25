@@ -4,7 +4,8 @@ A description is generated from a set of structured hints (approximate amount,
 relative date, merchant, type, channel, city). The label of a scenario is a
 function of the hints and the candidate pool only:
 
-* a candidate is *consistent* with the description when it is a debit and
+* a candidate is *consistent* with the description when it is an approved or
+  pending debit (a charge that reached the account) and
   satisfies every hint within the tolerances below;
 * it is *near-consistent* when the description has three or more cues and the
   candidate fails exactly one of them (one misremembered detail);
@@ -241,14 +242,19 @@ def cue_checks(hints: dict, cand: dict) -> dict[str, bool]:
     return out
 
 
+def _disputable(cand: dict) -> bool:
+    """A charge that reached the account: a debit that was approved or is pending (not declined or reversed)."""
+    return cand["transaction_type"] in DEBIT_TYPES and cand.get("transaction_status") in TARGET_STATUSES
+
+
 def is_consistent(hints: dict, cand: dict) -> bool:
-    """Satisfies every cue. Only debits can be a disputed charge."""
-    return cand["transaction_type"] in DEBIT_TYPES and all(cue_checks(hints, cand).values())
+    """Satisfies every cue. Only a disputable charge can be the one the customer means."""
+    return _disputable(cand) and all(cue_checks(hints, cand).values())
 
 
 def is_near_consistent(hints: dict, cand: dict) -> bool:
     """Fails exactly one cue of a description with three or more cues (one misremembered detail)."""
-    if cand["transaction_type"] not in DEBIT_TYPES or len(hints) < NEAR_MIN_CUES:
+    if not _disputable(cand) or len(hints) < NEAR_MIN_CUES:
         return False
     return list(cue_checks(hints, cand).values()).count(False) == 1
 

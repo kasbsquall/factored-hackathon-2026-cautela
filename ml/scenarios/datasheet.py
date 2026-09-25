@@ -110,7 +110,7 @@ A description is rendered from a set of structured hints about one transaction: 
 a relative date phrase, the merchant (exact, partial, misspelled, or a noun such as "una farmacia"), the
 type, the channel, sometimes the city. The label is a function of the hints and the pool only:
 
-* **consistent** candidate: a debit that satisfies every hint within fixed tolerances (amount within a
+* **consistent** candidate: an approved or pending debit that satisfies every hint within fixed tolerances (amount within a
   factor 1.25 of the claimed value and in the stated currency, date inside the phrase's range +- 2 days,
   merchant compatible with the surface form, type, channel and city equal);
 * **near-consistent**: fails exactly one hint of a description with three or more hints;
