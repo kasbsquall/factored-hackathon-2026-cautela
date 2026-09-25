@@ -72,9 +72,8 @@ def process_table(con: duckdb.DuckDBPyConnection, loc: SourceLocation, contract:
         uniques = silver.unique_violations(con, contract)
         hwm = silver.high_water_mark(con, contract)
         warehouse.set_watermark(con, name, hwm, run_id)
-        for f in new_files:
-            con.execute("INSERT INTO control.file_ledger VALUES (?, ?, ?, ?, ?)",
-                        [name, f.rel_path, per_file.get(f.rel_path, 0), run_id, ingested_at])
+        warehouse.record_files(con, name, [(f.rel_path, per_file.get(f.rel_path, 0)) for f in new_files],
+                               run_id, ingested_at)
         silver_total = con.execute(f"SELECT count(*) FROM silver.{warehouse.ident(name)}").fetchone()[0]
         con.execute("COMMIT")
     except Exception:

@@ -11,6 +11,8 @@ Schemas:
 
 from __future__ import annotations
 
+from datetime import datetime
+
 import duckdb
 
 from data_engineering.contracts.loader import TableContract
@@ -42,6 +44,10 @@ CREATE TABLE IF NOT EXISTS control.runs (
 
 def ident(name: str) -> str:
     return '"' + name.replace('"', '""') + '"'
+
+
+def literal(value: str) -> str:
+    return "'" + value.replace("'", "''") + "'"
 
 
 def init_warehouse(con: duckdb.DuckDBPyConnection) -> None:
@@ -83,6 +89,20 @@ def ensure_silver(con: duckdb.DuckDBPyConnection, contract: TableContract) -> No
 def loaded_files(con: duckdb.DuckDBPyConnection, table: str) -> set[str]:
     rows = con.execute("SELECT source_file FROM control.file_ledger WHERE table_name = ?", [table]).fetchall()
     return {r[0] for r in rows}
+
+
+def record_files(con: duckdb.DuckDBPyConnection, table: str, files: list[tuple[str, int]], run_id: str,
+                 loaded_at: datetime) -> None:
+    """Add loaded files to the ledger in one statement.
+
+    Values are inlined as escaped SQL literals on purpose: the DuckDB Python client probes for pandas on every bound
+    parameter, and without pandas installed each probe is an uncached import lookup (thousands per run).
+    """
+    if not files:
+        return
+    rows = ", ".join(f"({literal(table)}, {literal(rel)}, {int(n)}, {literal(run_id)}, "
+                     f"TIMESTAMP '{loaded_at:%Y-%m-%d %H:%M:%S.%f}')" for rel, n in files)
+    con.execute(f"INSERT INTO control.file_ledger VALUES {rows}")
 
 
 def get_watermark(con: duckdb.DuckDBPyConnection, table: str) -> str | None:
