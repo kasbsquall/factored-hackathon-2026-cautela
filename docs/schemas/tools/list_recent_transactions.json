@@ -1,0 +1,212 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "cautela/tools/list_recent_transactions.json",
+  "name": "list_recent_transactions",
+  "kind": "read",
+  "description": "Session customer's transactions in a bounded window (at most 90 days, 50 rows), newest first.",
+  "requires_confirmation": false,
+  "ownership_checked_args": {},
+  "side_effects": "none",
+  "errors": {
+    "validation_error": "Arguments do not match the tool input contract (unknown fields are rejected).",
+    "session_invalid": "Session token missing, malformed or with a bad signature.",
+    "session_expired": "Session token past its expiry.",
+    "session_revoked": "Session was closed (logout) and cannot be reused.",
+    "replay_detected": "The request id was already used in this session.",
+    "request_id_invalid": "Missing or oversized request id.",
+    "tool_not_allowed": "The tool is not on the allowlist.",
+    "tool_unavailable": "The backing store failed after bounded retries; a handoff is required."
+  },
+  "input": {
+    "additionalProperties": false,
+    "properties": {
+      "window_days": {
+        "default": 30,
+        "description": "Days back from today; bounded to 90",
+        "maximum": 90,
+        "minimum": 1,
+        "title": "Window Days",
+        "type": "integer"
+      },
+      "limit": {
+        "default": 20,
+        "maximum": 50,
+        "minimum": 1,
+        "title": "Limit",
+        "type": "integer"
+      }
+    },
+    "title": "ListRecentTransactionsInput",
+    "type": "object"
+  },
+  "output": {
+    "$defs": {
+      "TransactionView": {
+        "description": "What the customer may see. fraud_score and is_fraud stay internal: they feed policy only.",
+        "properties": {
+          "transaction_id": {
+            "title": "Transaction Id",
+            "type": "string"
+          },
+          "transaction_date": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transaction Date"
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "merchant_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Merchant Name"
+          },
+          "channel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel"
+          },
+          "transaction_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transaction Type"
+          },
+          "transaction_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transaction Status"
+          },
+          "product_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Id"
+          },
+          "transaction_country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transaction Country"
+          },
+          "transaction_city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transaction City"
+          }
+        },
+        "required": [
+          "transaction_id",
+          "transaction_date",
+          "amount",
+          "currency",
+          "merchant_name",
+          "channel",
+          "transaction_type",
+          "transaction_status",
+          "product_id",
+          "transaction_country",
+          "transaction_city"
+        ],
+        "title": "TransactionView",
+        "type": "object"
+      }
+    },
+    "properties": {
+      "transactions": {
+        "items": {
+          "$ref": "#/$defs/TransactionView"
+        },
+        "title": "Transactions",
+        "type": "array"
+      },
+      "window_start": {
+        "format": "date-time",
+        "title": "Window Start",
+        "type": "string"
+      },
+      "window_end": {
+        "format": "date-time",
+        "title": "Window End",
+        "type": "string"
+      },
+      "truncated": {
+        "title": "Truncated",
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "transactions",
+      "window_start",
+      "window_end",
+      "truncated"
+    ],
+    "title": "TransactionList",
+    "type": "object"
+  }
+}

@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "cautela/tools/get_dispute_policy.json",
+  "name": "get_dispute_policy",
+  "kind": "read",
+  "description": "Deterministic policy decision for disputing one own transaction: allowed actions, required confirmations, escalation reasons and the rule ids (with sources) that fired.",
+  "requires_confirmation": false,
+  "ownership_checked_args": {
+    "transaction_id": "transaction"
+  },
+  "side_effects": "none",
+  "errors": {
+    "validation_error": "Arguments do not match the tool input contract (unknown fields are rejected).",
+    "session_invalid": "Session token missing, malformed or with a bad signature.",
+    "session_expired": "Session token past its expiry.",
+    "session_revoked": "Session was closed (logout) and cannot be reused.",
+    "replay_detected": "The request id was already used in this session.",
+    "request_id_invalid": "Missing or oversized request id.",
+    "tool_not_allowed": "The tool is not on the allowlist.",
+    "tool_unavailable": "The backing store failed after bounded retries; a handoff is required.",
+    "not_found": "No such record for this customer (also returned for records of other customers)."
+  },
+  "input": {
+    "additionalProperties": false,
+    "properties": {
+      "transaction_id": {
+        "maxLength": 40,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9_\\-]+$",
+        "title": "Transaction Id",
+        "type": "string"
+      },
+      "intent": {
+        "default": "unrecognized_charge",
+        "maxLength": 40,
+        "title": "Intent",
+        "type": "string"
+      }
+    },
+    "required": [
+      "transaction_id"
+    ],
+    "title": "GetDisputePolicyInput",
+    "type": "object"
+  },
+  "output": {
+    "$defs": {
+      "PolicyDecision": {
+        "properties": {
+          "policy_version": {
+            "title": "Policy Version",
+            "type": "string"
+          },
+          "allowed_actions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Allowed Actions",
+            "type": "array"
+          },
+          "required_confirmations": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Required Confirmations",
+            "type": "array"
+          },
+          "must_escalate": {
+            "title": "Must Escalate",
+            "type": "boolean"
+          },
+          "escalation_reasons": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Escalation Reasons",
+            "type": "array"
+          },
+          "rules_fired": {
+            "items": {
+              "$ref": "#/$defs/RuleHit"
+            },
+            "title": "Rules Fired",
+            "type": "array"
+          },
+          "facts": {
+            "additionalProperties": true,
+            "title": "Facts",
+            "type": "object"
+          }
+        },
+        "required": [
+          "policy_version",
+          "allowed_actions",
+          "required_confirmations",
+          "must_escalate",
+          "escalation_reasons",
+          "rules_fired"
+        ],
+        "title": "PolicyDecision",
+        "type": "object"
+      },
+      "RuleHit": {
+        "properties": {
+          "rule_id": {
+            "title": "Rule Id",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "verification": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Verification"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rule_id",
+          "source",
+          "message"
+        ],
+        "title": "RuleHit",
+        "type": "object"
+      }
+    },
+    "properties": {
+      "transaction_id": {
+        "title": "Transaction Id",
+        "type": "string"
+      },
+      "decision": {
+        "$ref": "#/$defs/PolicyDecision"
+      }
+    },
+    "required": [
+      "transaction_id",
+      "decision"
+    ],
+    "title": "DisputePolicyView",
+    "type": "object"
+  }
+}

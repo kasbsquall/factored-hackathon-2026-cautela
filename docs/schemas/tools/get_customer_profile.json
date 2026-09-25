@@ -1,0 +1,163 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "cautela/tools/get_customer_profile.json",
+  "name": "get_customer_profile",
+  "kind": "read",
+  "description": "Masked profile and product list of the session customer.",
+  "requires_confirmation": false,
+  "ownership_checked_args": {},
+  "side_effects": "none",
+  "errors": {
+    "validation_error": "Arguments do not match the tool input contract (unknown fields are rejected).",
+    "session_invalid": "Session token missing, malformed or with a bad signature.",
+    "session_expired": "Session token past its expiry.",
+    "session_revoked": "Session was closed (logout) and cannot be reused.",
+    "replay_detected": "The request id was already used in this session.",
+    "request_id_invalid": "Missing or oversized request id.",
+    "tool_not_allowed": "The tool is not on the allowlist.",
+    "tool_unavailable": "The backing store failed after bounded retries; a handoff is required.",
+    "not_found": "No such record for this customer (also returned for records of other customers)."
+  },
+  "input": {
+    "additionalProperties": false,
+    "properties": {},
+    "title": "GetCustomerProfileInput",
+    "type": "object"
+  },
+  "output": {
+    "$defs": {
+      "ProductSummary": {
+        "properties": {
+          "product_id": {
+            "title": "Product Id",
+            "type": "string"
+          },
+          "product_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Type"
+          },
+          "product_number_masked": {
+            "title": "Product Number Masked",
+            "type": "string"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "required": [
+          "product_id",
+          "product_type",
+          "product_number_masked",
+          "currency",
+          "status"
+        ],
+        "title": "ProductSummary",
+        "type": "object"
+      }
+    },
+    "properties": {
+      "customer_ref": {
+        "title": "Customer Ref",
+        "type": "string"
+      },
+      "display_name": {
+        "description": "First name and last initial",
+        "title": "Display Name",
+        "type": "string"
+      },
+      "document_masked": {
+        "title": "Document Masked",
+        "type": "string"
+      },
+      "email_masked": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Email Masked"
+      },
+      "phone_masked": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Phone Masked"
+      },
+      "country": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Country"
+      },
+      "segment": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Segment"
+      },
+      "products": {
+        "items": {
+          "$ref": "#/$defs/ProductSummary"
+        },
+        "title": "Products",
+        "type": "array"
+      }
+    },
+    "required": [
+      "customer_ref",
+      "display_name",
+      "document_masked",
+      "email_masked",
+      "phone_masked",
+      "country",
+      "segment",
+      "products"
+    ],
+    "title": "CustomerProfile",
+    "type": "object"
+  }
+}

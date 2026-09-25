@@ -1,0 +1,317 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "cautela/tools/find_candidate_charges.json",
+  "name": "find_candidate_charges",
+  "kind": "read",
+  "description": "Rank the session customer's own charges against the amount, date and merchant the customer mentioned. Returns scored candidates and never a single guess when the match is ambiguous.",
+  "requires_confirmation": false,
+  "ownership_checked_args": {},
+  "side_effects": "none",
+  "errors": {
+    "validation_error": "Arguments do not match the tool input contract (unknown fields are rejected).",
+    "session_invalid": "Session token missing, malformed or with a bad signature.",
+    "session_expired": "Session token past its expiry.",
+    "session_revoked": "Session was closed (logout) and cannot be reused.",
+    "replay_detected": "The request id was already used in this session.",
+    "request_id_invalid": "Missing or oversized request id.",
+    "tool_not_allowed": "The tool is not on the allowlist.",
+    "tool_unavailable": "The backing store failed after bounded retries; a handoff is required."
+  },
+  "input": {
+    "additionalProperties": false,
+    "properties": {
+      "amount": {
+        "anyOf": [
+          {
+            "exclusiveMinimum": 0,
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Amount the customer mentioned",
+        "title": "Amount"
+      },
+      "currency": {
+        "anyOf": [
+          {
+            "pattern": "^[A-Z]{3}$",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Currency"
+      },
+      "date_hint": {
+        "anyOf": [
+          {
+            "format": "date",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Date the customer mentioned",
+        "title": "Date Hint"
+      },
+      "date_tolerance_days": {
+        "default": 3,
+        "maximum": 30,
+        "minimum": 0,
+        "title": "Date Tolerance Days",
+        "type": "integer"
+      },
+      "merchant_hint": {
+        "anyOf": [
+          {
+            "maxLength": 100,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Merchant Hint"
+      },
+      "window_days": {
+        "default": 90,
+        "description": "Search window back from today",
+        "maximum": 120,
+        "minimum": 1,
+        "title": "Window Days",
+        "type": "integer"
+      },
+      "top_k": {
+        "default": 5,
+        "maximum": 10,
+        "minimum": 1,
+        "title": "Top K",
+        "type": "integer"
+      }
+    },
+    "title": "FindCandidateChargesInput",
+    "type": "object"
+  },
+  "output": {
+    "$defs": {
+      "CandidateCharge": {
+        "properties": {
+          "transaction": {
+            "$ref": "#/$defs/TransactionView"
+          },
+          "score": {
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Score",
+            "type": "number"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Reasons",
+            "type": "array"
+          }
+        },
+        "required": [
+          "transaction",
+          "score",
+          "reasons"
+        ],
+        "title": "CandidateCharge",
+        "type": "object"
+      },
+      "TransactionView": {
+        "description": "What the customer may see. fraud_score and is_fraud stay internal: they feed policy only.",
+        "properties": {
+          "transaction_id": {
+            "title": "Transaction Id",
+            "type": "string"
+          },
+          "transaction_date": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transaction Date"
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "merchant_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Merchant Name"
+          },
+          "channel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel"
+          },
+          "transaction_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transaction Type"
+          },
+          "transaction_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transaction Status"
+          },
+          "product_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Id"
+          },
+          "transaction_country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transaction Country"
+          },
+          "transaction_city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transaction City"
+          }
+        },
+        "required": [
+          "transaction_id",
+          "transaction_date",
+          "amount",
+          "currency",
+          "merchant_name",
+          "channel",
+          "transaction_type",
+          "transaction_status",
+          "product_id",
+          "transaction_country",
+          "transaction_city"
+        ],
+        "title": "TransactionView",
+        "type": "object"
+      }
+    },
+    "properties": {
+      "candidates": {
+        "items": {
+          "$ref": "#/$defs/CandidateCharge"
+        },
+        "title": "Candidates",
+        "type": "array"
+      },
+      "is_ambiguous": {
+        "description": "True when the top score or its margin over the second is too small",
+        "title": "Is Ambiguous",
+        "type": "boolean"
+      },
+      "best_transaction_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Set only when the match is not ambiguous",
+        "title": "Best Transaction Id"
+      },
+      "ranker": {
+        "title": "Ranker",
+        "type": "string"
+      },
+      "ambiguity_rule": {
+        "title": "Ambiguity Rule",
+        "type": "string"
+      },
+      "searched": {
+        "title": "Searched",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "candidates",
+      "is_ambiguous",
+      "best_transaction_id",
+      "ranker",
+      "ambiguity_rule",
+      "searched"
+    ],
+    "title": "CandidateChargesResult",
+    "type": "object"
+  }
+}

@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "cautela/tools/get_case_status.json",
+  "name": "get_case_status",
+  "kind": "read",
+  "description": "Status of one own dispute case; also used by the verify step.",
+  "requires_confirmation": false,
+  "ownership_checked_args": {
+    "case_id": "case"
+  },
+  "side_effects": "none",
+  "errors": {
+    "validation_error": "Arguments do not match the tool input contract (unknown fields are rejected).",
+    "session_invalid": "Session token missing, malformed or with a bad signature.",
+    "session_expired": "Session token past its expiry.",
+    "session_revoked": "Session was closed (logout) and cannot be reused.",
+    "replay_detected": "The request id was already used in this session.",
+    "request_id_invalid": "Missing or oversized request id.",
+    "tool_not_allowed": "The tool is not on the allowlist.",
+    "tool_unavailable": "The backing store failed after bounded retries; a handoff is required.",
+    "not_found": "No such record for this customer (also returned for records of other customers)."
+  },
+  "input": {
+    "additionalProperties": false,
+    "properties": {
+      "case_id": {
+        "maxLength": 40,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9_\\-]+$",
+        "title": "Case Id",
+        "type": "string"
+      }
+    },
+    "required": [
+      "case_id"
+    ],
+    "title": "GetCaseStatusInput",
+    "type": "object"
+  },
+  "output": {
+    "properties": {
+      "case_id": {
+        "title": "Case Id",
+        "type": "string"
+      },
+      "transaction_id": {
+        "title": "Transaction Id",
+        "type": "string"
+      },
+      "status": {
+        "enum": [
+          "open",
+          "pending_human_review"
+        ],
+        "title": "Status",
+        "type": "string"
+      },
+      "created_at": {
+        "format": "date-time",
+        "title": "Created At",
+        "type": "string"
+      },
+      "policy_rule_ids": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Policy Rule Ids",
+        "type": "array"
+      },
+      "idempotent_replay": {
+        "default": false,
+        "title": "Idempotent Replay",
+        "type": "boolean"
+      },
+      "already_open": {
+        "default": false,
+        "title": "Already Open",
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "case_id",
+      "transaction_id",
+      "status",
+      "created_at",
+      "policy_rule_ids"
+    ],
+    "title": "CaseView",
+    "type": "object"
+  }
+}

@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "cautela/tools/get_transaction.json",
+  "name": "get_transaction",
+  "kind": "read",
+  "description": "One transaction of the session customer.",
+  "requires_confirmation": false,
+  "ownership_checked_args": {
+    "transaction_id": "transaction"
+  },
+  "side_effects": "none",
+  "errors": {
+    "validation_error": "Arguments do not match the tool input contract (unknown fields are rejected).",
+    "session_invalid": "Session token missing, malformed or with a bad signature.",
+    "session_expired": "Session token past its expiry.",
+    "session_revoked": "Session was closed (logout) and cannot be reused.",
+    "replay_detected": "The request id was already used in this session.",
+    "request_id_invalid": "Missing or oversized request id.",
+    "tool_not_allowed": "The tool is not on the allowlist.",
+    "tool_unavailable": "The backing store failed after bounded retries; a handoff is required.",
+    "not_found": "No such record for this customer (also returned for records of other customers)."
+  },
+  "input": {
+    "additionalProperties": false,
+    "properties": {
+      "transaction_id": {
+        "maxLength": 40,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9_\\-]+$",
+        "title": "Transaction Id",
+        "type": "string"
+      }
+    },
+    "required": [
+      "transaction_id"
+    ],
+    "title": "GetTransactionInput",
+    "type": "object"
+  },
+  "output": {
+    "description": "What the customer may see. fraud_score and is_fraud stay internal: they feed policy only.",
+    "properties": {
+      "transaction_id": {
+        "title": "Transaction Id",
+        "type": "string"
+      },
+      "transaction_date": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Transaction Date"
+      },
+      "amount": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Amount"
+      },
+      "currency": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Currency"
+      },
+      "merchant_name": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Merchant Name"
+      },
+      "channel": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Channel"
+      },
+      "transaction_type": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Transaction Type"
+      },
+      "transaction_status": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Transaction Status"
+      },
+      "product_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Product Id"
+      },
+      "transaction_country": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Transaction Country"
+      },
+      "transaction_city": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Transaction City"
+      }
+    },
+    "required": [
+      "transaction_id",
+      "transaction_date",
+      "amount",
+      "currency",
+      "merchant_name",
+      "channel",
+      "transaction_type",
+      "transaction_status",
+      "product_id",
+      "transaction_country",
+      "transaction_city"
+    ],
+    "title": "TransactionView",
+    "type": "object"
+  }
+}

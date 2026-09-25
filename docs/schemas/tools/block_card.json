@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "cautela/tools/block_card.json",
+  "name": "block_card",
+  "kind": "write",
+  "description": "Block one own active card in the sandbox. Requires a confirmation token; verified by read-back.",
+  "requires_confirmation": true,
+  "ownership_checked_args": {
+    "product_id": "product"
+  },
+  "side_effects": "inserts one row in sandbox.card_blocks (source product status is not modified)",
+  "errors": {
+    "validation_error": "Arguments do not match the tool input contract (unknown fields are rejected).",
+    "session_invalid": "Session token missing, malformed or with a bad signature.",
+    "session_expired": "Session token past its expiry.",
+    "session_revoked": "Session was closed (logout) and cannot be reused.",
+    "replay_detected": "The request id was already used in this session.",
+    "request_id_invalid": "Missing or oversized request id.",
+    "tool_not_allowed": "The tool is not on the allowlist.",
+    "tool_unavailable": "The backing store failed after bounded retries; a handoff is required.",
+    "not_found": "No such record for this customer (also returned for records of other customers).",
+    "policy_denied": "The policy engine does not allow this action for these facts; see rule_ids.",
+    "confirmation_required": "The action needs an explicit customer confirmation token.",
+    "confirmation_invalid": "Confirmation token tampered, expired, already used, or bound to other arguments.",
+    "not_verified": "The write could not be confirmed by reading it back; a handoff is required."
+  },
+  "input": {
+    "additionalProperties": false,
+    "properties": {
+      "product_id": {
+        "maxLength": 40,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9_\\-]+$",
+        "title": "Product Id",
+        "type": "string"
+      },
+      "reason": {
+        "default": "suspected_fraud",
+        "enum": [
+          "suspected_fraud",
+          "lost_or_stolen",
+          "customer_request"
+        ],
+        "title": "Reason",
+        "type": "string"
+      }
+    },
+    "required": [
+      "product_id"
+    ],
+    "title": "BlockCardInput",
+    "type": "object"
+  },
+  "output": {
+    "properties": {
+      "product_id": {
+        "title": "Product Id",
+        "type": "string"
+      },
+      "block_id": {
+        "title": "Block Id",
+        "type": "string"
+      },
+      "effective_status": {
+        "title": "Effective Status",
+        "type": "string"
+      },
+      "created_at": {
+        "format": "date-time",
+        "title": "Created At",
+        "type": "string"
+      }
+    },
+    "required": [
+      "product_id",
+      "block_id",
+      "effective_status",
+      "created_at"
+    ],
+    "title": "CardBlockView",
+    "type": "object"
+  }
+}
