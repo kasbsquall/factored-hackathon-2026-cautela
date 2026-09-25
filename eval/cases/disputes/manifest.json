@@ -1,0 +1,120 @@
+{
+  "config": {
+    "heldout_share_test": 0.4,
+    "label_mix": {
+      "ambiguous": 0.2,
+      "match": 0.6,
+      "no_match": 0.2
+    },
+    "max_target_age": 60,
+    "min_per_stratum": {
+      "test": 30,
+      "train": 40,
+      "val": 20
+    },
+    "min_pool": 3,
+    "n_es": {
+      "test": 900,
+      "train": 1800,
+      "val": 600
+    },
+    "periods": {
+      "test": [
+        "2026-01-01",
+        "2026-06-17"
+      ],
+      "train": [
+        "2023-10-01",
+        "2025-06-30"
+      ],
+      "val": [
+        "2025-07-01",
+        "2025-12-31"
+      ]
+    },
+    "pt_share": 0.25,
+    "recall_error_rate": 0.35,
+    "seed": 20260925,
+    "window_days": 90
+  },
+  "counts": {
+    "test": 1107,
+    "train": 2259,
+    "val": 754
+  },
+  "customers_loaded": 14640,
+  "data_version": "7d4d22c3837a267c",
+  "file_sha256": {
+    "test": "d2bd58329e4b5cba8627a0ccb347e12e0ec342f9a6b07aeadafd2cae362018d6",
+    "train": "27c85dbf245ba2f5cd0773011208c8736b0311f9973164be080b04ea05712e00",
+    "val": "08217defb819732fb79db9a22896ee3e3699b402477394f83f1b8884f5df3b8b"
+  },
+  "label_note": "Labels are valid by construction: see ml/DATASHEET.md.",
+  "load_stats": {
+    "raw_rows_for_selected_customers": 432075,
+    "rows_dropped_uncastable_or_duplicate": 0,
+    "rows_kept": 432075
+  },
+  "quotas": {
+    "test": {
+      "AR-Basic": 110,
+      "AR-Plus": 45,
+      "AR-Premium": 30,
+      "AR-Student": 30,
+      "CO-Basic": 162,
+      "CO-Plus": 67,
+      "CO-Premium": 30,
+      "CO-Student": 30,
+      "MX-Basic": 206,
+      "MX-Plus": 114,
+      "MX-Premium": 46,
+      "MX-Student": 30
+    },
+    "train": {
+      "AR-Basic": 215,
+      "AR-Plus": 89,
+      "AR-Premium": 40,
+      "AR-Student": 40,
+      "CO-Basic": 324,
+      "CO-Plus": 136,
+      "CO-Premium": 55,
+      "CO-Student": 40,
+      "MX-Basic": 503,
+      "MX-Plus": 223,
+      "MX-Premium": 91,
+      "MX-Student": 44
+    },
+    "val": {
+      "AR-Basic": 70,
+      "AR-Plus": 30,
+      "AR-Premium": 20,
+      "AR-Student": 20,
+      "CO-Basic": 109,
+      "CO-Plus": 46,
+      "CO-Premium": 20,
+      "CO-Student": 20,
+      "MX-Basic": 137,
+      "MX-Plus": 76,
+      "MX-Premium": 32,
+      "MX-Student": 20
+    }
+  },
+  "skipped_customers": {
+    "test": {
+      "ambiguous": 100,
+      "match": 251,
+      "no_match": 84
+    },
+    "train": {
+      "ambiguous": 129,
+      "match": 329,
+      "no_match": 101
+    },
+    "val": {
+      "ambiguous": 55,
+      "match": 160,
+      "no_match": 50
+    }
+  },
+  "source_fingerprint": "2882468849ed2794"
+}
