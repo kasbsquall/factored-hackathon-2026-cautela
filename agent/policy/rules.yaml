@@ -1,0 +1,141 @@
+# Cautela dispute-intake policy. Deterministic rules with ids and sources.
+#
+# source values:
+#   legal             a primary legal text; `citation` and `url` say which one
+#   synthetic_policy  a team-chosen value where no approved bank policy was supplied; it is labeled as such in
+#                     every decision it produces and must be replaced by the bank's approved policy
+# verification values:
+#   verified_primary     read by the team in the primary text (URL below) on the date given
+#   team_research        taken from the team's earlier research, not re-read in the primary text for this build
+#   pending_verification not verified; do not rely on it without legal review
+#
+# Anchor note: the laws count claim windows from the statement cut-off date or from when the customer learned of
+# the charge. The dataset has no statement dates, so every window is anchored at transaction_date, which is the
+# same day or earlier. That makes each window shorter or equal, never longer, so the approximation can only send
+# more cases to a human, never fewer.
+version: "2026-09-25.1"
+
+claim_windows:
+  - id: MX-WINDOW-001
+    country: Mexico
+    products: any
+    channels: any
+    days: 90
+    calendar: natural
+    bank_response: {days: 45, calendar: natural}
+    source: legal
+    citation: "Ley para la Transparencia y Ordenamiento de los Servicios Financieros (LTOSF), art. 23: 90 days to object to a charge, 45 days for the institution to respond"
+    url: https://www.diputados.gob.mx/LeyesBiblio/pdf/LTOSF.pdf
+    verification: team_research
+
+  - id: CO-WINDOW-001
+    country: Colombia
+    products: any
+    channels: [Web, App]
+    days: 5
+    calendar: business
+    bank_response: {days: 15, calendar: business}
+    source: legal
+    citation: "Decreto 587 de 2016 (reversion del pago): request within 5 business days, reversal within 15 business days"
+    url: https://www.funcionpublica.gov.co/eva/gestornormativo/norma.php?i=69037
+    verification: team_research
+    scope_note: >-
+      Decreto 587 regulates payment reversal for non-face-to-face sales (electronic commerce, remote channels).
+      It is applied to the Web and App channels only. Business days exclude weekends; Colombian public holidays
+      are not modeled, so the computed deadline can be later than the legal one by the number of holidays.
+
+  - id: CO-WINDOW-002
+    country: Colombia
+    products: any
+    channels: any
+    days: 90
+    calendar: natural
+    source: synthetic_policy
+    verification: pending_verification
+    citation: "No statutory window verified for face-to-face card or account charges in Colombia; synthetic 90-day window"
+
+  - id: AR-WINDOW-001
+    country: Argentina
+    products: [Credit Card]
+    channels: any
+    days: 30
+    calendar: natural
+    bank_response: {days: 15, calendar: natural, foreign_days: 60, acknowledge_days: 7}
+    source: legal
+    citation: "Ley 25.065 de Tarjetas de Credito, art. 26 (30 days from receiving the statement to question it), art. 27 (acknowledge within 7 days, answer within 15, or 60 for foreign charges), art. 28 (disputed amount is not payable while under review)"
+    url: http://servicios.infoleg.gob.ar/infolegInternet/anexos/55000-59999/55556/texact.htm
+    verification: verified_primary
+    verified_on: "2026-09-25"
+
+  - id: AR-WINDOW-002
+    country: Argentina
+    products: any
+    channels: any
+    days: 30
+    calendar: natural
+    bank_response: {days: 10, calendar: business}
+    source: synthetic_policy
+    verification: pending_verification
+    citation: "No customer-side claim window verified for debit cards or accounts. The bank response time is BCRA, Proteccion de los Usuarios de Servicios Financieros, point 3.1.6 (every complaint resolved within 10 business days); the 30-day claim window mirrors Ley 25.065 and is synthetic"
+    url: https://www.bcra.gob.ar/archivos/Pdfs/texord/t-pusf.pdf
+
+disputable_status:
+  - id: SYN-STATUS-001
+    statuses: [Approved, Pending]
+    source: synthetic_policy
+    citation: "Only charges that were or are about to be posted can be disputed"
+  - id: SYN-STATUS-002
+    statuses: [Declined]
+    source: synthetic_policy
+    citation: "A declined transaction moved no money; explain instead of opening a dispute"
+  - id: SYN-STATUS-003
+    statuses: [Reversed]
+    source: synthetic_policy
+    citation: "A reversed transaction was already returned; explain instead of opening a dispute"
+
+amount_review:
+  id: SYN-AMOUNT-001
+  threshold_usd: 450
+  source: synthetic_policy
+  citation: >-
+    Synthetic. Charges at or above USD 450 equivalent go to human review. 450 is about the 90th percentile of
+    Purchase amounts in one month of the supplied transactions (2024-03, 121,105 rows, team EDA).
+  missing_amount_rule: SYN-DATA-001
+
+missing_data:
+  id: SYN-DATA-001
+  source: synthetic_policy
+  citation: "If the USD amount cannot be established (amount_usd null and currency not USD) or a required field is missing, a human reviews the case"
+
+fraud_escalation:
+  id: SYN-FRAUD-001
+  fraud_score_at_least: 50
+  or_is_fraud: true
+  source: synthetic_policy
+  citation: >-
+    Synthetic. In one month of supplied transactions (2024-03) no transaction with is_fraud false scored above
+    30.0, and 54 of 137 flagged transactions scored 50 or more. A score of 50 or a fraud flag escalates as
+    suspected_fraud and offers block_card.
+
+confirmations:
+  id: SYN-CONFIRM-001
+  actions: [open_dispute_case, block_card]
+  source: synthetic_policy
+  citation: "Write actions run only after an explicit customer confirmation bound to the exact action and arguments"
+
+out_of_scope:
+  id: SYN-SCOPE-001
+  intents: [credit_limit_increase, loan_application, money_transfer, immediate_refund, change_personal_data,
+            account_closure, investment_advice, other_customer_request]
+  source: synthetic_policy
+  citation: "Cautela handles unrecognized-charge intake only; it never moves money or changes account data"
+
+human_request:
+  id: SYN-HUMAN-001
+  source: synthetic_policy
+  citation: "A customer who asks for a person is transferred"
+
+security_event:
+  id: SYN-SEC-001
+  source: synthetic_policy
+  citation: "A denied cross-customer access, a replay or a detected injection attempt transfers with security_event"
