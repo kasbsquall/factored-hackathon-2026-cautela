@@ -1,0 +1,25 @@
+# secrets
+.env
+*.pem
+
+# data (organizer data is never committed)
+data/
+!data/.gitkeep
+*.parquet
+*.csv
+mlruns/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# node
+node_modules/
+.next/
+dist/
+
+# os
+.DS_Store
+Thumbs.db

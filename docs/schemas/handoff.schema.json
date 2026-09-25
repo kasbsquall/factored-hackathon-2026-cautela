@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "cautela/handoff.schema.json",
+  "title": "Cautela human handoff",
+  "description": "Structured transfer to a human agent. Contains verified facts only; no raw transcript.",
+  "type": "object",
+  "required": ["handoff_id", "trace_id", "created_at", "language", "customer_ref", "request", "transfer_reason", "verified_facts", "actions_taken", "open_questions"],
+  "additionalProperties": false,
+  "properties": {
+    "handoff_id": { "type": "string" },
+    "trace_id": { "type": "string" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "language": { "enum": ["es", "pt"] },
+    "customer_ref": {
+      "description": "Session-scoped reference. The human console resolves identity through its own access controls.",
+      "type": "string"
+    },
+    "request": {
+      "type": "object",
+      "required": ["summary", "intent"],
+      "additionalProperties": false,
+      "properties": {
+        "summary": { "type": "string", "maxLength": 500 },
+        "intent": { "type": "string" },
+        "disputed_transaction_ids": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "transfer_reason": {
+      "type": "object",
+      "required": ["code", "rule_ids"],
+      "additionalProperties": false,
+      "properties": {
+        "code": { "enum": ["policy_requires_review", "amount_above_threshold", "low_confidence", "tool_failure", "suspected_fraud", "customer_requested_human", "out_of_scope", "security_event"] },
+        "rule_ids": { "type": "array", "items": { "type": "string" } },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "verified_facts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["fact", "source"],
+        "additionalProperties": false,
+        "properties": {
+          "fact": { "type": "string" },
+          "source": { "type": "string", "description": "Tool name and record id the fact was read from" }
+        }
+      }
+    },
+    "actions_taken": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["action", "status"],
+        "additionalProperties": false,
+        "properties": {
+          "action": { "type": "string" },
+          "status": { "enum": ["verified", "failed", "not_verified"] },
+          "record_id": { "type": "string" }
+        }
+      }
+    },
+    "evidence": { "type": "array", "items": { "type": "string" } },
+    "open_questions": { "type": "array", "items": { "type": "string" } }
+  }
+}
