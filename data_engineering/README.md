@@ -82,8 +82,22 @@ Silver casts each column with `TRY_CAST` and evaluates every check per row. A ro
 | `bad_enum` | Value outside the dictionary's list |
 | `out_of_range` | Value outside the dictionary's stated range |
 | `orphan_fk` | The key was never delivered in the parent table |
+| `parent_quarantined` | The parent key was delivered but that parent row is in quarantine (always a warning) |
+| `partition_path_mismatch` | The partition column disagrees with the file's `year=/month=/day=` folders (warning) |
 
-An orphan is checked against every key the parent ever delivered, whether it landed in silver or in quarantine. A transaction whose customer row was quarantined for a bad segment still references a real customer, so it stays in silver, and the customer problem stays visible in quarantine.
+An orphan is checked against every key the parent delivered to bronze. A child whose parent row was quarantined for a non-key reason (a bad segment, say) references a real parent, so it stays in silver with a `parent_quarantined` warning, and the report counts orphans and parent-quarantined children separately for every foreign key. A parent's quality problem therefore never cascades into its children.
+
+### Normalization before the checks
+
+Some delivered values are an accented or translated form of a documented value ("México" for "Mexico", "Urbana" for "Urban"). A column can declare an explicit `normalize` map, applied in silver before any check; the loader rejects a map whose targets fall outside the column's value list, so a map cannot widen a list silently. Values the dictionary does not list at all are accepted only through `observed_values`, which requires a note. The raw value stays in bronze, and each silver row lists what was normalized in `_normalized` (for example `country:México`).
+
+### Encoding
+
+Before reading, every CSV file's bytes are checked: strict UTF-8 (with or without BOM) is read as UTF-8, anything else is read as Latin-1 and listed in the report. After loading, any U+FFFD replacement character in the batch stops the table with an error and nothing is committed, because it means text was decoded with the wrong encoding upstream. On the organizer data all 5,491 files are UTF-8 with BOM and no replacement character exists. The "T�cnico" seen in the first run's console output came from printing through a Windows console code page; the stored value is "Técnico" (U+00E9). The CLI now writes UTF-8 to stdout.
+
+### Partition folders
+
+Daily tables arrive under `year=/month=/day=` folders. DuckDB's automatic Hive detection is switched off, so those folders do not become columns that look like drift. The folder date is instead validated against the partition column and reported as `partition_path_mismatch` (0 mismatches on the organizer data). A file that also carries `year`, `month` or `day` as data columns keeps them in bronze without a drift event.
 
 Warn-level findings travel with the row in `_quality_warnings`, so a downstream consumer can tell that, say, a complaint status was outside the decoded list.
 
@@ -147,14 +161,14 @@ Synthetic test fixture, team-generated, not organizer data. Full run: 484 files 
 | type_cast_error | 6 |
 | null_required | 3 |
 
-Warnings (rows kept): 14 orphan keys on nullable foreign keys and 6 values outside decoded lists. Late arrivals: 140 in transactions, 100 in digital events, 40 in complaints, 20 in call center interactions.
+Warnings (rows kept): 832 children of quarantined parents, 14 orphan keys on nullable foreign keys and 6 values outside decoded lists. Late arrivals: 140 in transactions, 100 in digital events, 40 in complaints, 20 in call center interactions.
 
 ## What the dictionary leaves unclear
 
 These are recorded in the contracts as notes. They need confirmation from the organizers or from the real data.
 
 1. `products`, `service_agents`, `transactions`, `satisfaction_surveys`, `digital_events` and `complaints`: descriptions and constraints are detached from their columns in the extraction. They were realigned by position, and the counts agree in every case.
-2. `products.product_type`: the value list is truncated after "Investme". Decoded prefix: Checking Account, Savings Account, Credit Card, Debit Card, Personal Loan, Mortgage. No enum check is applied.
+2. `products.product_type`: the value list is truncated after "Investme". Decoded prefix: Checking Account, Savings Account, Credit Card, Debit Card, Personal Loan, Mortgage. Resolved with the delivered data, see the reconciliation below.
 3. Decoded last values, to be confirmed: `transactions.transaction_type` (Adjustment), `transactions.transaction_category` (Other, and nullable), `call_center_interactions.reason_category` (Complaint), `digital_events.event_type` (Purchase), `complaints.status` (Rejected), `marketing_campaigns.campaign_objective` (Reactivation), `customers.detected_accent` ("ne-utral" read as neutral, nullable).
 4. `service_agents.experience_level` lists both "Mid-Senior" and "Senior", which may be an extraction artifact.
 5. `satisfaction_surveys.main_score`: 1-5 for CSAT and 0-10 for NPS; no range for CES. The contract checks 0-10 and only warns.
@@ -165,10 +179,45 @@ These are recorded in the contracts as notes. They need confirmation from the or
 10. The SLA threshold behind `complaints.sla_breached` is not documented.
 11. `transactions.currency`, `complaints.currency` and `branches.country` have no value lists, although `products.currency` and `customers.country` do.
 12. `call_transcripts` has no event timestamp, so late arrival cannot be measured from that table alone. `transcription_model` is an open list ("Whisper, Google STT, etc.").
-13. `daily_exchange_rates` is partitioned daily but has no `process_date`; the rate date is used. The direction of `exchange_rate` is not documented, and 3,000 rows over three years does not match three currencies per calendar day (about 3,300), so the pairs or the day coverage may differ from what we assume.
+13. `daily_exchange_rates` is partitioned daily but has no `process_date`; the rate date is used. The delivered data answers the other two questions: rates are given for every directed pair (source to target), and there are 13,164 rows, see the reconciliation below.
 14. `branches`, `service_agents` and `marketing_campaigns` have no update timestamp, so deduplication relies on snapshot file order.
 15. Snapshot tables (`monthly_snapshot`, `full_snapshot`) have no snapshot date column, and the number and layout of snapshots is unknown.
 16. The row-count column in `dataset-summary.txt` is shifted by one row (it prints 350 next to `service_agents`). The contracts use the per-table counts from the dictionary.
+
+## Reconciliation with the delivered data
+
+The first run over the organizer data (local mirror of the S3 bucket, 5,491 CSV files, 6,127,393 rows) showed where the dictionary and the data disagree. The contracts now follow the data, and every difference is recorded here and in the column's `note`. Counts come from the bronze layer of that run.
+
+| Column | Dictionary says | Data has | Decision | Why |
+|---|---|---|---|---|
+| `customers.country` | Mexico, Colombia, Argentina | México 74,907; Colombia 45,251; Argentina 29,842 | Normalize México to Mexico | Accented form of a documented value |
+| `branches.country` | No list | México 175; Colombia 105; Argentina 70 | Normalize México to Mexico | Same spelling as `customers.country` and `service_agents.country_of_origin` |
+| `transactions.transaction_country` | No list | México 2,105,794 and Mexico 40,515; also USA, Spain, Brazil | Normalize México to Mexico | Two spellings of one country in the same column |
+| `customers.document_type` | DNI, CURP, CC, CE, Passport | DNI 104,749; CE 15,150; Pasaporte 15,062; CC 15,039; no CURP | Normalize Pasaporte to Passport | Spanish form of a documented value |
+| `branches.geographic_zone` | Urban, Suburban, Rural | Urbana 350 (every branch) | Normalize Urbana to Urban | Spanish form; only the observed variant is mapped |
+| `call_center_interactions.channel` | Phone, Web Chat, WhatsApp, Email, App | The five, plus Web 3,395 | Accept Web as an observed value | Not a variant of a documented value; mapping it to Web Chat would be a guess |
+| `call_center_interactions.reason_category` | Transactional, Product, Technical, Commercial, Complaint (decoded) | Transaccional 240,056; Producto 150,863; Queja 117,021; Técnico 102,899; Comercial 54,879; Retención 20,578 | Normalize the five translations; accept Retención as observed | Retención has no documented counterpart, so it is kept as delivered rather than translated |
+| `call_center_interactions.detected_sentiment` | Positive, Neutral, Negative, Very Negative | Neutral 459,712; Negativo 94,322; Positivo 75,562; Muy Negativo 37,727; Muy Positivo 18,973 | Normalize three translations; accept Muy Positivo as observed | Same rule as above |
+| `products.product_type` | Truncated list ending in "Investme" | Cuenta Ahorro 120,203; Tarjeta Crédito 100,102; Cuenta Corriente 99,979; Tarjeta Débito 39,938; Préstamo Personal 19,960; Préstamo Hipotecario 11,910; Inversión 5,859; Seguro 2,049 | Normalize seven onto the decoded list (Inversión to Investment); accept Seguro as observed; bad values warn | The list is now checkable; Seguro may sit in the truncated tail, which we cannot see |
+| `customers.registration_branch_id` | FK to branches, NOT NULL | 149,995 of 150,000 values absent from branches (each customer has a distinct id; 5 match) | Orphans warn, rows kept | The relationship is unusable as delivered; quarantining would empty the customer table. `products.opening_branch_id` resolves for all 400,000 rows |
+| `service_agents.assigned_branch_id` | FK to branches | 831 of 833 non-null values absent from branches | Already warn; unchanged | Same pattern as customers |
+| `call_transcripts.duration_seconds` | NOT NULL | 24,029 nulls (14.0%) | Null warns, rows kept | Not needed downstream; the duration also exists on the interaction |
+| Partition folders `year`, `month`, `day` | Not columns | Added by DuckDB Hive auto-detection | Detection off; folders validated against `process_date` | 0 mismatches; they were never drift |
+
+The first run's customer quarantine (149,995 orphans) was not a cascade from the quarantined branches: those branch keys were already part of the parent key set. The customers really point at branch ids that `branches.csv` does not contain. The non-cascading logic above is still in place, and after reconciliation no branch is quarantined.
+
+### Observations reported, not changed
+
+- **Row counts differ from the summary.** transactions 4,425,008 (summary 5,000,000); call_center_interactions 686,296 (800,000); satisfaction_surveys 212,759 (250,000); call_transcripts 171,321 (200,000); complaints 67,095 (80,000); daily_exchange_rates 13,164 (3,000). customers 150,000, products 400,000, branches 350, service_agents 1,200 and marketing_campaigns 200 match. `digital_events` and `campaign_sends` are not in the delivery.
+- **No duplicates.** No delivered table has a repeated key. Detection ignores `process_date` and ingestion columns, so a re-delivered record would count. A direct check on bronze also finds no rows that repeat the same content under a different id (transactions by customer, product, timestamp, amount and type; complaints by customer, timestamp, category and description; interactions by customer, timestamp and reason; surveys by customer, timestamp and interaction). The "~2%" in the summary is not reproduced.
+- **Mexican accounts are in USD.** All 200,398 products and 2,216,431 transactions of Mexican customers are in USD; MXN never appears in products or transactions. Argentina uses ARS (792,585) and USD (87,420), Colombia COP (1,194,444) and USD (134,128). In total 2,437,979 transactions are in USD.
+- **Exchange rates cover every directed pair.** 12 pairs among MXN, COP, ARS and USD for each of 1,097 days (2023-06-17 to 2026-06-17) give the 13,164 rows. The pair names the direction, which resolves that question from the dictionary.
+- **Event time can be one day after the partition date.** In transactions, interactions and complaints the lag between `process_date` and the event date is -1 or 0 days (1,106,307 transactions have an event on the following day); surveys go down to -2. Within one partition, transaction timestamps span from about 06:00 to about 06:00 of the next day (hours are otherwise uniform), which is consistent with timestamps stored about six hours ahead of the local business day. That explanation is a hypothesis; the dictionary does not state a timezone. No row arrives late by the one-day rule.
+- **Sparse or one-sided columns.** `transactions.transaction_category` is null in 60.9% of rows; `customers.detected_accent` is null in 29.9% and never "neutral"; `satisfaction_surveys.nps_category` has Detractor 45,007 and Passive 15,387 and no Promoter at all; `complaints.origin_interaction_id` is always null, so no complaint links back to a call.
+- **Complaint categories are English and nearly uniform.** Transactions 13,580; Fees 13,553; Technical 13,407; Branch 13,361; Service 13,194. None is specific to an unrecognized charge; this matters for the workflow choice.
+- **Uniqueness.** `service_agents.employee_code` repeats 13 values over 26 rows and `products.product_number` 6 values over 12 rows (reported, not quarantined).
+
+After reconciliation the full refresh quarantines 0 of 6,127,393 rows. Remaining warnings are the 149,995 and 831 branch orphans and the 24,029 null transcript durations. The run takes about 10 minutes on a laptop; about 80 seconds of it is per-file CSV header sniffing.
 
 ## Capacity limits and route to production
 
