@@ -1,7 +1,7 @@
 """Pipeline entry point: bronze -> silver (with quarantine) for every contract table, incrementally.
 
     uv run python -m data_engineering.pipelines.run --source data/fixture --target data/warehouse.duckdb
-    uv run python -m data_engineering.pipelines.run --source s3://bucket/prefix --tables transactions complaints
+    uv run python -m data_engineering.pipelines.run --tables transactions complaints   # source from .env
 
 Each table is processed in its own transaction, parents before children. Only files not yet in the file ledger
 are read, so a rerun on the same source changes nothing, and a file that lands late in an old partition is still
@@ -23,6 +23,7 @@ import duckdb
 
 from data_engineering.contracts.loader import TableContract, dependency_order, load_contracts
 from data_engineering.pipelines import bronze, checks, silver, warehouse
+from data_engineering.pipelines.env import load_env_file
 from data_engineering.pipelines.report import table_section, totals, write_report
 from data_engineering.pipelines.source import (
     SourceLocation,
@@ -31,6 +32,7 @@ from data_engineering.pipelines.source import (
     file_schemas,
     list_files,
     parse_source,
+    resolve_source,
 )
 
 
@@ -44,6 +46,16 @@ def _source_label(loc: SourceLocation) -> str | None:
     if loc.kind == "local" and manifest.exists():
         return json.loads(manifest.read_text(encoding="utf-8")).get("label")
     return None
+
+
+def _refuse_mixed_sources(con: duckdb.DuckDBPyConnection, loc: SourceLocation) -> None:
+    """One warehouse, one source. The ledger keys files by path relative to the source root, so loading a second
+    source into the same warehouse could silently skip files that share a relative path (for example the
+    synthetic fixture and the real data)."""
+    rows = con.execute("SELECT DISTINCT source FROM control.runs WHERE status = 'succeeded'").fetchall()
+    others = sorted(r[0] for r in rows if r[0] != loc.root)
+    if others:
+        raise ValueError(f"this warehouse was built from {others[0]}; use another --target for {loc.root}")
 
 
 def process_table(con: duckdb.DuckDBPyConnection, loc: SourceLocation, contract: TableContract, run_id: str,
@@ -96,8 +108,9 @@ def run_pipeline(source: str, target: str | Path, tables: list[str] | None = Non
     started = datetime.now(timezone.utc)
     con = duckdb.connect(str(target))
     try:
-        connect_source(con, loc, env)
         warehouse.init_warehouse(con)
+        _refuse_mixed_sources(con, loc)
+        connect_source(con, loc, env)
         con.execute("INSERT INTO control.runs VALUES (?, ?, NULL, 'running', ?, ?, NULL)",
                     [run_id, started.replace(tzinfo=None), loc.root, order])
         sections = {}
@@ -132,14 +145,17 @@ def _parse_tables(values: list[str] | None) -> list[str] | None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Cautela bronze/silver pipeline")
-    parser.add_argument("--source", required=True, help="local directory or s3://bucket/prefix")
+    parser.add_argument("--source", help="local directory or s3://bucket/prefix (default: $LATAM_BANK_S3_URI)")
     parser.add_argument("--target", default="data/warehouse.duckdb", help="DuckDB file to create or update")
     parser.add_argument("--tables", nargs="*", help="subset of tables (parents must already be loaded)")
     parser.add_argument("--full-refresh", action="store_true", help="drop and rebuild the selected tables")
     parser.add_argument("--reports-dir", help="where to write quality_<run_id>.json (default: next to target)")
+    parser.add_argument("--env-file", default=".env", help="optional KEY=VALUE file with S3 settings")
     args = parser.parse_args(argv)
+    load_env_file(args.env_file)
     try:
-        report = run_pipeline(args.source, args.target, _parse_tables(args.tables), args.full_refresh,
+        source = resolve_source(args.source, os.environ)
+        report = run_pipeline(source, args.target, _parse_tables(args.tables), args.full_refresh,
                               args.reports_dir)
     except (ValueError, duckdb.Error) as exc:
         print(f"pipeline failed: {exc}", file=sys.stderr)

@@ -1,8 +1,9 @@
 """Source-agnostic access to the raw files: a local directory or an s3:// prefix.
 
 Both go through DuckDB (`glob`, `parquet_schema`, `read_parquet`, `read_csv`), so the rest of the pipeline never
-branches on where the data lives. S3 credentials are read from environment variables only and are never written
-to logs, reports or the warehouse.
+branches on where the data lives. S3 credentials are read from environment variables only (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY,
+AWS_REGION, default us-east-2), normally loaded from the git-ignored .env file, and are never written to logs,
+reports or the warehouse. LATAM_BANK_S3_URI gives the default source when --source is omitted.
 
 Expected layout under the source root, per table (the real delivery layout is still unconfirmed, so both forms
 are accepted):
@@ -22,6 +23,8 @@ from typing import Literal
 import duckdb
 
 FORMATS = ("parquet", "csv")
+DEFAULT_S3_REGION = "us-east-2"  # region of the organizer bucket
+SOURCE_ENV_VAR = "LATAM_BANK_S3_URI"
 _BUCKET = re.compile(r"^[a-z0-9][a-z0-9.\-]{1,61}[a-z0-9]$")
 
 
@@ -91,9 +94,7 @@ def s3_secret_sql(env: Mapping[str, str]) -> str:
             parts.append(f"SESSION_TOKEN {_q(env['AWS_SESSION_TOKEN'])}")
     else:
         parts.append("PROVIDER credential_chain")
-    region = env.get("AWS_REGION") or env.get("AWS_DEFAULT_REGION")
-    if region:
-        parts.append(f"REGION {_q(region)}")
+    parts.append(f"REGION {_q(s3_region(env))}")
     endpoint = env.get("AWS_ENDPOINT_URL")
     if endpoint:
         use_ssl = not endpoint.lower().startswith("http://")
@@ -102,11 +103,23 @@ def s3_secret_sql(env: Mapping[str, str]) -> str:
     return f"CREATE OR REPLACE SECRET cautela_s3 ({', '.join(parts)})"
 
 
+def s3_region(env: Mapping[str, str]) -> str:
+    return env.get("AWS_REGION") or env.get("AWS_DEFAULT_REGION") or DEFAULT_S3_REGION
+
+
 def describe_s3_auth(env: Mapping[str, str]) -> str:
     """A log-safe summary of how S3 will authenticate (no secret material)."""
     key = env.get("AWS_ACCESS_KEY_ID")
     how = f"static key ending ...{key[-4:]}" if key else "AWS credential chain"
-    return f"{how}, region {env.get('AWS_REGION') or env.get('AWS_DEFAULT_REGION') or 'default'}"
+    return f"{how}, region {s3_region(env)}"
+
+
+def resolve_source(cli_value: str | None, env: Mapping[str, str]) -> str:
+    """--source wins; otherwise LATAM_BANK_S3_URI (normally set in the git-ignored .env)."""
+    value = cli_value or env.get(SOURCE_ENV_VAR)
+    if not value:
+        raise ValueError(f"no source: pass --source or set {SOURCE_ENV_VAR} in .env")
+    return value
 
 
 def connect_source(con: duckdb.DuckDBPyConnection, loc: SourceLocation, env: Mapping[str, str] | None = None) -> None:

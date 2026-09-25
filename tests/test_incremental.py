@@ -112,7 +112,7 @@ def test_full_refresh_rebuilds_identically(copied_full_db, fixture_source, full_
 def test_cli_runs_a_table_subset(tmp_path, fixture_source, capsys):
     source, _ = fixture_source
     code = main(["--source", str(source), "--target", str(tmp_path / "w.duckdb"), "--tables", "branches,customers",
-                 "--reports-dir", str(tmp_path / "reports")])
+                 "--reports-dir", str(tmp_path / "reports"), "--env-file", str(tmp_path / "absent.env")])
     assert code == 0
     out = capsys.readouterr().out
     assert "SYNTHETIC TEST FIXTURE" in out and "customers" in out
@@ -120,7 +120,8 @@ def test_cli_runs_a_table_subset(tmp_path, fixture_source, capsys):
 
 
 def test_cli_rejects_bad_source(tmp_path, capsys):
-    assert main(["--source", "ftp://example.com/data", "--target", str(tmp_path / "w.duckdb")]) == 1
+    assert main(["--source", "ftp://example.com/data", "--target", str(tmp_path / "w.duckdb"),
+                 "--env-file", str(tmp_path / "absent.env")]) == 1
     assert "unsupported scheme" in capsys.readouterr().err
 
 
