@@ -37,7 +37,15 @@ See [docs/architecture.md](docs/architecture.md).
 
 ## How to run
 
-To be completed. Target: one command to reproduce the pipeline, the evaluation, and the app.
+Requires [uv](https://docs.astral.sh/uv/) and Python 3.12.
+
+```bash
+uv sync
+make fixture pipeline test   # synthetic test fixture -> bronze/silver warehouse -> tests
+make pipeline-s3             # real data; settings in .env (see .env.example)
+```
+
+Without `make`, the equivalent commands are in the [Makefile](Makefile). Data engineering details: [data_engineering/README.md](data_engineering/README.md). Evaluation and app: to be completed.
 
 ## Evaluation
 
