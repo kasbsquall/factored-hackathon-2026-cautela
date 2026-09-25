@@ -24,7 +24,8 @@ def cases():
 def test_manifest_hashes_match_files():
     manifest = json.loads((CASES_DIR / "manifest.json").read_text(encoding="utf-8"))
     for s in SPLITS:
-        assert hashlib.sha256((CASES_DIR / f"{s}.jsonl").read_bytes()).hexdigest() == manifest["file_sha256"][s]
+        payload = (CASES_DIR / f"{s}.jsonl").read_bytes().replace(b"\r\n", b"\n")  # tolerate CRLF checkouts
+        assert hashlib.sha256(payload).hexdigest() == manifest["file_sha256"][s]
 
 
 def test_group_split_has_no_customer_or_transaction_overlap(cases):

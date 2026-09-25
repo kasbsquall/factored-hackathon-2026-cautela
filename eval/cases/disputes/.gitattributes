@@ -1,0 +1,2 @@
+# Case files are hashed in manifest.json; keep LF on every checkout so the hashes hold.
+* text eol=lf
