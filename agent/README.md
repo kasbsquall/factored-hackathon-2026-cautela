@@ -173,6 +173,11 @@ Every value below is a team choice where no approved bank policy was supplied. E
   multi-process deployment needs the bank's case system or a server database.
 - The warehouse is read through the silver tables; gold serving views are still a placeholder.
 - A duplicated document number (the fixture has two) never authenticates; the real remedy is a data fix upstream.
+- Amounts with dot thousands separators ("2.140.000") look like dotted document numbers. The masker keeps a
+  number when a currency code, symbol or amount word sits right next to it, or when it has decimals, and masks it
+  when a document cue (DNI, CC, CURP, CPF, "cédula", "documento") sits right before it or when there is no
+  context at all. Residual risk: a document number written where an amount would go ("pagué por 12.345.678") is
+  kept. The opposite error, a bare amount masked as `[DOC]`, loses information but leaks nothing.
 - Name masking catches names the service already knows and cued phrases ("me llamo", "meu nome é"); an unknown
   name in free text without a cue is not detected.
 - Policy windows need legal review, public holidays per country, and statement dates to anchor correctly.

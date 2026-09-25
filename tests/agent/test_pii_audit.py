@@ -104,3 +104,61 @@ def test_retention_purges_only_whole_expired_day_files(tmp_path, clock):
     assert removed == [old]
     assert (tmp_path / "audit-2026-06-01.jsonl").exists()
     assert AUDIT_RETENTION_DAYS == 3650
+
+
+# ---- amounts with dot thousands separators versus dotted document numbers ---------------------------------
+@pytest.mark.parametrize("text", [
+    "Me cobraron 16.371.485 pesos",
+    "un cargo de 2.140.000 que no hice",
+    "COP 48.900",
+    "ARS 16.371.485",
+    "$ 2.140.000",
+    "US$ 1.250.000",
+    "paguei R$ 1.250.000 ontem",
+    "foram 2.140.000 reais",
+    "como 2.140.000",
+    "unos 16.371.485",
+    "por 2.140.000 en la tienda",
+    "2.140.000,50 sin moneda pero con decimales",
+    "como 2140000 pesos",
+], ids=lambda t: t[:22])
+def test_amounts_with_thousands_separators_are_kept(text):
+    assert mask_text(text) == text
+
+
+@pytest.mark.parametrize(("text", "leak"), [
+    ("DNI 12.345.678", "12.345.678"),
+    ("mi documento: 30.123.456", "30.123.456"),
+    ("C.C. 1.023.456.789", "1.023.456.789"),
+    ("cédula número 52.345.678", "52.345.678"),
+    ("meu CPF é 123.456.789", "123.456.789"),
+    ("CC 1023456789", "1023456789"),
+    ("solo el numero 16.371.485", "16.371.485"),  # no context: treated as a document
+    ("1.023.456.789", "456"),                     # four groups are masked whole, no tail left visible
+], ids=lambda v: str(v)[:22])
+def test_document_numbers_are_masked(text, leak):
+    assert leak not in mask_text(text)
+
+
+def test_mixed_sentence_masks_the_document_and_keeps_the_amounts():
+    text = ("Mi cédula es 1.023.456.789 y me cobraron COP 48.900 en la farmacia y otro cargo de 2.140.000; "
+            "meu CPF é 123.456.789 e paguei R$ 1.250.000")
+    masked = mask_text(text)
+    assert "1.023.456.789" not in masked and "123.456.789" not in masked
+    assert "COP 48.900" in masked and "cargo de 2.140.000" in masked and "R$ 1.250.000" in masked
+    assert masked.count("[DOC]") == 2
+
+
+def test_document_cue_wins_over_a_following_currency():
+    assert mask_text("cedula 52.345.678 pesos") == "cedula [DOC] pesos"
+
+
+def test_designated_document_fields_are_always_redacted():
+    masked = mask_mapping({"document_number": "2.140.000", "dni": "30123456", "amount_text": "COP 2.140.000"})
+    assert masked["document_number"] == masked["dni"] == "[DOC]"
+    assert masked["amount_text"] == "COP 2.140.000"
+
+
+def test_residual_risk_document_written_as_an_amount_is_kept():
+    """Documented limitation: a document placed where an amount would go reads as an amount."""
+    assert mask_text("pagué por 12.345.678") == "pagué por 12.345.678"
