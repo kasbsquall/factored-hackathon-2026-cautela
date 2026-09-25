@@ -21,9 +21,25 @@ columns:
   - {name: address, type: VARCHAR(200), nullable: false, severity: error, description: Full address (in Spanish)}
   - {name: city, type: VARCHAR(100), nullable: false, severity: error, description: City}
   - {name: state, type: VARCHAR(100), nullable: false, severity: error, description: State/Province}
-  - {name: country, type: VARCHAR(50), nullable: false, profile: true, severity: error, description: Country (no values listed)}
+  - name: country
+    type: VARCHAR(50)
+    nullable: false
+    normalize: {México: Mexico}
+    profile: true
+    severity: error
+    description: Country (no values listed)
+    note: Delivered as "México" (175 of 350). Normalized to "Mexico" to match customers.country and service_agents.
   - {name: postal_code, type: VARCHAR(10), nullable: true, severity: warn, description: Postal code}
-  - {name: geographic_zone, type: VARCHAR(50), nullable: false, allowed_values: [Urban, Suburban, Rural], enum_status: listed, severity: error, description: Zone}
+  - name: geographic_zone
+    type: VARCHAR(50)
+    nullable: false
+    allowed_values: [Urban, Suburban, Rural]
+    enum_status: listed
+    normalize: {Urbana: Urban}
+    profile: true
+    severity: error
+    description: Zone
+    note: All 350 delivered rows say "Urbana", the Spanish form of the documented "Urban". Only observed variants are mapped.
   - {name: phone, type: VARCHAR(20), nullable: false, severity: error, description: Contact phone}
   - {name: email, type: VARCHAR(100), nullable: true, severity: warn, description: Branch email}
   - {name: opening_time, type: TIME, nullable: false, severity: error, description: Opening time}

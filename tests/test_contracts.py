@@ -45,11 +45,31 @@ def test_stated_ranges_are_encoded(contracts):
     assert (sentiment.min, sentiment.max) == (-1, 1)
 
 
-def test_truncated_enum_is_unknown_and_profiled(contracts):
+def test_truncated_enum_reconciled_with_delivered_values(contracts):
     product_type = contracts["products"].column("product_type")
-    assert product_type.enum_status == "unknown"
-    assert product_type.allowed_values is None
-    assert product_type.profile and "truncated" in product_type.note
+    assert product_type.enum_status == "decoded" and "truncated" in product_type.note
+    assert product_type.observed_values == ["Seguro"]
+    assert set(product_type.normalize.values()) <= set(product_type.allowed_values)
+    assert product_type.severity_for("bad_enum") == "warn"
+
+
+def test_every_normalization_target_is_an_accepted_value(contracts):
+    for table, contract in contracts.items():
+        for col in contract.columns:
+            if col.normalize and col.allowed_values:
+                assert set(col.normalize.values()) <= set(col.accepted_values), f"{table}.{col.name}"
+
+
+def test_normalize_cannot_widen_a_value_list():
+    with pytest.raises(ValidationError, match="outside the value list"):
+        ColumnContract(name="x", type="VARCHAR(10)", nullable=False, allowed_values=["Urban"], enum_status="listed",
+                       normalize={"Urbana": "Urbano"}, severity="error", description="x")
+
+
+def test_observed_values_need_a_note():
+    with pytest.raises(ValidationError, match="note"):
+        ColumnContract(name="x", type="VARCHAR(10)", nullable=False, allowed_values=["Phone"], enum_status="listed",
+                       observed_values=["Web"], severity="error", description="x")
 
 
 def test_decoded_enums_only_warn_on_bad_values(contracts):

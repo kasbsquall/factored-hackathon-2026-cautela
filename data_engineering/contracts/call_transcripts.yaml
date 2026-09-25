@@ -36,4 +36,12 @@ columns:
     description: Model used for transcription
     note: The dictionary says "Whisper, Google STT, etc.", an open list, so no enum check is applied.
   - {name: audio_quality, type: VARCHAR(20), nullable: true, allowed_values: [High, Medium, Low], enum_status: listed, severity: warn, description: Audio quality}
-  - {name: duration_seconds, type: INTEGER, nullable: false, severity: error, description: Call duration}
+  - name: duration_seconds
+    type: INTEGER
+    nullable: false
+    check_severity: {not_null: warn}
+    severity: error
+    description: Call duration
+    note: >-
+      The dictionary says NOT NULL; the delivered data has 24,029 nulls (14.0%). The duration is also on the
+      related interaction and is not needed downstream, so a null is reported and the transcript is kept.

@@ -20,16 +20,20 @@ columns:
   - name: product_type
     type: VARCHAR(50)
     nullable: false
-    enum_status: unknown
+    allowed_values: [Checking Account, Savings Account, Credit Card, Debit Card, Personal Loan, Mortgage, Investment]
+    enum_status: decoded
+    observed_values: [Seguro]
+    normalize: {Cuenta Corriente: Checking Account, Cuenta Ahorro: Savings Account, Tarjeta Crédito: Credit Card, Tarjeta Débito: Debit Card, Préstamo Personal: Personal Loan, Préstamo Hipotecario: Mortgage, Inversión: Investment}
     provenance: decoded
+    check_severity: {bad_enum: warn}
     profile: true
     severity: error
     description: Product type
     note: >-
-      The value list is truncated in the extraction ("Checking Account, Savings Account, Credit CaNrdO,TDNebUitLCL ard,
-      Personal Loan, Mortgage, Investme"). Decoded prefix: Checking Account, Savings Account, Credit Card, Debit Card,
-      Personal Loan, Mortgage, then a value starting with "Investme". The full list is unknown, so no enum check is
-      applied and observed values are profiled in the quality report. NOT NULL is decoded from the interleaved text.
+      The dictionary list is truncated ("Checking Account, Savings Account, Credit CaNrdO,TDNebUitLCL ard, Personal
+      Loan, Mortgage, Investme"). The delivered data has 8 Spanish values. Seven map onto the decoded list, where
+      "Investment" completes the truncated "Investme". "Seguro" (insurance, 2,049 rows) has no visible
+      counterpart (it may sit in the truncated tail) and is kept as delivered. Enum violations are reported only.
   - {name: product_number, type: VARCHAR(30), nullable: false, unique: true, severity: error, provenance: realigned, description: Account/card/policy number}
   - {name: currency, type: VARCHAR(3), nullable: false, allowed_values: [MXN, COP, ARS, USD], enum_status: listed, severity: error, provenance: realigned, description: Currency}
   - {name: current_balance, type: "DECIMAL(15,2)", nullable: false, severity: error, provenance: realigned, description: Current balance}

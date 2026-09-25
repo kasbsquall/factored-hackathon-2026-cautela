@@ -41,6 +41,11 @@ class ColumnContract(BaseModel):
     fk: str | None = None
     allowed_values: list[str] | None = None
     enum_status: Literal["none", "listed", "decoded", "unknown"] = "none"
+    # Reconciliation with the delivered data (see the README reconciliation table). `observed_values` are accepted
+    # values the dictionary does not list; `normalize` maps a raw variant (accented or translated) of a value to
+    # its canonical form before any check runs. The raw value is kept in bronze and in silver._normalized.
+    observed_values: list[str] | None = None
+    normalize: dict[str, str] = Field(default_factory=dict)
     min: float | None = None
     max: float | None = None
     severity: Severity
@@ -67,11 +72,22 @@ class ColumnContract(BaseModel):
             raise ValueError(f"{self.name}: enum_status {self.enum_status} requires a note explaining why")
         if self.enum_status == "unknown" and not self.profile:
             raise ValueError(f"{self.name}: an unknown enum must be profiled (profile: true)")
+        if self.observed_values and not (has_values and self.note):
+            raise ValueError(f"{self.name}: observed_values extend a value list and need a note explaining why")
+        if has_values and self.normalize:
+            accepted = set(self.accepted_values)
+            outside = sorted(set(self.normalize.values()) - accepted)
+            if outside:
+                raise ValueError(f"{self.name}: normalize maps to values outside the value list: {outside}")
         if (self.min is not None or self.max is not None) and not self.type.startswith(_NUMERIC_PREFIXES):
             raise ValueError(f"{self.name}: min/max only apply to numeric columns")
         if self.min is not None and self.max is not None and self.min > self.max:
             raise ValueError(f"{self.name}: min is greater than max")
         return self
+
+    @property
+    def accepted_values(self) -> list[str]:
+        return [*(self.allowed_values or []), *(self.observed_values or [])]
 
     @property
     def duckdb_type(self) -> str:

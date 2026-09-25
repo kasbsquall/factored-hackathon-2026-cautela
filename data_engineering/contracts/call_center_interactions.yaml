@@ -19,26 +19,52 @@ columns:
   - {name: customer_id, type: VARCHAR(20), nullable: false, fk: customers.customer_id, severity: error, description: Customer ID}
   - {name: agent_id, type: VARCHAR(20), nullable: true, fk: service_agents.agent_id, severity: warn, description: Agent ID who attended}
   - {name: interaction_type, type: VARCHAR(30), nullable: false, allowed_values: [Inbound Call, Outbound Call, Chat, Email, Video], enum_status: listed, severity: error, description: Interaction type}
-  - {name: channel, type: VARCHAR(30), nullable: false, allowed_values: [Phone, Web Chat, WhatsApp, Email, App], enum_status: listed, severity: error, description: Channel}
+  - name: channel
+    type: VARCHAR(30)
+    nullable: false
+    allowed_values: [Phone, Web Chat, WhatsApp, Email, App]
+    enum_status: listed
+    observed_values: [Web]
+    profile: true
+    severity: error
+    description: Channel
+    note: >-
+      "Web" (3,395 rows) is not in the dictionary. It may or may not mean "Web Chat", so it is accepted as its own
+      observed value instead of being mapped.
   - {name: contact_reason, type: VARCHAR(100), nullable: false, profile: true, severity: error, description: Main contact reason (no values listed)}
   - name: reason_category
     type: VARCHAR(50)
     nullable: false
     allowed_values: [Transactional, Product, Technical, Commercial, Complaint]
     enum_status: decoded
+    observed_values: [Retención]
+    normalize: {Transaccional: Transactional, Producto: Product, Técnico: Technical, Comercial: Commercial, Queja: Complaint}
     provenance: decoded
     check_severity: {bad_enum: warn}
     profile: true
     severity: error
     description: Reason category
     note: >-
-      Extracted text ends with "CoNmOpTlaNinUt)LL": "NOT NULL" is interleaved with the last value. Decoded as
-      "Complaint" and NOT NULL. Enum violations are reported only until confirmed.
+      Extracted text ends with "CoNmOpTlaNinUt)LL", decoded as "Complaint" and NOT NULL. The delivered values are
+      Spanish; five map one to one onto the documented English values. "Retención" (20,578 rows) has no
+      documented counterpart and is kept as delivered rather than translated.
   - {name: duration_seconds, type: INTEGER, nullable: true, severity: warn, description: Duration in seconds}
   - {name: wait_time_seconds, type: INTEGER, nullable: true, severity: warn, description: Wait time before service}
   - {name: was_resolved, type: BOOLEAN, nullable: true, severity: warn, description: Resolved on first call (FCR)}
   - {name: requires_followup, type: BOOLEAN, nullable: false, severity: error, description: Requires follow-up}
-  - {name: detected_sentiment, type: VARCHAR(20), nullable: true, allowed_values: [Positive, Neutral, Negative, Very Negative], enum_status: listed, severity: warn, description: Sentiment}
+  - name: detected_sentiment
+    type: VARCHAR(20)
+    nullable: true
+    allowed_values: [Positive, Neutral, Negative, Very Negative]
+    enum_status: listed
+    observed_values: [Muy Positivo]
+    normalize: {Positivo: Positive, Negativo: Negative, Muy Negativo: Very Negative}
+    profile: true
+    severity: warn
+    description: Sentiment
+    note: >-
+      Delivered in Spanish except "Neutral". Positivo, Negativo and Muy Negativo map onto documented values.
+      "Muy Positivo" (18,973 rows) has no documented counterpart and is kept as delivered.
   - {name: sentiment_score, type: "DECIMAL(3,2)", nullable: true, min: -1, max: 1, severity: error, description: Sentiment score (-1 to 1)}
   - {name: customer_detected_accent, type: VARCHAR(50), nullable: true, profile: true, severity: warn, description: Customer's detected accent}
   - {name: agent_used_accent, type: VARCHAR(50), nullable: true, severity: warn, description: Accent used by agent in response}

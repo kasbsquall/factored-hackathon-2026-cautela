@@ -53,7 +53,17 @@ columns:
   - {name: branch_id, type: VARCHAR(20), nullable: true, fk: branches.branch_id, severity: warn, provenance: realigned, description: Branch ID (if applicable)}
   - {name: merchant_name, type: VARCHAR(150), nullable: true, severity: warn, provenance: realigned, description: Merchant name (for purchases)}
   - {name: merchant_category, type: VARCHAR(50), nullable: true, profile: true, severity: warn, provenance: realigned, description: MCC merchant category}
-  - {name: transaction_country, type: VARCHAR(50), nullable: false, profile: true, severity: error, provenance: realigned, description: Country where transaction occurred}
+  - name: transaction_country
+    type: VARCHAR(50)
+    nullable: false
+    normalize: {México: Mexico}
+    profile: true
+    severity: error
+    provenance: realigned
+    description: Country where transaction occurred
+    note: >-
+      Both "México" (2,105,794 rows) and "Mexico" (40,515 rows) are delivered. Normalized to "Mexico". Foreign
+      countries (USA, Spain, Brazil) are delivered in English.
   - {name: transaction_city, type: VARCHAR(100), nullable: true, severity: warn, provenance: realigned, description: City where transaction occurred}
   - {name: transaction_status, type: VARCHAR(20), nullable: false, allowed_values: [Approved, Declined, Pending, Reversed], enum_status: listed, severity: error, provenance: realigned, description: Transaction status}
   - {name: response_code, type: VARCHAR(10), nullable: true, profile: true, severity: warn, provenance: realigned, description: System response code}

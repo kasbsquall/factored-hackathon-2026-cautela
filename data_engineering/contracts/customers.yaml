@@ -15,7 +15,16 @@ notes:
 columns:
   - {name: customer_id, type: VARCHAR(20), nullable: false, pk: true, severity: error, description: Unique customer ID}
   - {name: document_number, type: VARCHAR(20), nullable: false, unique: true, severity: error, description: Identity document number}
-  - {name: document_type, type: VARCHAR(10), nullable: false, allowed_values: [DNI, CURP, CC, CE, Passport], enum_status: listed, severity: error, description: Document type}
+  - name: document_type
+    type: VARCHAR(10)
+    nullable: false
+    allowed_values: [DNI, CURP, CC, CE, Passport]
+    enum_status: listed
+    normalize: {Pasaporte: Passport}
+    profile: true
+    severity: error
+    description: Document type
+    note: Delivered "Pasaporte" (15,062 rows) is the Spanish form of the documented "Passport". CURP is never observed.
   - {name: first_name, type: VARCHAR(100), nullable: false, severity: error, description: Customer first name (in Spanish)}
   - {name: last_name, type: VARCHAR(100), nullable: false, severity: error, description: Customer last name (in Spanish)}
   - {name: date_of_birth, type: DATE, nullable: false, severity: error, description: Date of birth}
@@ -26,7 +35,16 @@ columns:
   - {name: address, type: VARCHAR(200), nullable: true, severity: warn, description: Full address (in Spanish)}
   - {name: city, type: VARCHAR(100), nullable: false, severity: error, description: City of residence}
   - {name: state, type: VARCHAR(100), nullable: false, severity: error, description: State/Province}
-  - {name: country, type: VARCHAR(50), nullable: false, allowed_values: [Mexico, Colombia, Argentina], enum_status: listed, severity: error, description: Country}
+  - name: country
+    type: VARCHAR(50)
+    nullable: false
+    allowed_values: [Mexico, Colombia, Argentina]
+    enum_status: listed
+    normalize: {México: Mexico}
+    profile: true
+    severity: error
+    description: Country
+    note: Delivered "México" (74,907 rows) is the accented form of the documented "Mexico".
   - {name: postal_code, type: VARCHAR(10), nullable: true, severity: warn, description: Postal code}
   - name: detected_accent
     type: VARCHAR(50)
@@ -47,7 +65,17 @@ columns:
   - {name: marital_status, type: VARCHAR(20), nullable: true, profile: true, severity: warn, description: Marital status (no values listed)}
   - {name: education_level, type: VARCHAR(50), nullable: true, profile: true, severity: warn, description: Education level (no values listed)}
   - {name: registration_date, type: TIMESTAMP, nullable: false, severity: error, description: Registration date as customer}
-  - {name: registration_branch_id, type: VARCHAR(20), nullable: false, fk: branches.branch_id, severity: error, description: Branch ID where registered}
+  - name: registration_branch_id
+    type: VARCHAR(20)
+    nullable: false
+    fk: branches.branch_id
+    check_severity: {orphan_fk: warn}
+    severity: error
+    description: Branch ID where registered
+    note: >-
+      In the delivered data 149,995 of 150,000 values do not exist in branches (every customer has a distinct
+      branch id and only 5 match). The relationship is unusable as delivered, so orphans are reported and the
+      customer rows are kept. products.opening_branch_id, by contrast, resolves for all 400,000 rows.
   - {name: customer_status, type: VARCHAR(20), nullable: false, allowed_values: [Active, Inactive, Suspended, Closed], enum_status: listed, severity: error, description: Customer status}
   - {name: last_updated, type: TIMESTAMP, nullable: false, severity: error, description: Last record update}
   - {name: accepts_marketing, type: BOOLEAN, nullable: false, severity: error, description: Accepts marketing communications}
