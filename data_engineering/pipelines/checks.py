@@ -1,16 +1,22 @@
-"""Silver step, part 1: cast the batch to contract types and evaluate every contract check per row.
+"""Silver step, part 1: normalize, cast to contract types and evaluate every contract check per row.
 
 Each failed check produces a tag "<column>:<reason>". Tags from error-severity checks go to __errors (the row is
 quarantined); tags from warn-severity checks go to __warnings (the row continues to silver and the tags are kept
 in its _quality_warnings column).
 
 Reason codes:
-  null_pk          a primary key column is null (always an error)
-  type_cast_error  a non-empty value does not fit the contract type (always an error)
-  null_required    a NOT NULL column is null
-  bad_enum         the value is outside the dictionary's value list
-  out_of_range     the value is outside the dictionary's stated range
-  orphan_fk        the key was never delivered in the parent table (neither in silver nor in quarantine)
+  null_pk                  a primary key column is null (always an error)
+  type_cast_error          a non-empty value does not fit the contract type (always an error)
+  null_required            a NOT NULL column is null
+  bad_enum                 the value is outside the dictionary list and the explicitly observed values
+  out_of_range             the value is outside the dictionary's stated range
+  orphan_fk                the key was never delivered in the parent table (absent from the parent's bronze)
+  parent_quarantined       the parent key was delivered but its row is in quarantine (always a warning, so a
+                           parent's quality problem never cascades into its children)
+  partition_path_mismatch  the partition column disagrees with the file's year=/month=/day= folders (warning)
+
+Normalization happens before the checks: a raw value listed in the column's `normalize` map is replaced by its
+canonical form, and the raw value is recorded in __normalized ("column:raw value").
 """
 
 from __future__ import annotations
@@ -19,9 +25,10 @@ import duckdb
 
 from data_engineering.contracts.loader import ColumnContract, TableContract
 from data_engineering.pipelines.bronze import BATCH_TABLE
-from data_engineering.pipelines.warehouse import ident, table_exists
+from data_engineering.pipelines.warehouse import existing_columns, ident, table_exists
 
 CHECKED_TABLE = "checked"
+_PATH_PART = r"regexp_extract(t._source_file, '(^|/){key}=(\d+)/', 2)"
 
 
 def _lit(value: str) -> str:
@@ -34,26 +41,41 @@ def _raw(col: ColumnContract, batch_columns: set[str]) -> str:
     return f"CASE WHEN trim(b.{ident(col.name)}) = '' THEN NULL ELSE b.{ident(col.name)} END"
 
 
-def _typed(col: ColumnContract) -> str:
+def _normalized(col: ColumnContract) -> str:
     raw = ident(f"__raw__{col.name}")
-    if col.duckdb_type == "VARCHAR":
+    if not col.normalize:
         return raw
-    return f"TRY_CAST(trim({raw}) AS {col.duckdb_type})"
+    cases = " ".join(f"WHEN {_lit(k)} THEN {_lit(v)}" for k, v in sorted(col.normalize.items()))
+    return f"CASE trim({raw}) {cases} ELSE {raw} END"
+
+
+def _typed(col: ColumnContract) -> str:
+    value = _normalized(col)
+    if col.duckdb_type == "VARCHAR":
+        return value
+    return f"TRY_CAST(trim({value}) AS {col.duckdb_type})"
 
 
 def prepare_parent_keys(con: duckdb.DuckDBPyConnection, contract: TableContract) -> dict[str, str | None]:
-    """Build one temp key table per foreign key. None means the parent is not loaded, so the check is skipped."""
+    """One temp key table per foreign key: every key the parent delivered (bronze) and whether it reached silver.
+
+    None means the parent was never loaded, so the check is skipped and reported as such.
+    """
     fk_tables: dict[str, str | None] = {}
     for col in contract.foreign_keys:
-        if not table_exists(con, "silver", col.fk_table):
+        parent, key = col.fk_table, col.fk_column
+        loaded = (table_exists(con, "bronze", parent) and table_exists(con, "silver", parent)
+                  and key in existing_columns(con, "bronze", parent))
+        if not loaded:
             fk_tables[col.name] = None
             continue
         name = f"__fk_{col.name}"
         con.execute(
             f"CREATE OR REPLACE TEMP TABLE {name} AS "
-            f"SELECT CAST({ident(col.fk_column)} AS VARCHAR) AS k FROM silver.{ident(col.fk_table)} "
-            f"UNION SELECT pk_value FROM quarantine.records WHERE table_name = {_lit(col.fk_table)} "
-            f"AND pk_value IS NOT NULL"
+            f"SELECT d.k, s.k IS NOT NULL AS in_silver "
+            f"FROM (SELECT DISTINCT {ident(key)} AS k FROM bronze.{ident(parent)} WHERE {ident(key)} IS NOT NULL) d "
+            f"LEFT JOIN (SELECT DISTINCT CAST({ident(key)} AS VARCHAR) AS k FROM silver.{ident(parent)}) s "
+            f"ON s.k = d.k"
         )
         fk_tables[col.name] = name
     return fk_tables
@@ -70,7 +92,7 @@ def _column_checks(col: ColumnContract, fk_alias: str | None) -> list[tuple[str,
     elif not col.nullable:
         checks.append((col.severity_for("not_null"), f"t.{raw} IS NULL", "null_required"))
     if col.allowed_values:
-        values = ", ".join(_lit(v) for v in col.allowed_values)
+        values = ", ".join(_lit(v) for v in col.accepted_values)
         checks.append((col.severity_for("bad_enum"), f"t.{name} NOT IN ({values})", "bad_enum"))
     bounds = [f"t.{name} < {col.min}" if col.min is not None else None,
               f"t.{name} > {col.max}" if col.max is not None else None]
@@ -79,7 +101,24 @@ def _column_checks(col: ColumnContract, fk_alias: str | None) -> list[tuple[str,
         checks.append((col.severity_for("out_of_range"), " OR ".join(bounds), "out_of_range"))
     if fk_alias:
         checks.append((col.severity_for("orphan_fk"), f"t.{name} IS NOT NULL AND {fk_alias}.k IS NULL", "orphan_fk"))
+        checks.append(("warn", f"{fk_alias}.k IS NOT NULL AND NOT {fk_alias}.in_silver", "parent_quarantined"))
     return checks
+
+
+def _partition_check(contract: TableContract) -> tuple[str, str, str] | None:
+    """Daily tables stored under year=/month=/day= folders: the folder date must equal the partition column."""
+    part = contract.partition_column
+    if contract.partitioning != "daily" or part is None:
+        return None
+    y, m, d = (f"TRY_CAST({_PATH_PART.format(key=k)} AS INTEGER)" for k in ("year", "month", "day"))
+    path_date = f"CASE WHEN {y} IS NOT NULL AND {m} IS NOT NULL AND {d} IS NOT NULL THEN make_date({y}, {m}, {d}) END"
+    return "warn", f"t.{ident(part)} IS NOT NULL AND {path_date} <> t.{ident(part)}", "partition_path_mismatch"
+
+
+def _tag_list(items: list[str]) -> str:
+    if not items:
+        return "CAST([] AS VARCHAR[])"
+    return f"list_filter([{', '.join(items)}], x -> x IS NOT NULL)"
 
 
 def build_checked(con: duckdb.DuckDBPyConnection, contract: TableContract, batch_columns: list[str],
@@ -95,17 +134,19 @@ def build_checked(con: duckdb.DuckDBPyConnection, contract: TableContract, batch
             joins.append(f"LEFT JOIN {fk_tables[col.name]} {alias} ON {alias}.k = t.{ident(col.name)}")
         for severity, condition, reason in _column_checks(col, alias):
             tags[severity].append(f"CASE WHEN {condition} THEN {_lit(col.name + ':' + reason)} END")
-
-    def tag_list(items: list[str]) -> str:
-        if not items:
-            return "CAST([] AS VARCHAR[])"
-        return f"list_filter([{', '.join(items)}], x -> x IS NOT NULL)"
-
+    partition = _partition_check(contract)
+    if partition:
+        severity, condition, reason = partition
+        tags[severity].append(f"CASE WHEN {condition} THEN {_lit(contract.partition_column + ':' + reason)} END")
+    normalized = [f"CASE WHEN trim(t.{ident('__raw__' + c.name)}) IN ({', '.join(_lit(k) for k in sorted(c.normalize))}) "
+                  f"THEN {_lit(c.name + ':')} || trim(t.{ident('__raw__' + c.name)}) END"
+                  for c in contract.columns if c.normalize]
     con.execute(f"""
         CREATE OR REPLACE TEMP TABLE {CHECKED_TABLE} AS
         WITH raw AS (SELECT b.__rid, b._source_file, b._ingested_at, b._run_id, {raw_cols} FROM {BATCH_TABLE} b),
         typed AS (SELECT *, {typed_cols} FROM raw)
-        SELECT t.*, {tag_list(tags['error'])} AS __errors, {tag_list(tags['warn'])} AS __warnings
+        SELECT t.*, {_tag_list(tags['error'])} AS __errors, {_tag_list(tags['warn'])} AS __warnings,
+               {_tag_list(normalized)} AS __normalized
         FROM typed t {' '.join(joins)}
     """)
 

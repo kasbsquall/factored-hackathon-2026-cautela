@@ -29,9 +29,11 @@ from data_engineering.pipelines.source import (
     SourceLocation,
     connect_source,
     describe_s3_auth,
+    detect_encodings,
     file_schemas,
     list_files,
     parse_source,
+    path_partitions,
     resolve_source,
 )
 
@@ -65,7 +67,7 @@ def process_table(con: duckdb.DuckDBPyConnection, loc: SourceLocation, contract:
         warehouse.reset_table(con, name)
     discovered = list_files(con, loc, name)
     done = warehouse.loaded_files(con, name)
-    new_files = [f for f in discovered if f.rel_path not in done]
+    new_files = detect_encodings(con, [f for f in discovered if f.rel_path not in done])
     previous_hwm = warehouse.get_watermark(con, name)
     schemas = file_schemas(con, new_files) if new_files else {}
     drift = bronze.detect_drift(contract, schemas)
@@ -73,6 +75,7 @@ def process_table(con: duckdb.DuckDBPyConnection, loc: SourceLocation, contract:
     con.execute("BEGIN TRANSACTION")
     try:
         batch_columns = bronze.load_batch(con, loc, contract, new_files, schemas, run_id, ingested_at)
+        encoding = bronze.check_encoding(con, name, new_files, batch_columns)
         per_file = bronze.rows_per_file(con)
         warehouse.ensure_silver(con, contract)
         fk_tables = checks.prepare_parent_keys(con, contract)
@@ -91,9 +94,10 @@ def process_table(con: duckdb.DuckDBPyConnection, loc: SourceLocation, contract:
     except Exception:
         con.execute("ROLLBACK")
         raise
-    files = {"discovered": len(discovered), "new": len(new_files), "already_loaded": len(discovered) - len(new_files)}
+    files = {"discovered": len(discovered), "new": len(new_files), "already_loaded": len(discovered) - len(new_files),
+             "partition_path_keys": sorted({k for f in new_files for k in path_partitions(f.rel_path)})}
     rows = {"bronze_in": sum(per_file.values()), "quarantined": quarantined, **merged, "silver_total": silver_total}
-    return table_section(files, rows, metrics, drift, uniques, {"before": previous_hwm, "after": hwm})
+    return table_section(files, rows, metrics, drift, uniques, {"before": previous_hwm, "after": hwm}, encoding)
 
 
 def run_pipeline(source: str, target: str | Path, tables: list[str] | None = None, full_refresh: bool = False,
@@ -152,12 +156,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--reports-dir", help="where to write quality_<run_id>.json (default: next to target)")
     parser.add_argument("--env-file", default=".env", help="optional KEY=VALUE file with S3 settings")
     args = parser.parse_args(argv)
+    # Spanish values in console output must not depend on the Windows code page (cp1252 turns them into U+FFFD
+    # when the output is captured as UTF-8). Files and reports are always written as UTF-8.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
     load_env_file(args.env_file)
     try:
         source = resolve_source(args.source, os.environ)
         report = run_pipeline(source, args.target, _parse_tables(args.tables), args.full_refresh,
                               args.reports_dir)
-    except (ValueError, duckdb.Error) as exc:
+    except (ValueError, duckdb.Error, bronze.EncodingError) as exc:
         print(f"pipeline failed: {exc}", file=sys.stderr)
         return 1
     if report["source_label"]:

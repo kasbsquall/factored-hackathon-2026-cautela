@@ -124,14 +124,16 @@ def generate(out: Path, seed: int = 42) -> dict:
     snapshot = ctx.end + timedelta(days=1)
     tables, links = _clean_rows(ctx)
     _prepare_output(out)
-    manifest_tables = {}
+    manifest_tables, injectors, final_rows = {}, {}, {}
     for name in sorted(tables):
-        contract = contracts[name]
-        inj = Injector(ctx, contract, tables[name])
+        inj = Injector(ctx, contracts[name], tables[name])
         inj.nulls()
         PLANS.get(name, lambda i, c: None)(inj, ctx)
         inj.duplicates()
-        rows = inj.finish()
+        injectors[name], final_rows[name] = inj, inj.finish()
+    for name in sorted(tables):
+        contract, inj, rows = contracts[name], injectors[name], final_rows[name]
+        inj.count_parent_quarantined(rows, injectors)
         drift = {}
         if name == "transactions":
             _apply_file_level_drift(ctx, rows)

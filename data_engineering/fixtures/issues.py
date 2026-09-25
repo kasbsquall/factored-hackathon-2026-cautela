@@ -49,6 +49,8 @@ class Injector:
         self._pool = list(range(len(rows)))
         ctx.rng.shuffle(self._pool)
         self._appended: list[dict] = []
+        self.error_rows: set[int] = set()  # id() of rows the pipeline must quarantine
+        self.quarantined_keys: set[str] = set()  # their primary keys (children then get parent_quarantined)
 
     def take(self, n: int, where: Callable[[dict], bool] | None = None) -> list[int]:
         picked = [i for i in self._pool if where is None or where(self.rows[i])][:n]
@@ -72,13 +74,34 @@ class Injector:
         severity = "error" if always_error else self.contract.column(column).severity_for(check)
         for k, i in enumerate(self.take(n, where)):
             self.rows[i][column] = value(k) if callable(value) else value
+            if severity == "error":
+                self._mark_error(self.rows[i])
         (self.ledger.quarantine if severity == "error" else self.ledger.warnings)[reason] += n
 
     def null_pk(self, n: int) -> None:
         pk = self.contract.primary_key[0]
         for i in self.take(n):
-            self._appended.append({**self.rows[i], pk: None})
+            copy = {**self.rows[i], pk: None}
+            self._appended.append(copy)
+            self._mark_error(copy)
         self.ledger.quarantine["null_pk"] += n
+
+    def _mark_error(self, row: dict) -> None:
+        self.error_rows.add(id(row))
+        key = row[self.contract.primary_key[0]]
+        if key is not None and len(self.contract.primary_key) == 1:
+            self.quarantined_keys.add(key)
+
+    def count_parent_quarantined(self, rows: list[dict], parents: dict[str, "Injector"]) -> None:
+        """Valid rows whose foreign key points at a parent row that the pipeline will quarantine."""
+        n = 0
+        for col in self.contract.foreign_keys:
+            parent = parents.get(col.fk_table)
+            if parent is None or not parent.quarantined_keys:
+                continue
+            n += sum(1 for r in rows if id(r) not in self.error_rows and r.get(col.name) in parent.quarantined_keys)
+        if n:
+            self.ledger.warnings["parent_quarantined"] += n
 
     def orphan(self, column: str, n: int) -> None:
         self.set_value("orphan_fk", column, lambda k: f"ORPHAN{self.contract.table[:3].upper()}{k:04d}", n)

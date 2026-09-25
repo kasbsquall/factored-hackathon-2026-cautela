@@ -18,7 +18,7 @@ import duckdb
 from data_engineering.contracts.loader import TableContract
 
 LINEAGE_COLUMNS = {"_source_file": "VARCHAR", "_ingested_at": "TIMESTAMP", "_run_id": "VARCHAR"}
-SILVER_EXTRA = {"_content_hash": "VARCHAR", "_quality_warnings": "VARCHAR[]"}
+SILVER_EXTRA = {"_content_hash": "VARCHAR", "_quality_warnings": "VARCHAR[]", "_normalized": "VARCHAR[]"}
 
 _DDL = """
 CREATE SCHEMA IF NOT EXISTS bronze;
@@ -84,6 +84,10 @@ def ensure_silver(con: duckdb.DuckDBPyConnection, contract: TableContract) -> No
     cols = [f"{ident(c.name)} {c.duckdb_type}" for c in contract.columns]
     cols += [f"{ident(c)} {t}" for c, t in {**SILVER_EXTRA, **LINEAGE_COLUMNS}.items()]
     con.execute(f"CREATE TABLE IF NOT EXISTS silver.{ident(contract.table)} ({', '.join(cols)})")
+    present = set(existing_columns(con, "silver", contract.table))
+    for col, kind in SILVER_EXTRA.items():  # warehouses created before a lineage column existed
+        if col not in present:
+            con.execute(f"ALTER TABLE silver.{ident(contract.table)} ADD COLUMN {ident(col)} {kind}")
 
 
 def loaded_files(con: duckdb.DuckDBPyConnection, table: str) -> set[str]:

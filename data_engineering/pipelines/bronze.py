@@ -13,14 +13,27 @@ from datetime import datetime
 import duckdb
 
 from data_engineering.contracts.loader import TableContract
-from data_engineering.pipelines.source import SourceFile, SourceLocation, read_relation_sql
+from data_engineering.pipelines.source import SourceFile, SourceLocation, path_partitions, read_relation_sql
 from data_engineering.pipelines.warehouse import ensure_bronze, ident
 
 BATCH_TABLE = "batch_raw"
 
 
+class EncodingError(RuntimeError):
+    """Raised when loaded text contains U+FFFD, the mark of bytes that were decoded with the wrong encoding."""
+
+
 def detect_drift(contract: TableContract, schemas: dict[str, dict[str, str]]) -> list[dict]:
-    """Compare each file's columns with the contract. Returns drift events; never raises."""
+    """Compare each file's columns with the contract. Returns drift events; never raises.
+
+    A column named after one of the file's own key=value folders (year, month, day) is a known partition column
+    and is not drift, even when the file also carries it as data.
+    """
+    return _drift_events(contract, {rel: {c: t for c, t in cols.items() if c not in path_partitions(rel)}
+                                    for rel, cols in schemas.items()})
+
+
+def _drift_events(contract: TableContract, schemas: dict[str, dict[str, str]]) -> list[dict]:
     expected = set(contract.column_names)
     unexpected: dict[str, list[str]] = defaultdict(list)
     missing: dict[str, list[str]] = defaultdict(list)
@@ -59,7 +72,7 @@ def load_batch(con: duckdb.DuckDBPyConnection, loc: SourceLocation, contract: Ta
                ingested_at: datetime) -> list[str]:
     """Read new files into the temp table batch_raw and append them to bronze. Returns the batch columns.
 
-    Files are grouped by identical schema (format, column names and types) and each group is read in one scan.
+    Files are grouped by identical format, encoding and schema (column names and types), one scan per group.
     Grouping first avoids asking DuckDB to reconcile conflicting types across files, which would abort the
     surrounding transaction; within a group every value is cast to text.
     """
@@ -70,7 +83,7 @@ def load_batch(con: duckdb.DuckDBPyConnection, loc: SourceLocation, contract: Ta
     con.execute(f"CREATE TEMP TABLE {BATCH_TABLE} ({', '.join(defs)})")
     groups: dict[tuple, list[SourceFile]] = defaultdict(list)
     for f in files:
-        groups[(f.fmt, tuple(sorted(schemas[f.rel_path].items())))].append(f)
+        groups[(f.fmt, f.encoding, tuple(sorted(schemas[f.rel_path].items())))].append(f)
     for key in sorted(groups):
         _insert(con, loc, groups[key], schemas, run_id, ingested_at)
     con.execute(f"UPDATE {BATCH_TABLE} SET __rid = rowid")
@@ -88,3 +101,27 @@ def _insert(con: duckdb.DuckDBPyConnection, loc: SourceLocation, group: list[Sou
 
 def rows_per_file(con: duckdb.DuckDBPyConnection) -> dict[str, int]:
     return dict(con.execute(f"SELECT _source_file, count(*) FROM {BATCH_TABLE} GROUP BY 1").fetchall())
+
+
+def replacement_characters(con: duckdb.DuckDBPyConnection, columns: list[str]) -> dict[str, int]:
+    """Rows per column containing U+FFFD in the batch. Any non-zero count means text was decoded wrongly."""
+    if not columns:
+        return {}
+    exprs = ", ".join(f"count(*) FILTER (WHERE contains({ident(c)}, chr(65533)))" for c in columns)
+    counts = con.execute(f"SELECT {exprs} FROM {BATCH_TABLE}").fetchone()
+    return {c: n for c, n in zip(columns, counts) if n}
+
+
+def check_encoding(con: duckdb.DuckDBPyConnection, table: str, files: list[SourceFile], columns: list[str]) -> dict:
+    """Encoding summary for the report. Fails loudly when replacement characters reached the batch."""
+    bad = replacement_characters(con, columns)
+    if bad:
+        raise EncodingError(f"{table}: U+FFFD replacement characters in {bad}; the source text was decoded with "
+                            f"the wrong encoding or already contains mangled bytes. Nothing was committed.")
+    by_encoding: dict[str, int] = defaultdict(int)
+    for f in files:
+        by_encoding[f"{f.fmt}:{f.encoding}"] += 1
+    return {"files_by_encoding": dict(sorted(by_encoding.items())),
+            "files_with_bom": sum(f.has_bom for f in files),
+            "non_utf8_files": [f.rel_path for f in files if f.encoding != "utf-8"][:20],
+            "replacement_characters": 0}

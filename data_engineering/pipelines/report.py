@@ -17,7 +17,8 @@ def _default(value: Any) -> Any:
     raise TypeError(f"not JSON serializable: {type(value).__name__}")
 
 
-def table_section(files: dict, rows: dict, metrics: dict, drift: list[dict], uniques: dict, hwm: dict) -> dict:
+def table_section(files: dict, rows: dict, metrics: dict, drift: list[dict], uniques: dict, hwm: dict,
+                  encoding: dict | None = None) -> dict:
     valid = rows.get("valid", 0)
     return {
         "files": files,
@@ -32,6 +33,8 @@ def table_section(files: dict, rows: dict, metrics: dict, drift: list[dict], uni
         "late_arrivals": metrics.get("late_arrivals"),
         "unique_violations": uniques,
         "drift_events": drift,
+        "normalized_values": metrics.get("normalized_values", {}),
+        "encoding": encoding or {},
         "profiles": metrics.get("profiles", {}),
         "high_water_mark": hwm,
     }

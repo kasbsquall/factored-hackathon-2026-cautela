@@ -16,7 +16,7 @@ from __future__ import annotations
 import os
 import re
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Literal
 
@@ -50,6 +50,45 @@ class SourceFile:
     uri: str  # what DuckDB reads
     rel_path: str  # path relative to the source root; used for lineage and the file ledger
     fmt: str
+    encoding: str = "utf-8"  # set by detect_encodings for CSV; Parquet strings are UTF-8 by specification
+    has_bom: bool = False
+
+
+_PARTITION_SEGMENT = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)=([^/]*)$")
+
+
+def path_partitions(rel_path: str) -> dict[str, str]:
+    """Hive-style key=value folder segments of a file path, e.g. {'year': '2023', 'month': '06', 'day': '17'}."""
+    out = {}
+    for segment in rel_path.split("/")[:-1]:
+        match = _PARTITION_SEGMENT.match(segment)
+        if match:
+            out[match.group(1).lower()] = match.group(2)
+    return out
+
+
+def detect_encodings(con: duckdb.DuckDBPyConnection, files: list[SourceFile]) -> list[SourceFile]:
+    """Check the bytes of every CSV file: strict UTF-8 (with or without BOM) or not.
+
+    A file that is not valid UTF-8 is read as Latin-1, the usual alternative for Spanish text exported on Windows,
+    and flagged in the report. Latin-1 decoding never fails, so a wrong guess would show up as odd characters;
+    the replacement-character check after loading is the backstop.
+    """
+    csv = [f for f in files if f.fmt == "csv"]
+    if not csv:
+        return files
+    rows = con.execute(
+        r"SELECT replace(filename, '\', '/'), text IS NULL, coalesce(starts_with(text, chr(65279)), false) "
+        f"FROM (SELECT filename, try(decode(content)) AS text FROM read_blob({sql_list([f.uri for f in csv])}))"
+    ).fetchall()
+    found = {uri: (invalid, bom) for uri, invalid, bom in rows}
+    out = []
+    for f in files:
+        if f.fmt == "csv":
+            invalid, bom = found[f.uri]
+            f = replace(f, encoding="latin-1" if invalid else "utf-8", has_bom=bool(bom))
+        out.append(f)
+    return out
 
 
 def parse_source(uri: str) -> SourceLocation:
@@ -160,17 +199,23 @@ def file_schemas(con: duckdb.DuckDBPyConnection, files: list[SourceFile]) -> dic
             if rel is not None:
                 schemas[rel.rel_path][name.lower()] = converted or physical
     for f in (f for f in files if f.fmt == "csv"):
-        described = con.execute("DESCRIBE SELECT * FROM read_csv(?, all_varchar = true, header = true)", [f.uri])
-        schemas[f.rel_path] = {row[0].lower(): "VARCHAR" for row in described.fetchall()}
+        described = con.execute(f"DESCRIBE SELECT * FROM {read_relation_sql([f])}")
+        schemas[f.rel_path] = {row[0].lower(): "VARCHAR" for row in described.fetchall() if row[0] != "filename"}
     return schemas
 
 
 def read_relation_sql(files: list[SourceFile]) -> str:
-    """A FROM-clause expression reading all files of one format, aligning columns by name."""
-    fmt = {f.fmt for f in files}
-    if len(fmt) != 1:
-        raise ValueError("read_relation_sql expects files of a single format")
+    """A FROM-clause expression reading files of one format and encoding, aligning columns by name.
+
+    Hive partitioning is switched off: year/month/day folders are metadata about the file, handled explicitly
+    (see path_partitions), and must not appear as data columns that look like schema drift.
+    """
+    kinds = {(f.fmt, f.encoding) for f in files}
+    if len(kinds) != 1:
+        raise ValueError("read_relation_sql expects files of a single format and encoding")
+    fmt, encoding = kinds.pop()
     uris = sql_list([f.uri for f in files])
-    if fmt == {"parquet"}:
-        return f"read_parquet({uris}, union_by_name = true, filename = true)"
-    return f"read_csv({uris}, union_by_name = true, filename = true, all_varchar = true, header = true)"
+    if fmt == "parquet":
+        return f"read_parquet({uris}, union_by_name = true, filename = true, hive_partitioning = false)"
+    return (f"read_csv({uris}, union_by_name = true, filename = true, all_varchar = true, header = true, "
+            f"hive_partitioning = false, encoding = {_q(encoding)})")

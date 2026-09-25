@@ -36,7 +36,8 @@ def build_candidates(con: duckdb.DuckDBPyConnection, contract: TableContract) ->
     con.execute(f"""
         CREATE OR REPLACE TEMP TABLE candidates AS
         SELECT {cols}, md5(CAST(to_json(struct_pack({struct})) AS VARCHAR)) AS _content_hash,
-               list_sort(__warnings) AS _quality_warnings, _source_file, _ingested_at, _run_id
+               list_sort(__warnings) AS _quality_warnings, list_sort(__normalized) AS _normalized,
+               _source_file, _ingested_at, _run_id
         FROM {CHECKED_TABLE} WHERE len(__errors) = 0
     """)
     return con.execute("SELECT count(*) FROM candidates").fetchone()[0]
@@ -96,6 +97,7 @@ def batch_metrics(con: duckdb.DuckDBPyConnection, contract: TableContract, fk_ta
         "quarantine_by_reason": _by_reason(q_cols), "quarantine_by_column": q_cols,
         "warnings_by_reason": _by_reason(w_cols), "warnings_by_column": w_cols,
         "null_rate": {}, "orphan_rate": {}, "late_arrivals": None, "profiles": {},
+        "normalized_values": _counts(con, "len(__errors) = 0", "__normalized"),
     }
     if total:
         exprs = ", ".join(f"count(*) FILTER (WHERE {ident('__raw__' + c)} IS NULL)" for c in contract.column_names)
@@ -105,12 +107,14 @@ def batch_metrics(con: duckdb.DuckDBPyConnection, contract: TableContract, fk_ta
         if fk_tables.get(col.name) is None:
             metrics["orphan_rate"][col.name] = {"parent": col.fk, "skipped": "parent table not loaded"}
             continue
-        tag = f"{col.name}:orphan_fk"
-        checked, orphans = con.execute(
-            f"SELECT count({ident(col.name)}), count(*) FILTER (WHERE list_contains(__errors, '{tag}') "
-            f"OR list_contains(__warnings, '{tag}')) FROM {CHECKED_TABLE}").fetchone()
+        orphan, quarantined = f"{col.name}:orphan_fk", f"{col.name}:parent_quarantined"
+        checked, orphans, parent_q = con.execute(
+            f"SELECT count({ident(col.name)}), count(*) FILTER (WHERE list_contains(__errors, '{orphan}') "
+            f"OR list_contains(__warnings, '{orphan}')), "
+            f"count(*) FILTER (WHERE list_contains(__warnings, '{quarantined}')) FROM {CHECKED_TABLE}").fetchone()
         metrics["orphan_rate"][col.name] = {"parent": col.fk, "checked": checked, "orphans": orphans,
-                                            "rate": round(orphans / checked, 4) if checked else 0.0}
+                                            "rate": round(orphans / checked, 4) if checked else 0.0,
+                                            "parent_quarantined": parent_q}
     metrics["late_arrivals"] = _late_arrivals(con, contract, previous_hwm)
     for col in (c for c in contract.columns if c.profile):
         top = con.execute(f"SELECT CAST({ident(col.name)} AS VARCHAR) v, count(*) n FROM candidates "
@@ -124,9 +128,12 @@ def _late_arrivals(con: duckdb.DuckDBPyConnection, contract: TableContract, prev
     part, event = contract.partition_column, contract.event_time_column
     out: dict = {"threshold_days": LATE_ARRIVAL_THRESHOLD_DAYS, "event_lag_rows": None, "late_partition_rows": None}
     if part and event:
-        out["event_lag_rows"] = con.execute(
-            f"SELECT count(*) FROM candidates WHERE date_diff('day', CAST({ident(event)} AS DATE), {ident(part)}) "
-            f"> {LATE_ARRIVAL_THRESHOLD_DAYS}").fetchone()[0]
+        lag = f"date_diff('day', CAST({ident(event)} AS DATE), {ident(part)})"
+        late, low, high = con.execute(
+            f"SELECT count(*) FILTER (WHERE {lag} > {LATE_ARRIVAL_THRESHOLD_DAYS}), min({lag}), max({lag}) "
+            f"FROM candidates").fetchone()
+        out["event_lag_rows"] = late
+        out["lag_days_range"] = [low, high]  # a negative lag means the event timestamp is after the partition date
     if part:
         out["late_partition_rows"] = 0 if previous_hwm is None else con.execute(
             f"SELECT count(*) FROM candidates WHERE CAST({ident(part)} AS VARCHAR) <= ?", [previous_hwm]).fetchone()[0]
