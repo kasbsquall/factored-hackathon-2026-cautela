@@ -50,23 +50,24 @@ Every step writes an execution record (trace id, inputs, rule ids, tool calls, o
 
 ### 3.2 Serving data and mock banking tools (`agent/tools/`)
 
-These are mock tools over the gold tables. Each has a documented contract (input schema, output schema, errors, side effects) in `docs/schemas/`.
+These are mock tools over the silver tables (read-only connection; gold serving views are still a placeholder). Writes go to a separate sandbox case store and never modify source data. Each tool has a documented contract (input schema, output schema, errors, side effects) exported to `docs/schemas/tools/`. Every call goes through one entry point, `agent/service.py`. Details and the reasons behind each control: [agent/README.md](../agent/README.md).
 
 | Tool | Kind | Notes |
 |---|---|---|
 | `get_customer_profile` | read | Scoped to the session's customer only |
 | `list_recent_transactions` | read | Session customer, bounded window |
 | `get_transaction` | read | Rejects ids that belong to another customer |
-| `get_dispute_policy` | read | Returns the rule set that applies (country, product, age of transaction) |
-| `open_dispute_case` | write | Idempotency key required; returns the case id |
+| `find_candidate_charges` | read | Ranks own charges against the customer's amount, date and merchant hints; never a single guess when ambiguous. `complaints` has no `transaction_id`, so the link is inferred |
+| `get_dispute_policy` | read | Returns the rule set that applies (country, product, channel, age of transaction) |
+| `open_dispute_case` | write | Idempotency key and confirmation required; returns the case id |
 | `block_card` | write | Requires explicit customer confirmation |
 | `get_case_status` | read | Used by the verify step |
 
 Failure injection (timeouts, 5xx, stale reads) can be switched on for evaluation. Retries are bounded, followed by a safe fallback to a handoff.
 
-### 3.3 Identity (`agent/policy/session`)
+### 3.3 Identity (`agent/security/session.py`)
 
-This is a test identity service that issues signed, expiring sessions for synthetic customers. A document number alone never grants access. Expired or tampered sessions are refused. This covers the "expired sessions" and "unauthorized access" evaluation cases.
+This is a test identity service that issues signed, expiring sessions for synthetic customers. A document number alone never grants access: it only starts a challenge, and a one-time code sent to the registered channel (mocked) completes the login. Expired, tampered, revoked or replayed sessions are refused. This covers the "expired sessions" and "unauthorized access" evaluation cases.
 
 ### 3.4 Policy engine (`agent/policy/`)
 
@@ -75,9 +76,11 @@ The policy engine is plain code. It holds:
 - dispute eligibility windows,
 - amount thresholds that force human review,
 - which actions need confirmation,
-- which requests are out of scope.
+- which requests are out of scope,
+- the fraud-score level that forces escalation,
+- the reason codes for each transfer, taken from the handoff schema.
 
-Each rule has an id and a source. The source is the supplied data, or a clearly labeled synthetic policy where the data is silent. The model can cite rule ids but cannot change them.
+Each rule has an id, a source and a verification status in `agent/policy/rules.yaml`. The source is a primary legal text (Mexico LTOSF art. 23, Colombia Decreto 587 de 2016, Argentina Ley 25.065 arts. 26-28 and BCRA rules) or a clearly labeled synthetic policy where no approved bank policy was supplied. The model can cite rule ids but cannot change them: a model proposal can only drop actions or add escalation.
 
 ### 3.5 Learned decision component (`ml/`)
 
@@ -114,7 +117,8 @@ The handoff is structured JSON with these fields: the request, the verified fact
 - Structured logs.
 - Latency and cost recorded per step.
 - Bounded retries with a safe fallback.
-- A data retention policy for the audit log and the transcripts.
+- A data retention policy for the audit log (`AUDIT_RETENTION_DAYS`, synthetic, 10 years) and the transcripts.
+- Hash-chained, append-only audit records with masked arguments and a keyed hash of the raw ones.
 - A reproducible setup with one command.
 
 ## 4. Evaluation plan (summary)
