@@ -104,7 +104,7 @@ def search_policy(records: list[dict], acts: list[float], abstains: list[float],
     """Grid search on val: maximize correct decisions subject to unsafe rate <= max_unsafe_rate."""
     _require_split(records, "val", "decision thresholds")
     abstain_grid = sorted({1.01, *np.quantile(np.asarray(abstains), np.linspace(0.4, 1.0, 31)).round(4).tolist()})
-    act_grid = np.linspace(0.30, 0.995, 140).round(4).tolist()
+    act_grid = np.linspace(0.05, 0.995, 190).round(4).tolist()
     best = None
     for ta in abstain_grid:
         for tc in act_grid:
