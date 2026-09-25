@@ -1,0 +1,63 @@
+# Contract for transactions. Source: data dictionary lines 247-296.
+# Garbled extraction: descriptions and constraints re-aligned by ordinal position (22 columns, 22 descriptions).
+table: transactions
+kind: fact
+description: Daily financial transactions
+source_system: Core Banking
+partitioning: daily
+partition_column: process_date
+event_time_column: transaction_date
+primary_key: [transaction_id]
+dedupe_order: [process_date]
+expected_rows: 5000000
+layout: realigned
+notes:
+  - Descriptions and constraints re-aligned by ordinal position (22 columns, 22 descriptions).
+  - The dictionary has no link from complaints to a transaction_id. Linking a dispute to its transaction must be inferred.
+  - transactions.currency has no value list in the dictionary (products.currency does).
+columns:
+  - {name: transaction_id, type: VARCHAR(30), nullable: false, pk: true, severity: error, provenance: realigned, description: Unique transaction ID}
+  - {name: transaction_date, type: TIMESTAMP, nullable: false, severity: error, provenance: realigned, description: Transaction date and time}
+  - {name: process_date, type: DATE, nullable: false, severity: error, provenance: realigned, description: Process date (partition key)}
+  - {name: product_id, type: VARCHAR(20), nullable: false, fk: products.product_id, severity: error, provenance: realigned, description: Product ID}
+  - {name: customer_id, type: VARCHAR(20), nullable: false, fk: customers.customer_id, severity: error, provenance: realigned, description: Customer ID}
+  - name: transaction_type
+    type: VARCHAR(50)
+    nullable: false
+    allowed_values: [Deposit, Withdrawal, Transfer, Payment, Purchase, Adjustment]
+    enum_status: decoded
+    provenance: decoded
+    check_severity: {bad_enum: warn}
+    profile: true
+    severity: error
+    description: Transaction type
+    note: >-
+      Extracted text ends with "AdNjuOsTtmNeUntL)L": "NOT NULL" is interleaved with the last value. Decoded as
+      "Adjustment" and NOT NULL. Enum violations are reported only until confirmed.
+  - name: transaction_category
+    type: VARCHAR(50)
+    nullable: true
+    allowed_values: [Food, Transport, Services, Entertainment, Health, Other]
+    enum_status: decoded
+    provenance: decoded
+    profile: true
+    severity: warn
+    description: Transaction category
+    note: >-
+      Extracted text reads "Health,-Other)": the constraint "-" is merged into the list. Decoded as nullable with
+      values ending in Health, Other.
+  - {name: amount, type: "DECIMAL(15,2)", nullable: false, severity: error, provenance: realigned, description: Transaction amount}
+  - {name: currency, type: VARCHAR(3), nullable: false, profile: true, severity: error, provenance: realigned, description: Currency (no values listed for this table)}
+  - {name: amount_usd, type: "DECIMAL(15,2)", nullable: true, severity: warn, provenance: realigned, description: Amount converted to USD}
+  - {name: channel, type: VARCHAR(30), nullable: false, allowed_values: [ATM, Branch, Web, App, POS, Transfer], enum_status: listed, severity: error, provenance: realigned, description: Channel}
+  - {name: branch_id, type: VARCHAR(20), nullable: true, fk: branches.branch_id, severity: warn, provenance: realigned, description: Branch ID (if applicable)}
+  - {name: merchant_name, type: VARCHAR(150), nullable: true, severity: warn, provenance: realigned, description: Merchant name (for purchases)}
+  - {name: merchant_category, type: VARCHAR(50), nullable: true, profile: true, severity: warn, provenance: realigned, description: MCC merchant category}
+  - {name: transaction_country, type: VARCHAR(50), nullable: false, profile: true, severity: error, provenance: realigned, description: Country where transaction occurred}
+  - {name: transaction_city, type: VARCHAR(100), nullable: true, severity: warn, provenance: realigned, description: City where transaction occurred}
+  - {name: transaction_status, type: VARCHAR(20), nullable: false, allowed_values: [Approved, Declined, Pending, Reversed], enum_status: listed, severity: error, provenance: realigned, description: Transaction status}
+  - {name: response_code, type: VARCHAR(10), nullable: true, profile: true, severity: warn, provenance: realigned, description: System response code}
+  - {name: is_fraud, type: BOOLEAN, nullable: false, severity: error, provenance: realigned, description: Marked as fraud}
+  - {name: fraud_score, type: "DECIMAL(5,2)", nullable: true, min: 0, max: 100, severity: error, provenance: realigned, description: Fraud risk score (0-100)}
+  - {name: latitude, type: "DECIMAL(10,7)", nullable: true, severity: warn, provenance: realigned, description: Transaction latitude}
+  - {name: longitude, type: "DECIMAL(10,7)", nullable: true, severity: warn, provenance: realigned, description: Transaction longitude}

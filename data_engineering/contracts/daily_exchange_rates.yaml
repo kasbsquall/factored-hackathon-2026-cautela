@@ -1,0 +1,23 @@
+# Contract for daily_exchange_rates. Source: data dictionary lines 552-564.
+table: daily_exchange_rates
+kind: reference
+description: Daily exchange rates for currency conversion
+source_system: Reference
+partitioning: daily
+partition_column: date
+event_time_column: null
+primary_key: [date, source_currency, target_currency]
+dedupe_order: []
+expected_rows: 3000
+layout: clean
+notes:
+  - The table is partitioned daily but has no process_date column; the rate date is used as the partition column.
+  - The direction of exchange_rate (source per target or target per source) is not documented.
+columns:
+  - {name: date, type: DATE, nullable: false, pk: true, severity: error, description: Exchange rate date}
+  - {name: source_currency, type: VARCHAR(3), nullable: false, pk: true, profile: true, severity: error, description: Source currency}
+  - {name: target_currency, type: VARCHAR(3), nullable: false, pk: true, profile: true, severity: error, description: Target currency}
+  - {name: exchange_rate, type: "DECIMAL(12,6)", nullable: false, severity: error, description: Exchange rate}
+  - {name: buy_rate, type: "DECIMAL(12,6)", nullable: true, severity: warn, description: Bank buy rate}
+  - {name: sell_rate, type: "DECIMAL(12,6)", nullable: true, severity: warn, description: Bank sell rate}
+  - {name: source, type: VARCHAR(50), nullable: true, profile: true, severity: warn, description: Exchange rate source}

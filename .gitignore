@@ -23,3 +23,6 @@ dist/
 # os
 .DS_Store
 Thumbs.db
+
+# local tooling
+.coverage

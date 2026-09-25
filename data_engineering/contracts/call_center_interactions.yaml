@@ -1,0 +1,48 @@
+# Contract for call_center_interactions. Source: data dictionary lines 298-345.
+table: call_center_interactions
+kind: fact
+description: Call center interactions with customers
+source_system: Contact Center
+partitioning: daily
+partition_column: process_date
+event_time_column: interaction_date
+primary_key: [interaction_id]
+dedupe_order: [process_date]
+expected_rows: 800000
+layout: clean
+notes:
+  - mentioned_products holds comma-separated product IDs; it is not a declared foreign key and is not checked.
+columns:
+  - {name: interaction_id, type: VARCHAR(30), nullable: false, pk: true, severity: error, description: Unique interaction ID}
+  - {name: interaction_date, type: TIMESTAMP, nullable: false, severity: error, description: Interaction date and time}
+  - {name: process_date, type: DATE, nullable: false, severity: error, description: Process date (partition key)}
+  - {name: customer_id, type: VARCHAR(20), nullable: false, fk: customers.customer_id, severity: error, description: Customer ID}
+  - {name: agent_id, type: VARCHAR(20), nullable: true, fk: service_agents.agent_id, severity: warn, description: Agent ID who attended}
+  - {name: interaction_type, type: VARCHAR(30), nullable: false, allowed_values: [Inbound Call, Outbound Call, Chat, Email, Video], enum_status: listed, severity: error, description: Interaction type}
+  - {name: channel, type: VARCHAR(30), nullable: false, allowed_values: [Phone, Web Chat, WhatsApp, Email, App], enum_status: listed, severity: error, description: Channel}
+  - {name: contact_reason, type: VARCHAR(100), nullable: false, profile: true, severity: error, description: Main contact reason (no values listed)}
+  - name: reason_category
+    type: VARCHAR(50)
+    nullable: false
+    allowed_values: [Transactional, Product, Technical, Commercial, Complaint]
+    enum_status: decoded
+    provenance: decoded
+    check_severity: {bad_enum: warn}
+    profile: true
+    severity: error
+    description: Reason category
+    note: >-
+      Extracted text ends with "CoNmOpTlaNinUt)LL": "NOT NULL" is interleaved with the last value. Decoded as
+      "Complaint" and NOT NULL. Enum violations are reported only until confirmed.
+  - {name: duration_seconds, type: INTEGER, nullable: true, severity: warn, description: Duration in seconds}
+  - {name: wait_time_seconds, type: INTEGER, nullable: true, severity: warn, description: Wait time before service}
+  - {name: was_resolved, type: BOOLEAN, nullable: true, severity: warn, description: Resolved on first call (FCR)}
+  - {name: requires_followup, type: BOOLEAN, nullable: false, severity: error, description: Requires follow-up}
+  - {name: detected_sentiment, type: VARCHAR(20), nullable: true, allowed_values: [Positive, Neutral, Negative, Very Negative], enum_status: listed, severity: warn, description: Sentiment}
+  - {name: sentiment_score, type: "DECIMAL(3,2)", nullable: true, min: -1, max: 1, severity: error, description: Sentiment score (-1 to 1)}
+  - {name: customer_detected_accent, type: VARCHAR(50), nullable: true, profile: true, severity: warn, description: Customer's detected accent}
+  - {name: agent_used_accent, type: VARCHAR(50), nullable: true, severity: warn, description: Accent used by agent in response}
+  - {name: was_escalated, type: BOOLEAN, nullable: false, severity: error, description: Was escalated to supervisor}
+  - {name: mentioned_products, type: VARCHAR(200), nullable: true, severity: warn, description: Product IDs mentioned (comma-separated)}
+  - {name: has_transcript, type: BOOLEAN, nullable: false, severity: error, description: Has transcript available}
+  - {name: has_recording, type: BOOLEAN, nullable: false, severity: error, description: Has audio recording}

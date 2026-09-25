@@ -1,0 +1,38 @@
+# Contract for branches. Source: data dictionary lines 140-167.
+table: branches
+kind: dimension
+description: Physical bank branches
+source_system: Internal
+partitioning: full_snapshot
+partition_column: null
+event_time_column: null
+primary_key: [branch_id]
+dedupe_order: []
+expected_rows: 350
+layout: clean
+notes:
+  - No update timestamp exists, so duplicates are resolved by the latest source file (snapshot path order).
+  - branches.country has no value list in the dictionary, unlike customers.country.
+columns:
+  - {name: branch_id, type: VARCHAR(20), nullable: false, pk: true, severity: error, description: Unique branch ID}
+  - {name: branch_code, type: VARCHAR(10), nullable: false, unique: true, severity: error, description: Internal branch code}
+  - {name: branch_name, type: VARCHAR(100), nullable: false, severity: error, description: Branch name}
+  - {name: branch_type, type: VARCHAR(30), nullable: false, allowed_values: [Main, Express, Premium, Corporate], enum_status: listed, severity: error, description: Branch type}
+  - {name: address, type: VARCHAR(200), nullable: false, severity: error, description: Full address (in Spanish)}
+  - {name: city, type: VARCHAR(100), nullable: false, severity: error, description: City}
+  - {name: state, type: VARCHAR(100), nullable: false, severity: error, description: State/Province}
+  - {name: country, type: VARCHAR(50), nullable: false, profile: true, severity: error, description: Country (no values listed)}
+  - {name: postal_code, type: VARCHAR(10), nullable: true, severity: warn, description: Postal code}
+  - {name: geographic_zone, type: VARCHAR(50), nullable: false, allowed_values: [Urban, Suburban, Rural], enum_status: listed, severity: error, description: Zone}
+  - {name: phone, type: VARCHAR(20), nullable: false, severity: error, description: Contact phone}
+  - {name: email, type: VARCHAR(100), nullable: true, severity: warn, description: Branch email}
+  - {name: opening_time, type: TIME, nullable: false, severity: error, description: Opening time}
+  - {name: closing_time, type: TIME, nullable: false, severity: error, description: Closing time}
+  - {name: has_atms, type: BOOLEAN, nullable: false, severity: error, description: Has ATMs}
+  - {name: atm_count, type: INTEGER, nullable: true, severity: warn, description: Number of ATMs}
+  - {name: has_teller_windows, type: BOOLEAN, nullable: false, severity: error, description: Has teller windows}
+  - {name: teller_window_count, type: INTEGER, nullable: true, severity: warn, description: Number of teller windows}
+  - {name: latitude, type: "DECIMAL(10,7)", nullable: true, severity: warn, description: Geographic latitude}
+  - {name: longitude, type: "DECIMAL(10,7)", nullable: true, severity: warn, description: Geographic longitude}
+  - {name: branch_opening_date, type: DATE, nullable: false, severity: error, description: Branch opening date}
+  - {name: branch_status, type: VARCHAR(20), nullable: false, allowed_values: [Active, Temporarily Closed, Closed], enum_status: listed, severity: error, description: Branch status}

@@ -1,0 +1,49 @@
+# Contract for satisfaction_surveys. Source: data dictionary lines 372-402.
+# Garbled extraction: the constraints column is printed as a separate block above the column list.
+# Constraints re-aligned by ordinal position (20 columns, 20 constraints).
+table: satisfaction_surveys
+kind: fact
+description: Post-interaction satisfaction surveys (CSAT, NPS)
+source_system: Contact Center
+partitioning: daily
+partition_column: process_date
+event_time_column: survey_date
+primary_key: [survey_id]
+dedupe_order: [process_date]
+expected_rows: 250000
+layout: realigned
+notes:
+  - Constraints re-aligned by ordinal position (20 columns, 20 constraints).
+  - campaign_response_rate looks out of place in a survey table; its meaning is unclear.
+columns:
+  - {name: survey_id, type: VARCHAR(30), nullable: false, pk: true, severity: error, provenance: realigned, description: Unique survey ID}
+  - {name: survey_date, type: TIMESTAMP, nullable: false, severity: error, provenance: realigned, description: Response date and time}
+  - {name: process_date, type: DATE, nullable: false, severity: error, provenance: realigned, description: Process date (partition key)}
+  - {name: interaction_id, type: VARCHAR(30), nullable: true, fk: call_center_interactions.interaction_id, severity: warn, provenance: realigned, description: Evaluated interaction ID}
+  - {name: customer_id, type: VARCHAR(20), nullable: false, fk: customers.customer_id, severity: error, provenance: realigned, description: Customer ID}
+  - {name: agent_id, type: VARCHAR(20), nullable: true, fk: service_agents.agent_id, severity: warn, provenance: realigned, description: Evaluated agent ID}
+  - {name: survey_type, type: VARCHAR(20), nullable: false, allowed_values: [CSAT, NPS, CES], enum_status: listed, severity: error, provenance: realigned, description: Survey type}
+  - {name: send_channel, type: VARCHAR(30), nullable: false, allowed_values: [Email, SMS, IVR, App, Web], enum_status: listed, severity: error, provenance: realigned, description: Send channel}
+  - name: main_score
+    type: INTEGER
+    nullable: false
+    min: 0
+    max: 10
+    check_severity: {out_of_range: warn}
+    severity: error
+    provenance: realigned
+    description: Main score
+    note: >-
+      The dictionary states 1-5 for CSAT and 0-10 for NPS and gives no range for CES. The contract checks the union
+      0-10 and reports violations only, because the CES scale is unknown.
+  - {name: nps_category, type: VARCHAR(20), nullable: true, allowed_values: [Promoter, Passive, Detractor], enum_status: listed, severity: warn, provenance: realigned, description: NPS category}
+  - {name: question_1_text, type: TEXT, nullable: true, severity: warn, provenance: realigned, description: Question 1 text}
+  - {name: question_1_response, type: INTEGER, nullable: true, min: 1, max: 5, severity: error, provenance: realigned, description: Question 1 response (1-5)}
+  - {name: question_2_text, type: TEXT, nullable: true, severity: warn, provenance: realigned, description: Question 2 text}
+  - {name: question_2_response, type: INTEGER, nullable: true, min: 1, max: 5, severity: error, provenance: realigned, description: Question 2 response (1-5)}
+  - {name: question_3_text, type: TEXT, nullable: true, severity: warn, provenance: realigned, description: Question 3 text}
+  - {name: question_3_response, type: INTEGER, nullable: true, min: 1, max: 5, severity: error, provenance: realigned, description: Question 3 response (1-5)}
+  - {name: open_comments, type: TEXT, nullable: true, severity: warn, provenance: realigned, description: Customer comments (in Spanish)}
+  - {name: comment_sentiment, type: VARCHAR(20), nullable: true, profile: true, severity: warn, provenance: realigned, description: Comment sentiment (no values listed)}
+  - {name: response_time_hours, type: "DECIMAL(8,2)", nullable: true, severity: warn, provenance: realigned, description: Hours between interaction and response}
+  - {name: campaign_response_rate, type: "DECIMAL(5,2)", nullable: true, severity: warn, provenance: realigned, description: Campaign response rate (%)}

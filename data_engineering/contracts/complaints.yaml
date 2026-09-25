@@ -1,0 +1,59 @@
+# Contract for complaints (PQR). Source: data dictionary lines 462-518.
+# Garbled extraction: descriptions and constraints re-aligned by ordinal position for the first 24 columns
+# (24 columns, 24 descriptions). The last three columns are printed aligned.
+table: complaints
+kind: fact
+description: Complaints and claims system (PQR)
+source_system: PQR
+partitioning: daily
+partition_column: process_date
+event_time_column: creation_date
+primary_key: [complaint_id]
+dedupe_order: [process_date]
+expected_rows: 80000
+layout: realigned
+notes:
+  - Descriptions and constraints re-aligned by ordinal position (24 columns, 24 descriptions) plus 3 aligned columns.
+  - There is no transaction_id column. A disputed charge can only be linked to a transaction through customer, product, amount and dates.
+  - category has no value list in the dictionary; observed values are profiled because workflow selection depends on them.
+  - The SLA threshold behind sla_breached is not documented.
+columns:
+  - {name: complaint_id, type: VARCHAR(30), nullable: false, pk: true, severity: error, provenance: realigned, description: Unique complaint/claim ID}
+  - {name: creation_date, type: TIMESTAMP, nullable: false, severity: error, provenance: realigned, description: Complaint creation date}
+  - {name: process_date, type: DATE, nullable: false, severity: error, provenance: realigned, description: Process date (partition key)}
+  - {name: customer_id, type: VARCHAR(20), nullable: false, fk: customers.customer_id, severity: error, provenance: realigned, description: Customer ID}
+  - {name: case_type, type: VARCHAR(30), nullable: false, allowed_values: [Complaint, Claim, Request, Suggestion], enum_status: listed, severity: error, provenance: realigned, description: Case type}
+  - {name: category, type: VARCHAR(100), nullable: false, profile: true, severity: error, provenance: realigned, description: Case category (no values listed)}
+  - {name: subcategory, type: VARCHAR(100), nullable: true, profile: true, severity: warn, provenance: realigned, description: Subcategory}
+  - {name: reception_channel, type: VARCHAR(30), nullable: false, allowed_values: [Call Center, Email, Web, App, Branch, Regulator], enum_status: listed, severity: error, provenance: realigned, description: Reception channel}
+  - {name: affected_product_id, type: VARCHAR(20), nullable: true, fk: products.product_id, severity: warn, provenance: realigned, description: Affected product ID}
+  - {name: related_branch_id, type: VARCHAR(20), nullable: true, fk: branches.branch_id, severity: warn, provenance: realigned, description: Related branch ID}
+  - {name: origin_interaction_id, type: VARCHAR(30), nullable: true, fk: call_center_interactions.interaction_id, severity: warn, provenance: realigned, description: Originating interaction ID}
+  - {name: description, type: TEXT, nullable: false, severity: error, provenance: realigned, description: Case description (in Spanish)}
+  - {name: claimed_amount, type: "DECIMAL(15,2)", nullable: true, severity: warn, provenance: realigned, description: Claimed amount (if applicable)}
+  - {name: currency, type: VARCHAR(3), nullable: true, profile: true, severity: warn, provenance: realigned, description: Claimed amount currency (no values listed)}
+  - {name: priority, type: VARCHAR(20), nullable: false, allowed_values: [Low, Medium, High, Critical], enum_status: listed, severity: error, provenance: realigned, description: Priority}
+  - name: status
+    type: VARCHAR(30)
+    nullable: false
+    allowed_values: [Open, In Process, Escalated, Resolved, Closed, Rejected]
+    enum_status: decoded
+    provenance: decoded
+    check_severity: {bad_enum: warn}
+    profile: true
+    severity: error
+    description: Case status
+    note: >-
+      Extracted text ends with "RejeNcOteTd)NULL": "NOT NULL" is interleaved with the last value. Decoded as
+      "Rejected" and NOT NULL. Enum violations are reported only until confirmed.
+  - {name: assigned_agent_id, type: VARCHAR(20), nullable: true, fk: service_agents.agent_id, severity: warn, provenance: realigned, description: Assigned agent ID}
+  - {name: assignment_date, type: TIMESTAMP, nullable: true, severity: warn, provenance: realigned, description: Assignment date}
+  - {name: first_response_date, type: TIMESTAMP, nullable: true, severity: warn, provenance: realigned, description: First response date}
+  - {name: resolution_date, type: TIMESTAMP, nullable: true, severity: warn, provenance: realigned, description: Resolution date}
+  - {name: closing_date, type: TIMESTAMP, nullable: true, severity: warn, provenance: realigned, description: Closing date}
+  - {name: sla_breached, type: BOOLEAN, nullable: false, severity: error, provenance: realigned, description: SLA breached}
+  - {name: resolution_days, type: INTEGER, nullable: true, severity: warn, provenance: realigned, description: Days to resolution}
+  - {name: resolution, type: TEXT, nullable: true, severity: warn, provenance: realigned, description: Resolution description (in Spanish)}
+  - {name: compensation_granted, type: "DECIMAL(15,2)", nullable: true, severity: warn, description: Compensation amount granted}
+  - {name: resolution_satisfaction, type: INTEGER, nullable: true, min: 1, max: 5, severity: error, description: Resolution satisfaction score (1-5)}
+  - {name: is_repeat_complainer, type: BOOLEAN, nullable: false, severity: error, description: Customer with previous complaints in last 90 days}

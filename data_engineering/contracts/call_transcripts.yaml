@@ -1,0 +1,39 @@
+# Contract for call_transcripts. Source: data dictionary lines 347-370.
+table: call_transcripts
+kind: fact
+description: Call center call transcripts
+source_system: Contact Center
+partitioning: daily
+partition_column: process_date
+event_time_column: null
+primary_key: [transcript_id]
+dedupe_order: [process_date]
+expected_rows: 200000
+layout: clean
+notes:
+  - The table has no event timestamp, so late arrival cannot be measured from this table alone (join to the interaction).
+columns:
+  - {name: transcript_id, type: VARCHAR(30), nullable: false, pk: true, severity: error, description: Unique transcript ID}
+  - {name: interaction_id, type: VARCHAR(30), nullable: false, fk: call_center_interactions.interaction_id, severity: error, description: Related interaction ID}
+  - {name: process_date, type: DATE, nullable: false, severity: error, description: Process date (partition key)}
+  - {name: customer_id, type: VARCHAR(20), nullable: false, fk: customers.customer_id, severity: error, description: Customer ID}
+  - {name: agent_id, type: VARCHAR(20), nullable: false, fk: service_agents.agent_id, severity: error, description: Agent ID}
+  - {name: full_text, type: TEXT, nullable: false, severity: error, description: Full call transcript (in Spanish)}
+  - {name: customer_text, type: TEXT, nullable: true, severity: warn, description: Only what customer said (in Spanish)}
+  - {name: agent_text, type: TEXT, nullable: true, severity: warn, description: Only what agent said (in Spanish)}
+  - {name: detected_language, type: VARCHAR(10), nullable: false, profile: true, severity: error, description: Main language detected (no values listed)}
+  - {name: detected_accent, type: VARCHAR(50), nullable: true, profile: true, severity: warn, description: Detected accent}
+  - {name: accent_confidence, type: "DECIMAL(3,2)", nullable: true, min: 0, max: 1, severity: error, description: Accent detection confidence (0-1)}
+  - {name: detected_keywords, type: VARCHAR(500), nullable: true, severity: warn, description: Identified keywords}
+  - {name: mentioned_entities, type: TEXT, nullable: true, severity: warn, description: Extracted entities (JSON)}
+  - {name: detected_intents, type: VARCHAR(300), nullable: true, profile: true, severity: warn, description: Identified intents}
+  - {name: main_topics, type: VARCHAR(300), nullable: true, severity: warn, description: Main conversation topics}
+  - name: transcription_model
+    type: VARCHAR(50)
+    nullable: false
+    profile: true
+    severity: error
+    description: Model used for transcription
+    note: The dictionary says "Whisper, Google STT, etc.", an open list, so no enum check is applied.
+  - {name: audio_quality, type: VARCHAR(20), nullable: true, allowed_values: [High, Medium, Low], enum_status: listed, severity: warn, description: Audio quality}
+  - {name: duration_seconds, type: INTEGER, nullable: false, severity: error, description: Call duration}

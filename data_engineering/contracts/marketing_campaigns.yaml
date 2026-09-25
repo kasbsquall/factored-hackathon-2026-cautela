@@ -1,0 +1,40 @@
+# Contract for marketing_campaigns. Source: data dictionary lines 211-242.
+table: marketing_campaigns
+kind: dimension
+description: Bank marketing campaigns
+source_system: Internal
+partitioning: full_snapshot
+partition_column: null
+event_time_column: null
+primary_key: [campaign_id]
+dedupe_order: []
+expected_rows: 200
+layout: clean
+notes:
+  - No update timestamp exists, so duplicates are resolved by the latest source file (snapshot path order).
+columns:
+  - {name: campaign_id, type: VARCHAR(20), nullable: false, pk: true, severity: error, description: Unique campaign ID}
+  - {name: campaign_name, type: VARCHAR(150), nullable: false, severity: error, description: Campaign name}
+  - {name: description, type: TEXT, nullable: true, severity: warn, description: Campaign description}
+  - {name: campaign_type, type: VARCHAR(50), nullable: false, allowed_values: [Email, SMS, Push, WhatsApp, Voice, Mix], enum_status: listed, severity: error, description: Campaign type}
+  - name: campaign_objective
+    type: VARCHAR(100)
+    nullable: false
+    allowed_values: [Acquisition, Retention, Cross-sell, Up-sell, Reactivation]
+    enum_status: decoded
+    provenance: decoded
+    check_severity: {bad_enum: warn}
+    profile: true
+    severity: error
+    description: Campaign objective
+    note: >-
+      Extracted text ends with "ReactivNaOtioTnN) ULL": the constraint "NOT NULL" is interleaved with the last value.
+      Decoded as "Reactivation" and NOT NULL. Enum violations are reported only until confirmed.
+  - {name: promoted_product, type: VARCHAR(50), nullable: true, profile: true, severity: warn, description: Promoted product}
+  - {name: target_segment, type: VARCHAR(50), nullable: true, severity: warn, description: Target segment}
+  - {name: target_country, type: VARCHAR(50), nullable: true, severity: warn, description: Target country}
+  - {name: start_date, type: DATE, nullable: false, severity: error, description: Start date}
+  - {name: end_date, type: DATE, nullable: false, severity: error, description: End date}
+  - {name: budget, type: "DECIMAL(12,2)", nullable: true, severity: warn, description: Assigned budget}
+  - {name: campaign_status, type: VARCHAR(20), nullable: false, allowed_values: [Planned, Active, Paused, Completed], enum_status: listed, severity: error, description: Campaign status}
+  - {name: expected_conversion_rate, type: "DECIMAL(5,2)", nullable: true, severity: warn, description: Expected conversion rate (%)}

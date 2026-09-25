@@ -1,0 +1,53 @@
+# Contract for customers. Source: organizer data dictionary v1.0.0 (data-dictionary.txt, lines 39-97).
+table: customers
+kind: dimension
+description: Bank customer dimension table
+source_system: Core Banking
+partitioning: monthly_snapshot
+partition_column: null
+event_time_column: null
+primary_key: [customer_id]
+dedupe_order: [last_updated]
+expected_rows: 150000
+layout: clean
+notes:
+  - Snapshot tables have no partition column in the dictionary; the snapshot date comes from the file path order.
+columns:
+  - {name: customer_id, type: VARCHAR(20), nullable: false, pk: true, severity: error, description: Unique customer ID}
+  - {name: document_number, type: VARCHAR(20), nullable: false, unique: true, severity: error, description: Identity document number}
+  - {name: document_type, type: VARCHAR(10), nullable: false, allowed_values: [DNI, CURP, CC, CE, Passport], enum_status: listed, severity: error, description: Document type}
+  - {name: first_name, type: VARCHAR(100), nullable: false, severity: error, description: Customer first name (in Spanish)}
+  - {name: last_name, type: VARCHAR(100), nullable: false, severity: error, description: Customer last name (in Spanish)}
+  - {name: date_of_birth, type: DATE, nullable: false, severity: error, description: Date of birth}
+  - {name: gender, type: VARCHAR(1), nullable: true, allowed_values: [M, F, O], enum_status: listed, severity: warn, description: Gender}
+  - {name: email, type: VARCHAR(100), nullable: true, severity: warn, description: Email address}
+  - {name: mobile_phone, type: VARCHAR(20), nullable: true, severity: warn, description: Mobile phone number}
+  - {name: landline_phone, type: VARCHAR(20), nullable: true, severity: warn, description: Landline phone number}
+  - {name: address, type: VARCHAR(200), nullable: true, severity: warn, description: Full address (in Spanish)}
+  - {name: city, type: VARCHAR(100), nullable: false, severity: error, description: City of residence}
+  - {name: state, type: VARCHAR(100), nullable: false, severity: error, description: State/Province}
+  - {name: country, type: VARCHAR(50), nullable: false, allowed_values: [Mexico, Colombia, Argentina], enum_status: listed, severity: error, description: Country}
+  - {name: postal_code, type: VARCHAR(10), nullable: true, severity: warn, description: Postal code}
+  - name: detected_accent
+    type: VARCHAR(50)
+    nullable: true
+    allowed_values: [mexican, colombian, argentine, neutral]
+    enum_status: decoded
+    provenance: decoded
+    profile: true
+    severity: warn
+    description: Spanish accent detected
+    note: >-
+      Extracted text reads "mexican, colombian, argentine, ne-utral": the constraint column "-" was merged into
+      the last value. Decoded as "neutral" and nullable. Reported only until the real data confirms it.
+  - {name: segment, type: VARCHAR(50), nullable: false, allowed_values: [Premium, Plus, Basic, Student], enum_status: listed, severity: error, description: Customer segment}
+  - {name: credit_score, type: INTEGER, nullable: true, min: 300, max: 850, severity: error, description: Credit score (300-850)}
+  - {name: estimated_monthly_income, type: "DECIMAL(12,2)", nullable: true, severity: warn, description: Estimated monthly income in local currency}
+  - {name: occupation, type: VARCHAR(100), nullable: true, severity: warn, description: Customer occupation}
+  - {name: marital_status, type: VARCHAR(20), nullable: true, profile: true, severity: warn, description: Marital status (no values listed)}
+  - {name: education_level, type: VARCHAR(50), nullable: true, profile: true, severity: warn, description: Education level (no values listed)}
+  - {name: registration_date, type: TIMESTAMP, nullable: false, severity: error, description: Registration date as customer}
+  - {name: registration_branch_id, type: VARCHAR(20), nullable: false, fk: branches.branch_id, severity: error, description: Branch ID where registered}
+  - {name: customer_status, type: VARCHAR(20), nullable: false, allowed_values: [Active, Inactive, Suspended, Closed], enum_status: listed, severity: error, description: Customer status}
+  - {name: last_updated, type: TIMESTAMP, nullable: false, severity: error, description: Last record update}
+  - {name: accepts_marketing, type: BOOLEAN, nullable: false, severity: error, description: Accepts marketing communications}

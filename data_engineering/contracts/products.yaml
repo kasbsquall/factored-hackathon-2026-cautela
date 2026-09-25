@@ -1,0 +1,46 @@
+# Contract for products. Source: data dictionary lines 99-138.
+# The extracted table is garbled: descriptions and constraints are printed below the column list.
+# They were re-aligned by ordinal position; the counts match (17 columns, 17 descriptions).
+table: products
+kind: dimension
+description: Active financial products of customers
+source_system: Core Banking
+partitioning: monthly_snapshot
+partition_column: null
+event_time_column: null
+primary_key: [product_id]
+dedupe_order: [last_updated]
+expected_rows: 400000
+layout: realigned
+notes:
+  - Descriptions and constraints re-aligned by ordinal position (17 columns, 17 descriptions).
+columns:
+  - {name: product_id, type: VARCHAR(20), nullable: false, pk: true, severity: error, provenance: realigned, description: Unique product ID}
+  - {name: customer_id, type: VARCHAR(20), nullable: false, fk: customers.customer_id, severity: error, provenance: realigned, description: Owner customer ID}
+  - name: product_type
+    type: VARCHAR(50)
+    nullable: false
+    enum_status: unknown
+    provenance: decoded
+    profile: true
+    severity: error
+    description: Product type
+    note: >-
+      The value list is truncated in the extraction ("Checking Account, Savings Account, Credit CaNrdO,TDNebUitLCL ard,
+      Personal Loan, Mortgage, Investme"). Decoded prefix: Checking Account, Savings Account, Credit Card, Debit Card,
+      Personal Loan, Mortgage, then a value starting with "Investme". The full list is unknown, so no enum check is
+      applied and observed values are profiled in the quality report. NOT NULL is decoded from the interleaved text.
+  - {name: product_number, type: VARCHAR(30), nullable: false, unique: true, severity: error, provenance: realigned, description: Account/card/policy number}
+  - {name: currency, type: VARCHAR(3), nullable: false, allowed_values: [MXN, COP, ARS, USD], enum_status: listed, severity: error, provenance: realigned, description: Currency}
+  - {name: current_balance, type: "DECIMAL(15,2)", nullable: false, severity: error, provenance: realigned, description: Current balance}
+  - {name: credit_limit, type: "DECIMAL(15,2)", nullable: true, severity: warn, provenance: realigned, description: Credit limit (for credit products)}
+  - {name: interest_rate, type: "DECIMAL(5,2)", nullable: true, severity: warn, provenance: realigned, description: Annual interest rate (%)}
+  - {name: opening_date, type: DATE, nullable: false, severity: error, provenance: realigned, description: Product opening date}
+  - {name: expiration_date, type: DATE, nullable: true, severity: warn, provenance: realigned, description: Expiration date (for term products)}
+  - {name: opening_branch_id, type: VARCHAR(20), nullable: false, fk: branches.branch_id, severity: error, provenance: realigned, description: Branch where opened}
+  - {name: product_status, type: VARCHAR(20), nullable: false, allowed_values: [Active, Blocked, Closed, Suspended], enum_status: listed, severity: error, provenance: realigned, description: Product status}
+  - {name: opening_channel, type: VARCHAR(30), nullable: false, allowed_values: [Branch, Web, App, Call Center], enum_status: listed, severity: error, provenance: realigned, description: Opening channel}
+  - {name: has_linked_app, type: BOOLEAN, nullable: false, severity: error, provenance: realigned, description: Product linked to mobile app}
+  - {name: days_past_due, type: INTEGER, nullable: true, severity: warn, provenance: realigned, description: Days past due (for credits)}
+  - {name: last_transaction_date, type: TIMESTAMP, nullable: true, severity: warn, provenance: realigned, description: Last transaction date}
+  - {name: last_updated, type: TIMESTAMP, nullable: false, severity: error, provenance: realigned, description: Last record update}

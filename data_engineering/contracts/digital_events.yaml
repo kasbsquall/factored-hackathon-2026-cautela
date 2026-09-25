@@ -1,0 +1,56 @@
+# Contract for digital_events. Source: data dictionary lines 404-460.
+# Garbled extraction: descriptions and constraints re-aligned by ordinal position for the first 22 columns
+# (22 columns, 22 descriptions). The last four columns (referrer, utm_*) are printed aligned.
+table: digital_events
+kind: fact
+description: Digital channel interaction events (mobile app, web)
+source_system: Digital Banking
+partitioning: daily
+partition_column: process_date
+event_time_column: event_date
+primary_key: [event_id]
+dedupe_order: [process_date]
+expected_rows: 10000000
+layout: realigned
+notes:
+  - Descriptions and constraints re-aligned by ordinal position (22 columns, 22 descriptions) plus 4 aligned columns.
+  - customer_id is a nullable foreign key (anonymous events are allowed by the dictionary).
+columns:
+  - {name: event_id, type: VARCHAR(30), nullable: false, pk: true, severity: error, provenance: realigned, description: Unique event ID}
+  - {name: event_date, type: TIMESTAMP, nullable: false, severity: error, provenance: realigned, description: Event date and time}
+  - {name: process_date, type: DATE, nullable: false, severity: error, provenance: realigned, description: Process date (partition key)}
+  - {name: customer_id, type: VARCHAR(20), nullable: true, fk: customers.customer_id, severity: warn, provenance: realigned, description: Customer ID}
+  - {name: session_id, type: VARCHAR(50), nullable: false, severity: error, provenance: realigned, description: User session ID}
+  - name: event_type
+    type: VARCHAR(50)
+    nullable: false
+    allowed_values: [PageView, Click, FormSubmit, Login, Logout, Error, Purchase]
+    enum_status: decoded
+    provenance: decoded
+    check_severity: {bad_enum: warn}
+    profile: true
+    severity: error
+    description: Event type
+    note: >-
+      Extracted text ends with "PuNrOchTaNseU)LL": "NOT NULL" is interleaved with the last value. Decoded as
+      "Purchase" and NOT NULL. Enum violations are reported only until confirmed.
+  - {name: event_category, type: VARCHAR(50), nullable: false, allowed_values: [Navigation, Transaction, Authentication, Product], enum_status: listed, severity: error, provenance: realigned, description: Event category}
+  - {name: channel, type: VARCHAR(30), nullable: false, allowed_values: [Android App, iOS App, Desktop Web, Mobile Web], enum_status: listed, severity: error, provenance: realigned, description: Channel}
+  - {name: platform, type: VARCHAR(30), nullable: true, allowed_values: [Android, iOS, Windows, MacOS, Linux], enum_status: listed, severity: warn, provenance: realigned, description: Platform}
+  - {name: browser, type: VARCHAR(50), nullable: true, severity: warn, provenance: realigned, description: Browser used}
+  - {name: app_version, type: VARCHAR(20), nullable: true, severity: warn, provenance: realigned, description: App version}
+  - {name: page_url, type: VARCHAR(300), nullable: true, severity: warn, provenance: realigned, description: Page URL}
+  - {name: page_title, type: VARCHAR(200), nullable: true, severity: warn, provenance: realigned, description: Page title}
+  - {name: action, type: VARCHAR(100), nullable: true, profile: true, severity: warn, provenance: realigned, description: Action performed}
+  - {name: element_id, type: VARCHAR(100), nullable: true, severity: warn, provenance: realigned, description: Interacted element ID}
+  - {name: product_id, type: VARCHAR(20), nullable: true, fk: products.product_id, severity: warn, provenance: realigned, description: Related product ID}
+  - {name: event_value, type: "DECIMAL(15,2)", nullable: true, severity: warn, provenance: realigned, description: Event monetary value (if applicable)}
+  - {name: duration_seconds, type: INTEGER, nullable: true, severity: warn, provenance: realigned, description: Event duration}
+  - {name: ip_address, type: VARCHAR(45), nullable: true, severity: warn, provenance: realigned, description: User IP address}
+  - {name: ip_country, type: VARCHAR(50), nullable: true, severity: warn, provenance: realigned, description: Country detected by IP}
+  - {name: ip_city, type: VARCHAR(100), nullable: true, severity: warn, provenance: realigned, description: City detected by IP}
+  - {name: is_mobile, type: BOOLEAN, nullable: false, severity: error, provenance: realigned, description: Event from mobile device}
+  - {name: referrer, type: VARCHAR(300), nullable: true, severity: warn, description: Referrer URL}
+  - {name: utm_source, type: VARCHAR(100), nullable: true, severity: warn, description: UTM source}
+  - {name: utm_medium, type: VARCHAR(100), nullable: true, severity: warn, description: UTM medium}
+  - {name: utm_campaign, type: VARCHAR(100), nullable: true, severity: warn, description: UTM campaign}
