@@ -1,0 +1,96 @@
+{
+  "suite_version": "e2e-fresh-v1",
+  "seed": 20261002,
+  "suite_sha256": "9a1b12fdcee809c49cd8e051fc49bb17f85a882fe79455416424d2d59c604624",
+  "gold_sha256": "fbda05a05034ee34d6868cf635c5834bc677b598c669c01680ecc0af84b15d17",
+  "texts_sha256": "0e391eca8fc83590bbc94da744d6de3740988e4ed84603984f2c7a0fc9c42271",
+  "policy_version": "2026-09-26.2",
+  "warehouse_slice_content_hash": "ad599f5def614a53357166da4140d5835edd6562cec0d745ddd34db4dc289eb7",
+  "sources": {
+    "test_fresh_sha256": "8c86c3495632906f168986e8266916972632211752c0f258b0cc5fa0720aa900",
+    "test_fresh_version": "8c86c3495632906f",
+    "test_split_used": false,
+    "adversarial_jsonl_used": false,
+    "heldout_suite_sha256_at_freeze": "83f62ce21fea7eb225939a29976c6003bd6ee30507154b4f28e66c1d840b2b74"
+  },
+  "frozen_on_commit": "0fc526bdc8e55ca1edbaebcc9c298fc54eeec2d1",
+  "agent_code_read_by_the_builder": {
+    "agent/policy/engine.py": "86873f6a87885efff09c7329702c059e53182f1d73b983195166a1bbf3adee47",
+    "agent/policy/rules.yaml": "61da229b0e414741a8454df40246df409821e297882a79e41b4c6733cd72c765"
+  },
+  "conversations": 1692,
+  "oracle_engine_agreement": {
+    "charges": 623,
+    "agree": 623
+  },
+  "by_category": {
+    "adversarial": 48,
+    "bad_data": 48,
+    "dispute": 1072,
+    "expired_session": 48,
+    "human_request": 60,
+    "identity": 30,
+    "injection": 64,
+    "multilingual": 120,
+    "out_of_scope": 52,
+    "recognized": 48,
+    "tool_failure": 48,
+    "unauthorized": 54
+  },
+  "by_category_and_language": {
+    "adversarial": {
+      "es": 24,
+      "pt": 24
+    },
+    "bad_data": {
+      "es": 24,
+      "pt": 24
+    },
+    "dispute": {
+      "es": 777,
+      "pt": 295
+    },
+    "expired_session": {
+      "es": 24,
+      "pt": 24
+    },
+    "human_request": {
+      "es": 30,
+      "pt": 30
+    },
+    "identity": {
+      "es": 15,
+      "pt": 15
+    },
+    "injection": {
+      "es": 32,
+      "pt": 32
+    },
+    "multilingual": {
+      "es": 60,
+      "pt": 60
+    },
+    "out_of_scope": {
+      "es": 26,
+      "pt": 26
+    },
+    "recognized": {
+      "es": 24,
+      "pt": 24
+    },
+    "tool_failure": {
+      "es": 24,
+      "pt": 24
+    },
+    "unauthorized": {
+      "es": 27,
+      "pt": 27
+    }
+  },
+  "run_once": {
+    "markers": "eval/fresh/ran/<config>.json, committed after each run",
+    "command": "uv run python -m eval.fresh.run --configs <rules|learned|llm>",
+    "override": "--rerun-not-for-reporting: never used for reporting; writes to data/eval/fresh_unreported/ and never to eval/fresh/results.json"
+  },
+  "note": "Frozen before any fix prompted by eval/report.md and before any configuration ran on it. Gold outcomes are in suite.jsonl (git-ignored, organizer-derived ids) and, without ids, in gold.jsonl. Rebuild with `uv run python -m eval.fresh.build --verify`."
+}
