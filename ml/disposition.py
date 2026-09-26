@@ -41,7 +41,8 @@ def _cue_hits(row: list[float]) -> dict[str, bool]:
     if row[IDX["date_given"]]:
         hits["date"] = row[IDX["date_dist"]] <= 2
     if row[IDX["text_merch_signal"]] >= 0.8 or row[IDX["noun_given"]]:
-        hits["merchant"] = row[IDX["merch_max"]] >= 0.8 or bool(row[IDX["noun_match"]])
+        named = row[IDX["merch_max"]] >= 0.8 or bool(row[IDX["noun_match"]])
+        hits["merchant"] = named and not row[IDX["merch_mismatch"]]
     if row[IDX["type_given"]]:
         hits["type"] = bool(row[IDX["type_match"]])
     if row[IDX["chan_given"]]:

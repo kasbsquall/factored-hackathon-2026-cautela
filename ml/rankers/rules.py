@@ -1,7 +1,8 @@
 """Baseline: deterministic rules with hand-set weights, nothing fitted.
 
 Score = weighted mean of per-cue agreement over the cues the parser found:
-amount proximity (0.30), date proximity (0.25), merchant (0.25), type (0.10),
+amount proximity (0.30), date proximity (0.25), merchant (0.25, IDF-weighted, 0 when the text names another
+merchant), type (0.10),
 channel (0.10), city (0.05). Credits (deposits) are down-weighted because a
 disputed charge is a debit. With no readable cue every candidate scores 0.
 """
@@ -12,7 +13,7 @@ import math
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from ml.features.pairwise import FEATURE_NAMES, candidate_features
+from ml.features.pairwise import FEATURE_NAMES, candidate_features, merchant_score
 from ml.rankers.protocol import coerce_features, order
 
 IDX = {n: i for i, n in enumerate(FEATURE_NAMES)}
@@ -30,9 +31,10 @@ def rule_score(f: list[float]) -> float:
         parts["amount"] = a
     if f[IDX["date_given"]]:
         parts["date"] = max(0.0, 1.0 - f[IDX["date_dist"]] / 5.0)
-    fuzzy = f[IDX["merch_max"]] if f[IDX["merch_max"]] >= MERCHANT_FUZZY_MIN else 0.0
+    fuzzy = merchant_score(f[IDX["merch_max"]], f[IDX["merch_idf"]]) if f[IDX["merch_max"]] >= MERCHANT_FUZZY_MIN else 0.0
     if f[IDX["text_merch_signal"]] >= MERCHANT_FUZZY_MIN or f[IDX["noun_given"]]:
-        parts["merchant"] = max(fuzzy, f[IDX["noun_match"]])
+        # a merchant named in the text that is not this candidate's merchant scores 0 on this cue
+        parts["merchant"] = 0.0 if f[IDX["merch_mismatch"]] else max(fuzzy, f[IDX["noun_match"]])
     if f[IDX["type_given"]]:
         parts["type"] = f[IDX["type_match"]]
     if f[IDX["chan_given"]]:

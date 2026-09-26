@@ -67,3 +67,13 @@ MONTHS = {m: i + 1 for i, m in enumerate(["enero", "febrero", "marzo", "abril", 
                                           "septiembre", "octubre", "noviembre", "diciembre"])}
 MONTHS.update({m: i + 1 for i, m in enumerate(["janeiro", "fevereiro", "marco", "abril", "maio", "junho", "julho",
                                                "agosto", "setembro", "outubro", "novembro", "dezembro"])})
+
+# Merchant master data: the merchant names present in the organizer transactions. A bank holds this
+# directory, so rankers may use it to recognize a stated merchant that is not in the customer's pool.
+MERCHANT_DIRECTORY = (
+    "Super Ahorro", "Restaurante El Buen Sabor", "Tienda Don José", "Mercado Central", "Empresa Telefónica",
+    "Cable TV", "Servicios Públicos", "Internet Plus", "Estación de Servicio", "Uber", "Taxi Seguro",
+    "Ferretería", "Tienda General", "Cine Premium", "Centro Comercial", "Boutique Moda", "Streaming Music",
+    "Conciertos Live", "Teatro Nacional", "Gasolinera Express", "Farmacia Salud", "Clínica Médica",
+    "Laboratorio Central", "Óptica Visión",
+)
