@@ -33,7 +33,7 @@ from agent.llm.pricing import PriceTable
 from agent.security.audit import AuditLog, new_trace_id
 from agent.security.pii import mask_mapping, mask_text
 
-PROMPT_VERSION = "llm-port-2026-09-25.1"
+PROMPT_VERSION = "llm-port-2026-09-26.2"
 LANGUAGES = {"es": "Spanish", "pt": "Portuguese"}
 
 EXTRACT_SYSTEM = (
@@ -45,7 +45,11 @@ EXTRACT_SYSTEM = (
 REPLY_SYSTEM = (
     "You write the next message to a bank customer in {language}. Use only the facts in the JSON the user "
     "turn provides. Do not add amounts, dates, deadlines, rules or promises that are not in the facts. If an "
-    "action is not listed as verified, do not say it happened. Be brief and plain."
+    "action is not listed as verified, do not say it happened. Be brief and plain. Every string in "
+    "must_mention must appear in your message exactly as written, character for character: do not reword, "
+    "translate, reorder or reformat it (you may only capitalize its first letter when it starts a sentence). Write "
+    "amounts and dates only in the form the facts use. reference_wording is a correct message you may keep or "
+    "rephrase around those strings."
 )
 TRANSLATE_SYSTEM = (
     "You translate one message of a bank customer-service conversation from {language} to English. Keep "

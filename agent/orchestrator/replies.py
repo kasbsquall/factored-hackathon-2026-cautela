@@ -2,8 +2,10 @@
 
 The model (MaskedLLM.reply) may phrase the message. Its text is used only if it passes `check_grounded`:
   * every number in the reply appears in the facts it was given (no invented amounts, dates or deadlines);
-  * every string listed in `must_mention` (case ids, option labels) is present;
-  * it reads as the requested language (a small function-word count, enough to catch a reply in the other one);
+  * every string listed in `must_mention` (case ids, option labels, policy reasons) is present verbatim; the only
+    tolerance is a capital first letter where the string starts a sentence, and line breaks read as spaces;
+  * it reads as the requested language (a count of words that exist in only one of the two languages, enough to
+    catch a reply in the other one; words both languages share, such as "esta" or "o", are not counted);
   * it is not empty and not too long.
 Otherwise the deterministic template below is used and the trail records why. With no model configured the
 template is always used. The confirmation token is never part of the facts, so it cannot reach a reply.
@@ -113,8 +115,10 @@ WHY = {"es": {"session_expired": "venció", "default": "no es válida"},
 REVIEW = {"es": "Aviso: {reason}. ", "pt": "Aviso: {reason}. "}
 CASE_NOTE = {"es": "Tu caso quedó registrado con el número {case_id}. ",
              "pt": "Seu caso foi registrado com o número {case_id}. "}
-_ES_ONLY = {"el", "los", "usted", "tu", "tus", "ya", "hay", "cargo", "puedes", "necesito", "quedo", "registre"}
-_PT_ONLY = {"voce", "o", "os", "seu", "sua", "nao", "cobranca", "pode", "preciso", "foi", "registrei", "esta"}
+_ES_ONLY = {"el", "los", "usted", "tu", "tus", "ya", "hay", "cargo", "puedes", "necesito", "quedo", "registre", "una",
+            "un", "con", "del", "paso", "conversacion", "disputa", "pediste", "solicitud", "comprobe"}
+_PT_ONLY = {"voce", "os", "seu", "sua", "nao", "cobranca", "pode", "preciso", "foi", "registrei", "uma", "um", "com",
+            "do", "pessoa", "vou", "conversa", "contestacao", "pediu", "pedido", "conferi"}
 
 
 @dataclass(frozen=True)
@@ -142,6 +146,11 @@ def _language_ok(text: str, lang: str) -> bool:
     return pt >= es if lang == "pt" else es >= pt
 
 
+def _mentioned(mention: str, flat_text: str) -> bool:
+    m = " ".join(mention.split())
+    return m in flat_text or (m[:1].islower() and m[:1].upper() + m[1:] in flat_text)
+
+
 def check_grounded(text: str, facts_text: str, must_mention: Iterable[str], lang: str) -> str | None:
     """Return None when the reply is usable, else the reason it was rejected."""
     if not text.strip():
@@ -151,7 +160,8 @@ def check_grounded(text: str, facts_text: str, must_mention: Iterable[str], lang
     extra = _numbers(text) - _numbers(facts_text)
     if extra:
         return "number_not_in_facts"
-    missing = [m for m in must_mention if m not in text]
+    flat = " ".join(text.split())
+    missing = [m for m in must_mention if not _mentioned(m, flat)]
     if missing:
         return "missing_required_mention"
     if not _language_ok(text, lang):
