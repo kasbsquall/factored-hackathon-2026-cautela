@@ -38,6 +38,22 @@ Without `--source`, the pipeline reads `LATAM_BANK_S3_URI`. The real data gets i
 | `pipelines/run.py` | CLI entry point |
 | `pipelines/gold.py` | Old placeholder, superseded by `gold/` |
 | `gold/` | Gold layer: contracts, SQL, incremental build, checks and CLI (see the gold section) |
+| `slice.py` | Copies chosen customers from a built warehouse into a small one with every lineage column, for the public demo bundle (see below) |
+
+## Demo slice
+
+`slice.py` writes a small warehouse with only the customers the public demo uses (`deploy/demo_select.py` picks them,
+`deploy/bundle.py` calls the slice). Rows are copied, never rebuilt: bronze, silver and the gold serving tables
+(`customer_profile`, `customer_transactions`) keep `_source_file`, `_ingested_at`, `_run_id`, `_source_table`,
+`_source_key`, `_source_run_ids` and `_gold_run_id` as they were. Tables are created from the source DDL, the
+`dispute_policy_inputs` view from its own definition, and `control.runs` and `control.gold_runs` are copied whole, so
+the tool repository's freshness check sees the same history. `control.file_ledger` keeps only the files the copied
+bronze rows came from, and `control.demo_slice` records which scenario each customer was chosen for and from which
+warehouse. The gold analytics tables are left out: they aggregate every customer and would be wrong for a slice.
+
+For the eight demo customers of the organizer data the slice is 284 transactions and 3.9 MB (the full warehouse is
+1.8 GB). Two slices of the same customers hold the same rows but not the same file bytes (DuckDB's block layout), so
+`content_digest()` hashes the rows in a fixed order; the bundle lock records both. Tests: `tests/deploy/test_slice.py`.
 
 ## Design and the reasons behind it
 
