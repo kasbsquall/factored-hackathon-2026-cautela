@@ -212,6 +212,28 @@ class ConversationView(BaseModel):
     handoff_id: str | None
 
 
+class TranslateRequest(_Request):
+    """One message of the conversation, as the transcript shows it (a part of it is accepted, since clients drop
+    the numbered option lines). Text that is not in the conversation answers 404, so this is no free translator."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    role: Literal["customer", "assistant"]
+    text: str = Field(min_length=1, max_length=2000)
+
+
+class TranslationResponse(BaseModel):
+    """Machine translation for reviewers who read English; the conversation itself stays in its language."""
+
+    translation: str
+    source_language: Language = Field(description="The conversation language")
+    target_language: Literal["en"]
+    machine_translation: Literal[True]
+    masked: bool = Field(description="True when PII masking changed the text sent to the model")
+    provider: str | None
+    model: str | None
+    cached: bool = Field(description="True when this message was already translated; no model call was made")
+
+
 class CaseStatusResponse(BaseModel):
     case_id: str
     transaction_id: str

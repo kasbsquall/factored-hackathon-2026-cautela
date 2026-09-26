@@ -70,6 +70,7 @@ git-ignored, and loaded with `CAUTELA_SEED_FILE`; `api.seed` refuses to write it
 | `POST /conversations/{id}/recognize` | Bearer, rate limited | Answer "do you recognize this charge?" by `recognition_id` |
 | `POST /conversations/{id}/confirm` | Bearer, rate limited | Accept or decline the pending action by `confirmation_id` |
 | `GET /conversations/{id}` | Bearer | Transcript, stage, options, pending recognition question and confirmation |
+| `POST /conversations/{id}/translate` | Bearer, rate limited | English machine translation of one message of that conversation, for reviewers |
 | `GET /cases/{case_id}` | Bearer | Case status through `get_case_status` (ownership checked) |
 | `GET /console/handoffs` | `X-Console-Key` | Handoff queue for the human-agent console, newest first |
 | `GET /console/handoffs/{handoff_id}` | `X-Console-Key` | One handoff (schema: `docs/schemas/handoff.schema.json`) |
@@ -98,6 +99,16 @@ ranker, never from model text (`agent/orchestrator/evidence.py`):
 - `claim_window`: the window rule id and the deadline the policy engine computed from the charge date (also on the
   `case`).
 
+`POST /conversations/{id}/translate {"role": "customer" | "assistant", "text": "..."}` is for hackathon reviewers
+who read English; the conversation itself stays in Spanish or Portuguese. The text must be part of a transcript line
+of that role in the caller's own conversation (404 `not_found` otherwise), so the route is no general translator.
+It goes through the LLM port like every other model call: PII is masked before the adapter sees the text (`masked`
+says whether masking changed it), usage and cost are recorded, the audit entry `llm.translate` carries no text, and
+the daily cap of `agent/llm/budget.py` applies when the adapter is wrapped (as `deploy/serve.py` does). Each message
+is translated once per conversation and then served from an in-memory cache (`cached: true`, 2000 entries, oldest
+dropped). Without a model (`LLM_PROVIDER` unset or `fake`), with the daily cap reached or when the provider fails, it
+answers 503 `translation_unavailable`; a message already in the cache is still served.
+
 `POST /auth/verify` returns `expires_in` (seconds) next to `expires_at`, so a client does not depend on its clock
 agreeing with the service clock.
 
@@ -107,6 +118,7 @@ Every error is `{"error": {"code", "message", "trace_id", "fields"}}` with a sta
 `session_expired`, `session_revoked` (401), `otp_invalid`, `otp_expired`, `otp_locked` (401),
 `console_forbidden` (403), `not_found`, `conversation_not_found` (404), `no_pending_confirmation`,
 `no_pending_recognition` (409),
+`translation_unavailable` (503, translate route only),
 `validation_error` (422, with the invalid field paths and never the submitted values), `rate_limited` (429) and
 `internal_error` (500, logged server side with its type only in the response). Another customer's conversation or
 case answers 404, the same as a missing one.

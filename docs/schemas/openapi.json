@@ -1374,6 +1374,104 @@
         "title": "TransferReason",
         "type": "object"
       },
+      "TranslateRequest": {
+        "additionalProperties": false,
+        "description": "One message of the conversation, as the transcript shows it (a part of it is accepted, since clients drop\nthe numbered option lines). Text that is not in the conversation answers 404, so this is no free translator.",
+        "properties": {
+          "role": {
+            "enum": [
+              "customer",
+              "assistant"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "text"
+        ],
+        "title": "TranslateRequest",
+        "type": "object"
+      },
+      "TranslationResponse": {
+        "description": "Machine translation for reviewers who read English; the conversation itself stays in its language.",
+        "properties": {
+          "cached": {
+            "description": "True when this message was already translated; no model call was made",
+            "title": "Cached",
+            "type": "boolean"
+          },
+          "machine_translation": {
+            "const": true,
+            "title": "Machine Translation",
+            "type": "boolean"
+          },
+          "masked": {
+            "description": "True when PII masking changed the text sent to the model",
+            "title": "Masked",
+            "type": "boolean"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
+          },
+          "source_language": {
+            "description": "The conversation language",
+            "enum": [
+              "es",
+              "pt"
+            ],
+            "title": "Source Language",
+            "type": "string"
+          },
+          "target_language": {
+            "const": "en",
+            "title": "Target Language",
+            "type": "string"
+          },
+          "translation": {
+            "title": "Translation",
+            "type": "string"
+          }
+        },
+        "required": [
+          "translation",
+          "source_language",
+          "target_language",
+          "machine_translation",
+          "masked",
+          "provider",
+          "model",
+          "cached"
+        ],
+        "title": "TranslationResponse",
+        "type": "object"
+      },
       "TurnRequest": {
         "additionalProperties": false,
         "properties": {
@@ -2931,6 +3029,134 @@
           }
         ],
         "summary": "Recognize",
+        "tags": [
+          "conversation"
+        ]
+      }
+    },
+    "/conversations/{conversation_id}/translate": {
+      "post": {
+        "description": "English machine translation of one message of this conversation, for reviewers who read English.",
+        "operationId": "translate_conversations__conversation_id__translate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TranslateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Translate",
         "tags": [
           "conversation"
         ]

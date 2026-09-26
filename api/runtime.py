@@ -1,4 +1,5 @@
-"""Process-wide state behind the API: the service stack, the orchestrator, the handoff queue, the demo outbox.
+"""Process-wide state behind the API: the service stack, the orchestrator, the handoff queue, the demo outbox,
+the translation cache.
 
 Every call into the orchestrator or the service runs under one lock: the in-memory stores (sessions, replay ids,
 conversations) are single-process by design, which is a documented capacity limit, not a hidden one.
@@ -11,6 +12,7 @@ import logging
 import os
 import secrets
 import threading
+from collections import OrderedDict
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -27,6 +29,7 @@ from api.settings import ROOT, ApiSettings
 
 log = logging.getLogger("cautela.api")
 DEMO_CODE_TTL_S = 300
+TRANSLATION_CACHE_MAX = 2000
 
 
 @dataclass
@@ -54,6 +57,7 @@ class Runtime:
         self.orchestrator = Orchestrator(self.stack.service, self.llm_choice.llm, disposition or load_default(),
                                          handoff_sink=self._on_handoff)
         self.demo_codes: dict[str, tuple[str, datetime]] = {}
+        self.translations: OrderedDict[tuple[str, str, str], dict[str, Any]] = OrderedDict()
         self.console_key = settings.console_key or (self._demo_console_key() if settings.demo_mode else None)
         self.identities = self._load_identities() if settings.demo_mode else []
 
@@ -70,6 +74,13 @@ class Runtime:
 
     def handoff(self, handoff_id: str) -> QueueItem | None:
         return next((i for i in self.queue if i.handoff["handoff_id"] == handoff_id), None)
+
+    # ---- translation cache ---------------------------------------------------------------------------------
+    def remember_translation(self, key: tuple[str, str, str], value: dict[str, Any]) -> None:
+        """Keep a translation so the same message never costs twice; the oldest entry goes past the bound."""
+        self.translations[key] = value
+        while len(self.translations) > TRANSLATION_CACHE_MAX:
+            self.translations.popitem(last=False)
 
     # ---- demo helpers -------------------------------------------------------------------------------------
     def start_login(self, document_number: str):

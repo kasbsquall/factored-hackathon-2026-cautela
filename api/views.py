@@ -6,11 +6,15 @@ ApiError class it is given, so error codes stay stable and no internal detail re
 
 from __future__ import annotations
 
+import hashlib
 import secrets
 from typing import Any
 
+from agent.llm import LLMUnavailable
 from agent.orchestrator import TurnResult
 from agent.orchestrator.core import confirmation_view, recognition_view
+from agent.security.audit import new_trace_id
+from agent.security.pii import mask_text
 from agent.security.session import AuthError
 from api.runtime import QueueItem, Runtime
 
@@ -78,6 +82,43 @@ def conversation(runtime: Runtime, token: str, conversation_id: str, error: type
             "confirmation": confirmation_view(state),
             "case_id": state.case_id, "handoff_id": (state.handoff or {}).get("handoff_id"),
         }
+
+
+def translate(runtime: Runtime, token: str, conversation_id: str, body: Any, error: type) -> dict[str, Any]:
+    """English rendering of one message of the caller's own conversation, for reviewers.
+
+    The text must be part of a transcript line of that role, so the route cannot translate arbitrary input. The
+    model call goes through the LLM port (masking, usage, audit without the text, and the daily budget when the
+    adapter is wrapped) and runs under the runtime lock like a turn's calls, because the port writes to the shared
+    audit chain. A cached message answers without the model, even when no model is configured.
+    """
+    with runtime.lock:
+        try:
+            session = runtime.service.identity.validate(token)
+        except AuthError as exc:
+            raise error(401, exc.code) from None
+        state = runtime.orchestrator.store.get(conversation_id, session.customer_id)
+        if state is None:
+            raise error(404, "conversation_not_found")
+        if not any(role == body.role and body.text in line for role, line in state.transcript):
+            raise error(404, "not_found")
+        key = (conversation_id, body.role, hashlib.sha256(body.text.encode("utf-8")).hexdigest())
+        if key in runtime.translations:
+            return {**runtime.translations[key], "cached": True}
+        llm, names, trace_id = runtime.llm_choice.llm, runtime.service.customer_names(session), new_trace_id()
+        if llm is None:
+            raise error(503, "translation_unavailable")
+        try:
+            text = llm.translate(body.text, state.language, known_names=names, trace_id=trace_id)
+        except LLMUnavailable:  # provider failure or daily budget reached (BudgetExceeded arrives wrapped)
+            raise error(503, "translation_unavailable", trace_id) from None
+        if not text:
+            raise error(503, "translation_unavailable", trace_id)
+        result = {"translation": text, "source_language": state.language, "target_language": "en",
+                  "machine_translation": True, "masked": mask_text(body.text, names) != body.text,
+                  "provider": runtime.llm_choice.provider, "model": runtime.llm_choice.model}
+        runtime.remember_translation(key, result)
+    return {**result, "cached": False}
 
 
 def case_status(runtime: Runtime, token: str, case_id: str, error: type) -> dict[str, Any]:

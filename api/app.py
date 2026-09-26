@@ -29,8 +29,8 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from api import views
 from api.models import (CaseStatusResponse, ChallengeRequest, ChallengeResponse, ConfirmRequest, ConversationAudit,
                         ConversationView, DemoIdentity, ErrorResponse, HandoffQueueItem, HealthResponse,
-                        OutboxResponse, RecognizeRequest, SessionResponse, TraceView, TurnRequest, TurnResponse,
-                        VerifyRequest)
+                        OutboxResponse, RecognizeRequest, SessionResponse, TraceView, TranslateRequest,
+                        TranslationResponse, TurnRequest, TurnResponse, VerifyRequest)
 from api.ratelimit import RateLimiter
 from api.runtime import Runtime
 from api.settings import ApiSettings
@@ -46,7 +46,8 @@ MESSAGES = {"session_invalid": "Session is not valid.", "session_expired": "Sess
             "There is no pending confirmation with that id.", "no_pending_recognition":
             "There is no pending recognition question with that id.", "not_found": "Not found.",
             "rate_limited": "Too many requests; try again later.", "console_forbidden": "Console key required.",
-            "demo_disabled": "Not available.", "validation_error": "Invalid request."}
+            "demo_disabled": "Not available.", "validation_error": "Invalid request.",
+            "translation_unavailable": "Translation is not available right now."}
 
 
 class ApiError(HTTPException):
@@ -184,6 +185,13 @@ def create_app(runtime: Runtime | None = None, settings: ApiSettings | None = No
              responses=ERRORS, dependencies=[Depends(limited("turn"))])
     def conversation(conversation_id: str, request: Request, session: Auth) -> Any:
         return views.conversation(rt(request), session, conversation_id, ApiError)
+
+    @app.post("/conversations/{conversation_id}/translate", response_model=TranslationResponse,
+              tags=["conversation"], responses={**ERRORS, 503: {"model": ErrorResponse}},
+              dependencies=[Depends(limited("turn"))])
+    def translate(conversation_id: str, body: TranslateRequest, request: Request, session: Auth) -> Any:
+        """English machine translation of one message of this conversation, for reviewers who read English."""
+        return views.translate(rt(request), session, conversation_id, body, ApiError)
 
     @app.get("/cases/{case_id}", response_model=CaseStatusResponse, tags=["conversation"], responses=ERRORS,
              dependencies=[Depends(limited("turn"))])
