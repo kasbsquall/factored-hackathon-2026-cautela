@@ -228,6 +228,7 @@ still need to be added to the repository's `.env.example`.
 | Session gate | `IdentityService.validate`; an expired, revoked or forged token stops the turn before any step | `core.py` |
 | Understand | Injection markers first (deterministic, SYN-SEC-001). Then `MaskedLLM.extract` into a `DisputeIntent` validated by JSON Schema and pydantic; any value the message does not state (a record id, an amount, a date, a currency, a merchant) is dropped and the dropped fields are recorded. On a model failure or invalid output, the `ml.features.parse` parser plus explicit date, currency-code and record-id patterns; the reason is in the trail. Parser escalation signals (a person, an out-of-scope topic) apply even when the model disagrees | `intent.py` |
 | Decide | `list_recent_transactions` (90 days); a charge that fits every cue and moved no money goes straight to policy (see below); otherwise the pool feeds the learned disposition model from `ml/` (resolve, clarify, escalate); without its git-ignored artifacts the labeled rule baseline runs. For the chosen charge, `get_dispute_policy` gives the deterministic decision and `narrow()` applies the proposal | `disposition.py`, `actions.py` |
+| Recognize | When policy allows a dispute, the customer first sees the charge as the tools read it (date, amount, merchant, category, channel, city, card last 4) with the match reasons that fired, and answers whether they recognize it. "I recognize it" ends in stage `recognized`: audited (`orchestrator.recognize.answer`), nothing written, no token issued. "I don't" issues the confirmation | `actions.py`, `evidence.py` |
 | Act | `request_confirmation`; the token stays in server-side state and the customer answers by confirmation id | `actions.py` |
 | Verify | After the write, `get_case_status` (or the card status in `get_customer_profile`) is read back; success is reported only if it matches | `actions.py` |
 | Escalate | Handoff from tool-read facts with sources, actions with verified status, rule citations as evidence, open questions, reason code and rule ids; validated against the schema | `handoffs.py` |
@@ -247,11 +248,12 @@ uv run python -m agent.demo ambiguous --lang pt
 LLM_PROVIDER=ollama LLM_MODEL=qwen2.5:7b-instruct uv run python -m agent.demo normal
 ```
 
-Scenarios: `normal`, `ambiguous`, `human`, `unsupported`, `declined`, `expired`, `unauthorized`, `injection`,
-`tool_failure`, `bad_data`. The demo reads `LLM_*` from the process environment only (not `.env`). Tests:
+Scenarios: `normal`, `recognized` (the customer recognizes the charge after seeing its evidence), `ambiguous`,
+`human`, `unsupported`, `declined`, `expired`, `unauthorized`, `injection`, `tool_failure`, `bad_data`. The demo reads `LLM_*` from the process environment only (not `.env`). Tests:
 `tests/orchestrator/` (the three required cases in both languages, the 24 adversarial cases end to end with and
-without a compromised model, failure injection, handoff schema, narrowing, and that no confirmation token reaches
-a prompt, reply, trail or audit record). The HTTP layer is in `api/` (see `api/README.md`).
+without a compromised model, failure injection, handoff schema, narrowing, that no confirmation token reaches
+a prompt, reply, trail or audit record, and in `test_evidence.py` that every charge field shown equals the tool
+read and every match reason is a feature that fired). The HTTP layer is in `api/` (see `api/README.md`).
 
 Known behavior worth reading before a demo: the learned disposition was trained on pools with a median of 4
 candidates, while fixture customers have 16 to 78 transactions in 90 days, so it asks more often than on its test

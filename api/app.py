@@ -5,8 +5,9 @@
 
 Auth: POST /auth/challenge with a document number starts a login; the one-time code goes to the mock channel
 (in demo mode, readable at GET /demo/outbox/{challenge_id}); POST /auth/verify returns a session token for
-'Authorization: Bearer'. Conversation: POST /conversations/turn, then POST /conversations/{id}/confirm with the
-confirmation id when the reply asks for one. The human-agent console reads /console/* with 'X-Console-Key'.
+'Authorization: Bearer'. Conversation: POST /conversations/turn; when a turn carries `recognition`, POST
+/conversations/{id}/recognize with the customer's answer; when it carries `confirmation`, POST
+/conversations/{id}/confirm with the confirmation id. The human-agent console reads /console/* with 'X-Console-Key'.
 
 Errors always have the shape {"error": {"code", "message", "trace_id", "fields"}} and never include stack traces,
 SQL, file paths or the request body.
@@ -28,7 +29,8 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from api import views
 from api.models import (CaseStatusResponse, ChallengeRequest, ChallengeResponse, ConfirmRequest, ConversationAudit,
                         ConversationView, DemoIdentity, ErrorResponse, HandoffQueueItem, HealthResponse,
-                        OutboxResponse, SessionResponse, TraceView, TurnRequest, TurnResponse, VerifyRequest)
+                        OutboxResponse, RecognizeRequest, SessionResponse, TraceView, TurnRequest, TurnResponse,
+                        VerifyRequest)
 from api.ratelimit import RateLimiter
 from api.runtime import Runtime
 from api.settings import ApiSettings
@@ -41,7 +43,8 @@ MESSAGES = {"session_invalid": "Session is not valid.", "session_expired": "Sess
             "session_revoked": "Session was closed.", "otp_invalid": "The code is not valid.",
             "otp_expired": "The code expired; start again.", "otp_locked": "Too many attempts; start again.",
             "conversation_not_found": "Conversation not found.", "no_pending_confirmation":
-            "There is no pending confirmation with that id.", "not_found": "Not found.",
+            "There is no pending confirmation with that id.", "no_pending_recognition":
+            "There is no pending recognition question with that id.", "not_found": "Not found.",
             "rate_limited": "Too many requests; try again later.", "console_forbidden": "Console key required.",
             "demo_disabled": "Not available.", "validation_error": "Invalid request."}
 
@@ -167,6 +170,14 @@ def create_app(runtime: Runtime | None = None, settings: ApiSettings | None = No
         r = rt(request)
         with r.lock:
             result = r.orchestrator.confirm(session, conversation_id, body.confirmation_id, body.accept)
+        return views.turn_response(result, ApiError)
+
+    @app.post("/conversations/{conversation_id}/recognize", response_model=TurnResponse, tags=["conversation"],
+              responses=ERRORS, dependencies=[Depends(limited("turn"))])
+    def recognize(conversation_id: str, body: RecognizeRequest, request: Request, session: Auth) -> Any:
+        r = rt(request)
+        with r.lock:
+            result = r.orchestrator.recognize(session, conversation_id, body.recognition_id, body.recognized)
         return views.turn_response(result, ApiError)
 
     @app.get("/conversations/{conversation_id}", response_model=ConversationView, tags=["conversation"],

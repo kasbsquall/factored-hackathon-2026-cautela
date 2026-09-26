@@ -89,6 +89,32 @@
         ],
         "title": "Merchant Name"
       },
+      "merchant_category": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "MCC code as delivered (ISO 18245), e.g. 5411",
+        "title": "Merchant Category"
+      },
+      "transaction_category": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Food, Transport, Services, Entertainment, Health or Other",
+        "title": "Transaction Category"
+      },
       "channel": {
         "anyOf": [
           {

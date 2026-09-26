@@ -25,8 +25,8 @@ from agent.orchestrator import Orchestrator, RuleDisposition, TurnResult, build_
 from agent.orchestrator.wiring import Stack, build_stack, session_secret
 
 WAREHOUSE = Path(os.environ.get("CAUTELA_WAREHOUSE", "data/warehouse.duckdb"))
-SCENARIOS = ("normal", "ambiguous", "human", "unsupported", "declined", "expired", "unauthorized", "injection",
-             "tool_failure", "bad_data")
+SCENARIOS = ("normal", "recognized", "ambiguous", "human", "unsupported", "declined", "expired", "unauthorized",
+             "injection", "tool_failure", "bad_data")
 TEXT = {
     "unsupported": {"es": "Quiero que me aumenten el cupo de mi tarjeta de crédito.",
                     "pt": "Quero aumentar o limite do cartão de crédito."},
@@ -61,6 +61,20 @@ class Demo:
         self.show(result)
         return result
 
+    def recognize(self, token: str, result: TurnResult, recognized: bool = False) -> TurnResult:
+        answer = "I recognize it" if recognized else "I do not recognize it"
+        self.out(f"\ncustomer> [sees the charge evidence, presses '{answer}': {result.recognition['label']}]")
+        after = self.orchestrator.recognize(token, result.conversation_id, result.recognition["recognition_id"],
+                                            recognized)
+        self.show(after)
+        return after
+
+    def through(self, token: str, result: TurnResult) -> TurnResult:
+        """Answer 'I do not recognize it' when asked, then confirm when a confirmation is pending."""
+        if result.recognition:
+            result = self.recognize(token, result)
+        return self.confirm(token, result) if result.confirmation else result
+
     def confirm(self, token: str, result: TurnResult, accept: bool = True) -> TurnResult:
         self.out(f"\ncustomer> [presses {'confirm' if accept else 'cancel'}: {result.confirmation['label']}]")
         after = self.orchestrator.confirm(token, result.conversation_id, result.confirmation["confirmation_id"],
@@ -70,6 +84,12 @@ class Demo:
 
     def show(self, r: TurnResult) -> None:
         self.out(f"cautela> {r.reply}" if r.reply else f"cautela> (error: {r.error})")
+        for option in r.options:
+            codes = ", ".join(x["code"] for x in option.reasons) or "no reason fired"
+            self.out(f"   option {option.index}) {option.label}  [{codes}]")
+        if r.recognition:
+            charge = {k: v for k, v in r.recognition["charge"].items() if v is not None}
+            self.out("   evidence " + json.dumps(charge, ensure_ascii=False))
         for step in r.trail:
             detail = {k: v for k, v in step.detail.items() if v not in (None, [], {})}
             rules = f" rules={','.join(step.rule_ids)}" if step.rule_ids else ""
@@ -88,17 +108,22 @@ class Demo:
 def run_normal(d: Demo) -> None:
     case = d.cases["normal"]
     token = d.login(case)
+    d.through(token, d.say(token, case.opener(d.lang)))
+
+
+def run_recognized(d: Demo) -> None:
+    case = d.cases["normal"]
+    token = d.login(case)
     r = d.say(token, case.opener(d.lang))
-    if r.confirmation:
-        d.confirm(token, r)
+    if r.recognition:
+        d.recognize(token, r, recognized=True)
 
 
 def run_human(d: Demo) -> None:
     case = d.cases["human"]
     token = d.login(case)
     r = d.say(token, case.opener(d.lang))
-    if r.confirmation:
-        d.confirm(token, r)
+    d.through(token, r)
 
 
 def run_ambiguous(d: Demo) -> None:
@@ -112,8 +137,7 @@ def run_ambiguous(d: Demo) -> None:
         text = TEXT["pick"][d.lang].format(n=target) if target else \
             TEXT["none"][d.lang].format(amount=round(float(case.transaction["amount"])))
         r = d.say(token, text, r.conversation_id)
-    if r.confirmation:
-        d.confirm(token, r)
+    d.through(token, r)
 
 
 def run_unsupported(d: Demo) -> None:
@@ -129,6 +153,8 @@ def run_expired(d: Demo) -> None:
     case = d.cases["normal"]
     token = d.login(case)
     r = d.say(token, case.opener(d.lang))
+    if r.recognition:
+        r = d.recognize(token, r)
     d.out("\n   ...the customer leaves for 16 minutes (session TTL is 15)")
     d.clock.advance(minutes=16)
     late = d.confirm(token, r)
@@ -156,8 +182,7 @@ def run_tool_failure(d: Demo) -> None:
     r = d.say(token, case.opener(d.lang))
     d.out("\n   ...failure injection: every write to the case store fails (bounded retries: 3 attempts)")
     d.stack.faults.set("case_store.write", "error")
-    if r.confirmation:
-        d.confirm(token, r)
+    d.through(token, r)
     d.stack.faults.clear()
 
 
@@ -167,8 +192,7 @@ def run_bad_data(d: Demo) -> None:
     r = d.say(token, TEXT["no_cues"][d.lang])
     r = d.say(token, TEXT["bad_ref"][d.lang], r.conversation_id)
     r = d.say(token, case.opener(d.lang), r.conversation_id)
-    if r.confirmation:
-        d.confirm(token, r)
+    d.through(token, r)
 
 
 RUNNERS = {name: globals()[f"run_{name}"] for name in SCENARIOS}

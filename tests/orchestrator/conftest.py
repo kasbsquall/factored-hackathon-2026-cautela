@@ -90,3 +90,10 @@ def case_rows(rig: Rig, customer_id: str) -> int:
 
 def steps(result) -> list[str]:
     return [s.step for s in result.trail]
+
+
+def not_recognized(orch: Orchestrator, token: str, result):
+    """Answer the "do you recognize it?" step with "no", which is what issues the dispute confirmation."""
+    assert result.stage == "awaiting_recognition" and result.recognition, (result.stage, result.reply)
+    assert result.confirmation is None, "no confirmation exists before the customer answers"
+    return orch.recognize(token, result.conversation_id, result.recognition["recognition_id"], recognized=False)

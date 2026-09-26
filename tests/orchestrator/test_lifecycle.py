@@ -6,7 +6,7 @@ from __future__ import annotations
 import pytest
 
 from agent.handoff import validate_handoff
-from tests.orchestrator.conftest import case_rows, steps
+from tests.orchestrator.conftest import case_rows, not_recognized, steps
 
 LANGS = ["es", "pt"]
 
@@ -15,13 +15,16 @@ LANGS = ["es", "pt"]
 def test_normal_case_is_resolved_and_verified(rig, orch, cases, login, lang):
     case = cases["normal"]
     token = login(case)
-    first = orch.turn(token, case.opener(lang), language=lang)
+    asked = orch.turn(token, case.opener(lang), language=lang)
+    assert asked.stage == "awaiting_recognition" and asked.language == lang
+    assert {"gate", "understand", "decide.disposition", "decide.policy", "recognize.request"} <= set(steps(asked))
+    policy = next(s for s in asked.trail if s.step == "decide.policy")
+    assert "MX-WINDOW-001" in policy.rule_ids and "SYN-CONFIRM-001" in policy.rule_ids
+    first = not_recognized(orch, token, asked)
     assert first.stage == "awaiting_confirmation" and first.language == lang
     assert first.confirmation and "token" not in first.confirmation
     assert case_rows(rig, case.customer_id) == 0, "nothing is written before the customer confirms"
-    assert {"gate", "understand", "decide.disposition", "decide.policy", "confirm.request"} <= set(steps(first))
-    policy = next(s for s in first.trail if s.step == "decide.policy")
-    assert "MX-WINDOW-001" in policy.rule_ids and "SYN-CONFIRM-001" in policy.rule_ids
+    assert {"recognize.answer", "confirm.request"} <= set(steps(first))
 
     done = orch.confirm(token, first.conversation_id, first.confirmation["confirmation_id"])
     assert done.stage == "resolved" and done.handoff is None
@@ -48,7 +51,7 @@ def test_ambiguous_case_asks_then_carries_state(rig, orch, cases, login, lang):
     chosen = first.options[1]
     state = orch.store.get(first.conversation_id, case.customer_id)
     assert state.transaction_id == chosen.record_id, "the pick resolves against the options of the earlier turn"
-    assert second.stage in {"awaiting_confirmation", "handed_off", "abstained"}
+    assert second.stage in {"awaiting_recognition", "handed_off", "abstained"}
     assert state.statements == [case.opener(lang)], "the customer did not have to repeat the description"
 
 
@@ -74,7 +77,7 @@ def test_declined_charge_is_explained_not_disputed(rig, orch, cases, login):
 def test_human_required_case_registers_for_review_and_hands_off(rig, orch, cases, login, lang):
     case = cases["human"]
     token = login(case)
-    first = orch.turn(token, case.opener(lang), language=lang)
+    first = not_recognized(orch, token, orch.turn(token, case.opener(lang), language=lang))
     assert first.stage == "awaiting_confirmation" and first.confirmation["review"] is True
     done = orch.confirm(token, first.conversation_id, first.confirmation["confirmation_id"])
     assert done.stage == "handed_off"
@@ -118,7 +121,7 @@ def test_amount_word_then_date_are_merged_across_turns(orch, cases, login):
 def test_bad_data_charge_goes_to_review_under_syn_data_001(orch, cases, login):
     case = cases["bad_data"]
     token = login(case)
-    first = orch.turn(token, case.opener("es"), language="es")
+    first = not_recognized(orch, token, orch.turn(token, case.opener("es"), language="es"))
     done = orch.confirm(token, first.conversation_id, first.confirmation["confirmation_id"])
     assert done.handoff["transfer_reason"]["code"] == "policy_requires_review"
     assert "SYN-DATA-001" in done.handoff["transfer_reason"]["rule_ids"]
@@ -139,7 +142,7 @@ def test_clarification_is_bounded(orch, cases, login):
 def test_customer_can_decline_and_nothing_is_written(rig, orch, cases, login):
     case = cases["normal"]
     token = login(case)
-    first = orch.turn(token, case.opener("es"), language="es")
+    first = not_recognized(orch, token, orch.turn(token, case.opener("es"), language="es"))
     done = orch.confirm(token, first.conversation_id, first.confirmation["confirmation_id"], accept=False)
     assert done.stage == "closed" and case_rows(rig, case.customer_id) == 0
     again = orch.turn(token, "Hola otra vez", first.conversation_id)
@@ -149,7 +152,7 @@ def test_customer_can_decline_and_nothing_is_written(rig, orch, cases, login):
 def test_message_while_confirmation_is_pending(orch, cases, login):
     case = cases["normal"]
     token = login(case)
-    first = orch.turn(token, case.opener("es"), language="es")
+    first = not_recognized(orch, token, orch.turn(token, case.opener("es"), language="es"))
     reminder = orch.turn(token, "¿Sigues ahí?", first.conversation_id)
     assert reminder.stage == "awaiting_confirmation" and reminder.confirmation is not None
     human = orch.turn(token, "Quiero hablar con una persona", first.conversation_id)
@@ -161,7 +164,7 @@ def test_message_while_confirmation_is_pending(orch, cases, login):
 def test_expired_session_requires_login_and_resumes_without_repeating(rig, orch, cases, login):
     case = cases["normal"]
     token = login(case)
-    first = orch.turn(token, case.opener("es"), language="es")
+    first = not_recognized(orch, token, orch.turn(token, case.opener("es"), language="es"))
     rig.clock.advance(minutes=16)
     late = orch.confirm(token, first.conversation_id, first.confirmation["confirmation_id"])
     assert late.stage == "auth_required" and late.error == "session_expired"
@@ -182,10 +185,14 @@ def test_invalid_tokens_never_reach_a_step(rig, orch, token):
 
 
 def test_conversation_of_another_customer_is_not_found(orch, cases, login):
-    first = orch.turn(login(cases["normal"]), cases["normal"].opener("es"), language="es")
+    owner = login(cases["normal"])
+    asked = orch.turn(owner, cases["normal"].opener("es"), language="es")
     other = login(cases["human"])
-    result = orch.turn(other, "continúa", first.conversation_id)
+    result = orch.turn(other, "continúa", asked.conversation_id)
     assert result.error == "conversation_not_found" and result.reply == ""
+    answer = orch.recognize(other, asked.conversation_id, asked.recognition["recognition_id"], recognized=True)
+    assert answer.error == "conversation_not_found"
+    first = not_recognized(orch, owner, asked)
     confirm = orch.confirm(other, first.conversation_id, first.confirmation["confirmation_id"])
     assert confirm.error == "conversation_not_found"
 

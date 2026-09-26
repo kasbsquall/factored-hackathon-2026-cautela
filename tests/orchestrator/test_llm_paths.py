@@ -8,7 +8,7 @@ import json
 import pytest
 
 from agent.orchestrator import replies
-from tests.orchestrator.conftest import ScriptedAdapter, extraction
+from tests.orchestrator.conftest import ScriptedAdapter, extraction, not_recognized
 
 
 def _understand(result):
@@ -42,7 +42,7 @@ def test_invalid_or_failed_extraction_falls_back_to_the_parser(make_orchestrator
     result = orch.turn(login(cases["normal"]), cases["normal"].opener("es"), language="es")
     step = _understand(result)
     assert step.outcome == "deterministic_parser" and step.detail["fallback_reason"] == reason
-    assert result.stage == "awaiting_confirmation", "the fallback still resolves a clear description"
+    assert result.stage == "awaiting_recognition", "the fallback still resolves a clear description"
 
 
 def test_record_reference_the_customer_did_not_write_is_dropped(make_orchestrator, cases, login, people):
@@ -69,7 +69,7 @@ def test_grounded_llm_reply_is_used_and_ungrounded_one_is_not(make_orchestrator,
     first = orch.turn(token, "No reconozco un cargo en mi cuenta.", language="es")
     assert first.reply_source == "llm" and first.reply == wording
     second = orch.turn(token, case.opener("es"), first.conversation_id)
-    assert second.reply_source == "template", "a confirmation reply must name the charge label"
+    assert second.reply_source == "template", "the recognition question must name the charge label"
     note = next(s for s in second.trail if s.step == "reply").detail["note"]
     assert note == "llm_reply_rejected:missing_required_mention"
 
@@ -91,7 +91,8 @@ def test_confirmation_token_never_reaches_a_prompt_reply_trail_or_audit(rig, mak
     adapter = ScriptedAdapter()
     orch = make_orchestrator(adapter)
     token = login(case)
-    first = orch.turn(token, case.opener("es"), language="es")
+    asked = orch.turn(token, case.opener("es"), language="es")
+    first = not_recognized(orch, token, asked)
     state = orch.store.get(first.conversation_id, case.customer_id)
     tokens = [state.pending.token]
     rig.clock.advance(minutes=16)  # expire, log in again: a second token is issued
@@ -102,7 +103,8 @@ def test_confirmation_token_never_reaches_a_prompt_reply_trail_or_audit(rig, mak
     assert done.stage == "resolved" and len(set(tokens)) == 2 and all(tokens)
     sent = adapter.everything_sent()
     assert adapter.received, "the model was called on every turn"
-    visible = json.dumps([r.reply for r in (first, reissued, done)] + [r.confirmation for r in (first, reissued)]
+    visible = json.dumps([r.reply for r in (asked, first, reissued, done)] + [asked.recognition]
+                         + [r.confirmation for r in (first, reissued)]
                          + [s.as_dict() for s in state.trail], default=str)
     audit = json.dumps([r.model_dump() for r in rig.audit.records()], default=str)
     for secret in tokens + [token, fresh]:
@@ -123,11 +125,15 @@ def test_reply_prompt_holds_only_the_facts_of_the_turn(make_orchestrator, cases,
     case = cases["normal"]
     adapter = ScriptedAdapter()
     orch = make_orchestrator(adapter)
-    orch.turn(login(case), case.opener("pt"), language="pt")
+    token = login(case)
+    not_recognized(orch, token, orch.turn(token, case.opener("pt"), language="pt"))
     reply_prompts = [p for p in adapter.received if p.json_schema is None]
     assert reply_prompts and all("Portuguese" in p.system for p in reply_prompts)
+    kinds = [json.loads(p.user)["message_kind"] for p in reply_prompts]
+    assert kinds == ["recognize_check", "confirm_open"]
     payload = json.loads(reply_prompts[-1].user)
-    assert payload["message_kind"] == "confirm_open" and payload["language"] == "pt"
+    assert payload["language"] == "pt"
+    assert "token" not in payload["facts"] and "confirmation_id" not in reply_prompts[-1].user
     assert case.customer_id not in reply_prompts[-1].user
 
 
@@ -173,9 +179,10 @@ def test_a_paraphrased_policy_reason_is_replaced_by_the_template(make_orchestrat
     """Seen with qwen2.5:7b: a synthetic-policy reason was reworded as 'pelo regulamento vigente'."""
     case = cases["human"]
     token = login(case)
-    first = make_orchestrator().turn(token, case.opener("pt"), language="pt")
-    label = first.confirmation["label"]
-    orch = make_orchestrator(ScriptedAdapter(replies=[f"Vou registrar {label}. Pelo regulamento vigente, uma pessoa "
-                                                      "vai analisar. Confirme no botão."]))
-    result = orch.turn(login(case), case.opener("pt"), language="pt")
+    label = make_orchestrator().turn(token, case.opener("pt"), language="pt").recognition["label"]
+    orch = make_orchestrator(ScriptedAdapter(replies=["", f"Vou registrar {label}. Pelo regulamento vigente, uma "
+                                                          "pessoa vai analisar. Confirme no botão."]))
+    fresh = login(case)
+    result = not_recognized(orch, fresh, orch.turn(fresh, case.opener("pt"), language="pt"))
+    assert result.stage == "awaiting_confirmation" and result.confirmation["review"] is True
     assert result.reply_source == "template" and "regulamento" not in result.reply

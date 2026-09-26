@@ -1,24 +1,28 @@
-"""Decide (policy part), act and verify.
+"""Decide (policy part), recognize, act and verify.
 
 Policy: the deterministic decision for the identified charge comes from get_dispute_policy (the same computation
 the guard enforces). The proposal (open a case) passes through narrow(), which can only remove actions or add
-escalation. Act: a write is prepared as a confirmation challenge; it runs only when the customer confirms, with
-the token held server side. Verify: after the write, the case (or card) is read back through a separate tool
-call, and success is reported only if the stored state matches what was requested.
+escalation. Recognize: before any dispute the customer sees the charge's verified merchant evidence and answers
+whether they recognize it; a recognized charge ends the conversation with no write. Act: a write is prepared as a
+confirmation challenge; it runs only when the customer confirms, with the token held server side. Verify: after
+the write, the case (or card) is read back through a separate tool call, and success is reported only if the
+stored state matches what was requested.
 """
 
 from __future__ import annotations
 
+import secrets
 import time
 from typing import Any
 
-from agent.orchestrator import replies
-from agent.orchestrator.state import Option, PendingConfirmation
+from agent.orchestrator import evidence, replies
+from agent.orchestrator.state import Option, PendingConfirmation, RecognitionCheck
 from agent.orchestrator.steps import StepsMixin, Turn, card_label, request_id, tx_label
 from agent.policy.engine import READ_ACTIONS, ModelProposal, PolicyDecision, narrow
 from agent.security.permissions import ConfirmationChallenge
 
 CARD_TYPES = frozenset({"Credit Card", "Debit Card"})
+SOURCE_REASON = {"customer_selection": "customer_selected", "customer_reference": "customer_reference"}
 
 
 class ActionsMixin(StepsMixin):
@@ -39,6 +43,9 @@ class ActionsMixin(StepsMixin):
         how = f"Charge identified by {source}" + (f", P(match) {confidence:.4f}" if confidence is not None else "")
         if how not in state.evidence:
             state.evidence.append(how)
+        reasons = list(state.reasons.get(transaction_id, []))
+        if source in SOURCE_REASON:
+            reasons.append(evidence.reason(SOURCE_REASON[source], state.language))
         policy = self._tool(turn, "get_dispute_policy", {"transaction_id": transaction_id})
         if not policy.ok:
             return self._tool_problem(turn, policy)
@@ -51,9 +58,7 @@ class ActionsMixin(StepsMixin):
                     "reasons": final.escalation_reasons, "rejected_proposals": narrowed.rejected,
                     "policy_version": final.policy_version}, final.rule_ids)
         if final.allows("open_dispute_case"):
-            args = {"transaction_id": transaction_id, "idempotency_key": f"{state.conversation_id}-{transaction_id}",
-                    "customer_statement": state.text[:1000]}
-            return self._request_confirmation(turn, "open_dispute_case", args, label, final, confidence)
+            return self._ask_recognition(turn, transaction_id, view, label, final, confidence, reasons)
         if final.must_escalate:
             return self._escalate(turn, final.primary_reason or "policy_requires_review", final.rule_ids,
                                   confidence=confidence)
@@ -70,6 +75,8 @@ class ActionsMixin(StepsMixin):
             if line not in state.evidence:
                 state.evidence.append(line)
         facts = decision.facts
+        if facts.get("window_deadline") and facts.get("window_rule"):
+            state.claim_window = {"rule_id": facts["window_rule"], "deadline": facts["window_deadline"]}
         if facts.get("window_deadline"):
             state.add_fact(f"Claim window {facts.get('window_rule')} ends {facts['window_deadline']} "
                            f"({facts.get('days_since_transaction')} days since the charge)", source)
@@ -77,9 +84,47 @@ class ActionsMixin(StepsMixin):
             usd = facts["amount_usd"]
             state.add_fact("USD amount unknown" if usd is None else f"USD amount {usd:.2f}", source)
 
+    # ---- recognize: merchant evidence before any dispute ------------------------------------------------
+    def _cards(self, turn: Turn) -> dict[str, dict[str, str]]:
+        """Card type and last 4 per product, read once per conversation from the masked profile."""
+        state = turn.state
+        if state.cards is None:
+            profile = self._tool(turn, "get_customer_profile", {})
+            state.cards = evidence.card_digits(profile.data["products"]) if profile.ok else {}
+        return state.cards
+
+    def _ask_recognition(self, turn: Turn, transaction_id: str, view: dict[str, Any], label: str,
+                         decision: PolicyDecision, confidence: float | None,
+                         reasons: list[dict[str, Any]]) -> replies.Reply:
+        """Show the charge as the tools read it and ask whether the customer recognizes it. Nothing is issued yet:
+        the confirmation token exists only after the customer says they do not recognize the charge."""
+        state = turn.state
+        charge = evidence.charge_details(view, self._cards(turn))
+        check = RecognitionCheck("rc_" + secrets.token_hex(8), transaction_id, label, charge, reasons, decision,
+                                 confidence)
+        state.recognition, state.stage = check, "awaiting_recognition"
+        self._step(turn, "recognize.request", "shown",
+                   {"recognition_id": check.recognition_id, "transaction_id": transaction_id,
+                    "reasons": [r["code"] for r in reasons],
+                    "fields": sorted(k for k, v in charge.items() if v is not None)})
+        return self._say(turn, "recognize_check", {"label": label}, (label,))
+
+    def _after_recognition(self, turn: Turn, check: RecognitionCheck, recognized: bool) -> replies.Reply:
+        state = turn.state
+        if recognized:  # resolved without a dispute: audited, nothing written
+            state.stage = "recognized"
+            return self._say(turn, "recognized", {"label": check.label}, (check.label,))
+        args = {"transaction_id": check.transaction_id,
+                "idempotency_key": f"{state.conversation_id}-{check.transaction_id}",
+                "customer_statement": state.text[:1000]}
+        return self._request_confirmation(turn, "open_dispute_case", args, check.label, check.decision,
+                                          check.confidence, charge=check.charge, reasons=check.reasons)
+
     # ---- act: confirmation first ------------------------------------------------------------------------
     def _request_confirmation(self, turn: Turn, tool: str, args: dict[str, Any], label: str,
-                              decision: PolicyDecision | None, confidence: float | None) -> replies.Reply:
+                              decision: PolicyDecision | None, confidence: float | None, *,
+                              charge: dict[str, Any] | None = None,
+                              reasons: list[dict[str, Any]] | None = None) -> replies.Reply:
         state = turn.state
         started = time.perf_counter()
         challenge = self.service.request_confirmation(turn.token, request_id(), tool, args, turn.trace_id)
@@ -90,7 +135,8 @@ class ActionsMixin(StepsMixin):
         reason = decision.primary_reason if decision and decision.must_escalate else None
         state.pending = PendingConfirmation(challenge.confirmation_id, tool, args, challenge.expires_at, label,
                                             bool(reason), reason, decision.rule_ids if decision else [],
-                                            confidence, token=challenge.token)
+                                            confidence, token=challenge.token, charge=charge,
+                                            reasons=list(reasons or []))
         state.stage = "awaiting_confirmation"
         self._step(turn, "confirm.request", "issued", {"tool": tool, "confirmation_id": challenge.confirmation_id,
                                                        "review": bool(reason)},
@@ -108,7 +154,7 @@ class ActionsMixin(StepsMixin):
         if not result.ok:
             if result.error and result.error.code == "confirmation_invalid":
                 return self._request_confirmation(turn, pending.tool, pending.args, pending.label, None,
-                                                  pending.confidence)
+                                                  pending.confidence, charge=pending.charge, reasons=pending.reasons)
             return self._tool_problem(turn, result, action=pending.tool)
         if pending.tool == "block_card":
             return self._verify_block(turn, pending, result.data)

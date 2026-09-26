@@ -116,6 +116,9 @@ class TransactionView(BaseModel):
     amount: float | None
     currency: str | None
     merchant_name: str | None
+    merchant_category: str | None = Field(None, description="MCC code as delivered (ISO 18245), e.g. 5411")
+    transaction_category: str | None = Field(None, description="Food, Transport, Services, Entertainment, Health "
+                                                               "or Other")
     channel: str | None
     transaction_type: str | None
     transaction_status: str | None

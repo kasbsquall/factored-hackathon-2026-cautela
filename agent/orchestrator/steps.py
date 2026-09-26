@@ -115,6 +115,7 @@ class StepsMixin:
                                      now=self.service.clock(), known_names=self._names(turn), topic=topic,
                                      confidence=confidence, extra_questions=questions)
         state.handoff, state.stage, state.options, state.pending = document, "handed_off", [], None
+        state.recognition = None
         self._step(turn, "escalate", reason_code, {"handoff_id": document["handoff_id"],
                                                    "facts": len(document["verified_facts"]),
                                                    "actions": len(document["actions_taken"])}, rule_ids, started)
@@ -156,7 +157,7 @@ class StepsMixin:
             run()
         except Exception as exc:  # noqa: BLE001 (any defect must end in a safe, audited state)
             log.error("orchestrator step failed: %s", type(exc).__name__, exc_info=exc)
-            turn.state.pending = None
+            turn.state.pending = turn.state.recognition = None
             self._step(turn, "error", type(exc).__name__)
             question = (f"Internal error ({type(exc).__name__}) during this turn; check trace {turn.trace_id} "
                         "for any write before contacting the customer.")

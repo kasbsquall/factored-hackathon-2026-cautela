@@ -29,7 +29,10 @@ outbox, which stand in for the customer's phone. Turn it off with `CAUTELA_DEMO_
 3. `GET /demo/outbox/{challenge_id}` returns the 6-digit code the mock channel delivered.
 4. `POST /auth/verify {"challenge_id": "...", "code": "..."}` returns `session_token`.
 5. `POST /conversations/turn {"message": "...", "language": "es"}` with `Authorization: Bearer <token>`.
-6. When the answer has `confirmation`, `POST /conversations/{id}/confirm {"confirmation_id": "..."}`.
+6. When the answer has `recognition` (the charge was identified and policy allows a dispute), show its `charge` and
+   `reasons` and `POST /conversations/{id}/recognize {"recognition_id": "...", "recognized": false}`; `true` ends the
+   conversation in stage `recognized` with no write.
+7. When the answer has `confirmation`, `POST /conversations/{id}/confirm {"confirmation_id": "..."}`.
 
 ### Demo logins
 
@@ -40,7 +43,7 @@ transaction (2026-05-31T12:00Z) and then runs in real time, so the static charge
 
 | Scenario | Document number | What happens |
 |---|---|---|
-| normal | 1418434291 | Charge under the review threshold: confirmation, case opened, read back, verified |
+| normal | 1418434291 | Charge under the review threshold: "do you recognize it?", confirmation, case opened, read back, verified |
 | human | 974594683 | Charge at or above USD 450: case registered for review, handoff `amount_above_threshold` (SYN-AMOUNT-001) |
 | ambiguous | 4593579348 | "A purchase last week": numbered options, the customer picks one, the flow continues |
 | bad_data | 7965114245 | No cues first (targeted question), then a charge with no USD amount: review under SYN-DATA-001 |
@@ -64,8 +67,9 @@ git-ignored, and loaded with `CAUTELA_SEED_FILE`; `api.seed` refuses to write it
 | `POST /auth/verify` | none, rate limited | Exchange challenge and code for a 15-minute session token |
 | `POST /auth/logout` | Bearer | Revoke the session |
 | `POST /conversations/turn` | Bearer, rate limited | One customer message; starts a conversation when `conversation_id` is absent |
+| `POST /conversations/{id}/recognize` | Bearer, rate limited | Answer "do you recognize this charge?" by `recognition_id` |
 | `POST /conversations/{id}/confirm` | Bearer, rate limited | Accept or decline the pending action by `confirmation_id` |
-| `GET /conversations/{id}` | Bearer | Transcript, stage, options, pending confirmation |
+| `GET /conversations/{id}` | Bearer | Transcript, stage, options, pending recognition question and confirmation |
 | `GET /cases/{case_id}` | Bearer | Case status through `get_case_status` (ownership checked) |
 | `GET /console/handoffs` | `X-Console-Key` | Handoff queue for the human-agent console, newest first |
 | `GET /console/handoffs/{handoff_id}` | `X-Console-Key` | One handoff (schema: `docs/schemas/handoff.schema.json`) |
@@ -75,16 +79,34 @@ git-ignored, and loaded with `CAUTELA_SEED_FILE`; `api.seed` refuses to write it
 The console key comes from `CAUTELA_CONSOLE_KEY`. In demo mode without it, the process generates one and writes it
 to `data/demo/console_key.txt` (git-ignored); the value is never logged.
 
-A turn response carries `stage` (`collecting`, `clarifying`, `awaiting_confirmation`, `resolved`, `handed_off`,
-`abstained`, `closed`), the `reply`, whether it came from the model or a template (`reply_source`), numbered
-`options` to answer with their number, the pending `confirmation` (id and label, never the token), the verified
-`case`, the `handoff_id` and `transfer_reason`, the decision `trail` of that turn and its LLM usage and cost.
+A turn response carries `stage` (`collecting`, `clarifying`, `awaiting_recognition`, `awaiting_confirmation`,
+`resolved`, `recognized`, `handed_off`, `abstained`, `closed`), the `reply`, whether it came from the model or a
+template (`reply_source`), numbered `options` to answer with their number, the pending `recognition` question, the
+pending `confirmation` (id, label and charge, never the token), the verified `case`, the `handoff_id` and
+`transfer_reason`, the decision `trail` of that turn and its LLM usage and cost.
+
+Options, the recognition question and the confirmation carry structured data built only from tool reads and the
+ranker, never from model text (`agent/orchestrator/evidence.py`):
+
+- `charge`: date, amount and currency, merchant name, category and MCC code, channel, city and country, card type
+  and last 4 digits when the charge moved a card (from the already masked profile), type and status.
+- `reasons`: match reason codes with a short Spanish or Portuguese label, one per pairwise ranker feature that fired
+  for that charge (`amount_exact`, `amount_close` with the percent, `date_same_day`, `date_within_days` or
+  `date_near` with the days, `date_in_range`, `merchant_named`, `type_match`, `channel_match`, `city_match`,
+  `only_fit` when it is the only charge of the 90-day window that fits every cue, plus `customer_selected` or
+  `customer_reference`). The trail step `decide.reasons` records the codes and the features behind them.
+- `claim_window`: the window rule id and the deadline the policy engine computed from the charge date (also on the
+  `case`).
+
+`POST /auth/verify` returns `expires_in` (seconds) next to `expires_at`, so a client does not depend on its clock
+agreeing with the service clock.
 
 ## Errors
 
 Every error is `{"error": {"code", "message", "trace_id", "fields"}}` with a stable code: `session_invalid`,
 `session_expired`, `session_revoked` (401), `otp_invalid`, `otp_expired`, `otp_locked` (401),
-`console_forbidden` (403), `not_found`, `conversation_not_found` (404), `no_pending_confirmation` (409),
+`console_forbidden` (403), `not_found`, `conversation_not_found` (404), `no_pending_confirmation`,
+`no_pending_recognition` (409),
 `validation_error` (422, with the invalid field paths and never the submitted values), `rate_limited` (429) and
 `internal_error` (500, logged server side with its type only in the response). Another customer's conversation or
 case answers 404, the same as a missing one.

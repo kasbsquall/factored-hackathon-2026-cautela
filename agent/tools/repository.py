@@ -36,9 +36,9 @@ PROFILE_COLUMNS = ("customer_id", "first_name", "last_name", "country", "state",
                    "registration_date")
 POLICY_COLUMNS = ("transaction_id", "customer_id", "transaction_date", "amount", "currency", "amount_usd", "channel",
                   "transaction_type", "transaction_status", "fraud_score", "is_fraud", "product_type")
-TX_COLUMNS = ("transaction_id", "transaction_date", "amount", "currency", "amount_usd", "merchant_name", "channel",
-              "transaction_type", "transaction_status", "product_id", "customer_id", "transaction_country",
-              "transaction_city", "fraud_score", "is_fraud")
+TX_COLUMNS = ("transaction_id", "transaction_date", "amount", "currency", "amount_usd", "merchant_name",
+              "merchant_category", "transaction_category", "channel", "transaction_type", "transaction_status",
+              "product_id", "customer_id", "transaction_country", "transaction_city", "fraud_score", "is_fraud")
 
 
 def _rows(cursor: duckdb.DuckDBPyConnection) -> list[dict[str, Any]]:

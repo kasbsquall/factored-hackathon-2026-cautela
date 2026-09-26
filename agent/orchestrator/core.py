@@ -1,11 +1,14 @@
-"""The request lifecycle: session gate -> understand -> decide -> act -> verify -> escalate.
+"""The request lifecycle: session gate -> understand -> decide -> recognize -> act -> verify -> escalate.
 
     orchestrator = Orchestrator(service, llm=None | MaskedLLM, disposition=load_default())
     result = orchestrator.turn(session_token, "No reconozco un cargo de 350 pesos del 27 de mayo")
+    result = orchestrator.recognize(session_token, result.conversation_id,
+                                    result.recognition["recognition_id"], recognized=False)
     result = orchestrator.confirm(session_token, result.conversation_id, result.confirmation["confirmation_id"])
 
 The model interprets (extract) and phrases (reply). Everything else is code: the session gate, ownership and
-confirmation checks (ToolService), the policy decision (rules.yaml), the verify read-back and the handoff. Each
+confirmation checks (ToolService), the policy decision (rules.yaml), the charge evidence and match reasons shown
+to the customer (evidence.py, tool fields and ranker features only), the verify read-back and the handoff. Each
 step appends to the decision trail and writes an audit record under the turn's trace id, with rule ids, tool
 calls, latency, and the LLM tokens and cost of the turn.
 """
@@ -19,8 +22,8 @@ from typing import Any
 from jsonschema import SchemaError
 
 from agent.llm.port import LanguageModel, LLMOutputError, LLMUnavailable
+from agent.orchestrator import evidence, replies
 from agent.orchestrator import intent as nlu
-from agent.orchestrator import replies
 from agent.orchestrator.actions import ActionsMixin
 from agent.orchestrator.disposition import DispositionModel, load_default, non_disputable_fit
 from agent.orchestrator.state import FINAL_STAGES, ConversationStore, Option, TrailStep
@@ -52,6 +55,7 @@ class TurnResult:
     error: str | None = None
     llm: dict[str, Any] = field(default_factory=dict)
     latency_ms: float = 0.0
+    recognition: dict[str, Any] | None = None
 
 
 class Orchestrator(ActionsMixin):
@@ -113,6 +117,28 @@ class Orchestrator(ActionsMixin):
         else:
             state.stage = "closed"
             self._say(turn, "declined")
+        return self._finish(turn)
+
+    def recognize(self, session_token: str, conversation_id: str, recognition_id: str,
+                  recognized: bool) -> TurnResult:
+        """The customer's answer to "do you recognize this charge?". Recognized: the conversation ends with no
+        dispute and no write. Not recognized: the dispute confirmation is issued."""
+        trace_id, started = new_trace_id(), time.perf_counter()
+        session = self._gate(session_token, trace_id)
+        if isinstance(session, TurnResult):
+            return session
+        state = self.store.get(conversation_id, session.customer_id)
+        if state is None:
+            return self._error(trace_id, "conversation_not_found", "es")
+        check = state.recognition
+        if check is None or check.recognition_id != recognition_id:
+            return self._error(trace_id, "no_pending_recognition", state.language, state.conversation_id)
+        turn = Turn(state, session_token, session, trace_id, started)
+        state.trace_ids.append(trace_id)
+        state.recognition = None
+        self._step(turn, "recognize.answer", "recognized" if recognized else "not_recognized",
+                   {"recognition_id": recognition_id, "transaction_id": check.transaction_id})
+        self._guarded(turn, lambda: self._after_recognition(turn, check, recognized))
         return self._finish(turn)
 
     # ---- gate --------------------------------------------------------------------------------------------
@@ -181,6 +207,10 @@ class Orchestrator(ActionsMixin):
             return
         if state.pending is not None:
             self._say(turn, "pending_confirmation", {"label": state.pending.label}, (state.pending.label,))
+            return
+        if state.recognition is not None:
+            label = state.recognition.label
+            self._say(turn, "pending_recognition", {"label": label}, (label,))
             return
         refs = [r for r in dict.fromkeys([*(filter(None, [found.record_ref])), *nlu.find_refs(message)])
                 if nlu.ref_kind(r) != "customer"]
@@ -257,6 +287,7 @@ class Orchestrator(ActionsMixin):
                    {"model": disposition.model, "confidence": disposition.confidence, "cues": sorted(cues),
                     "pool_size": len(pool), "probabilities": disposition.probabilities}, started=started)
         if disposition.decision == "resolve":
+            self._match_reasons(turn, pool, disposition.top_k[:1])
             self._act_on_transaction(turn, disposition.top_k[0], disposition.confidence, disposition.model)
             return
         if disposition.decision == "escalate" or state.clarify_rounds >= MAX_CLARIFY_ROUNDS:
@@ -266,12 +297,32 @@ class Orchestrator(ActionsMixin):
             self._escalate(turn, "low_confidence", [], confidence=disposition.confidence)
             return
         by_id = {tx["transaction_id"]: tx for tx in pool}
-        state.options = [Option(i + 1, "transaction", tid, tx_label(by_id[tid]))
-                         for i, tid in enumerate(disposition.top_k[:3]) if tid in by_id]
+        shown = [tid for tid in disposition.top_k[:3] if tid in by_id]
+        reasons, cards = self._match_reasons(turn, pool, shown), self._cards(turn)
+        state.options = [Option(i + 1, "transaction", tid, tx_label(by_id[tid]),
+                                evidence.charge_details(by_id[tid], cards), tuple(reasons.get(tid, [])))
+                         for i, tid in enumerate(shown)]
         state.clarify_rounds += 1
         state.stage = "clarifying"
         listing = "\n".join(f"{o.index}) {o.label}" for o in state.options)
         self._say(turn, "clarify_options", {"options": listing}, tuple(o.label for o in state.options))
+
+    def _match_reasons(self, turn: Turn, pool: list[dict[str, Any]],
+                       ids: list[str]) -> dict[str, list[dict[str, Any]]]:
+        """Why each charge matched, from the ranker features that fired (agent/orchestrator/evidence.py)."""
+        state, started = turn.state, time.perf_counter()
+        try:
+            found = evidence.match_reasons(state.text, self.service.clock().date(), state.slots.overrides(), pool,
+                                           ids, state.language, POOL_ARGS["window_days"])
+        except (KeyError, TypeError, ValueError) as exc:  # a charge the feature code cannot read: show no reasons
+            self._step(turn, "decide.reasons", "unavailable", {"error": type(exc).__name__}, started=started)
+            return {}
+        state.reasons.update(found)
+        self._step(turn, "decide.reasons", "computed",
+                   {"reasons": {tid: [r["code"] for r in rs] for tid, rs in found.items()},
+                    "features": sorted({evidence.FEATURE_OF[r["code"]] for rs in found.values() for r in rs})},
+                   started=started)
+        return found
 
     def _cues(self, state, pool: list[dict[str, Any]]) -> set[str]:
         slots = state.slots
@@ -311,13 +362,33 @@ class Orchestrator(ActionsMixin):
                                   args={"reply_source": reply.source, "llm_calls": llm["calls"],
                                         "llm_cost_usd": llm["cost_usd"], "llm_input_tokens": llm["input_tokens"],
                                         "llm_output_tokens": llm["output_tokens"]})
-        pending = state.pending
-        confirmation = None if pending is None else {
-            "confirmation_id": pending.confirmation_id, "tool": pending.tool, "label": pending.label,
-            "expires_at": pending.expires_at.isoformat(), "review": pending.must_escalate}
-        case = None if not state.case_id else {
-            "case_id": state.case_id,
-            "verified": any(a == "open_dispute_case" and s == "verified" for a, s, _ in state.actions)}
         return TurnResult(state.conversation_id, turn.trace_id, state.language, state.stage, reply.text,
-                          reply.source, list(state.options), confirmation, case, state.handoff, list(turn.steps),
-                          None, llm, round(latency, 1))
+                          reply.source, list(state.options), confirmation_view(state), case_view(state),
+                          state.handoff, list(turn.steps), None, llm, round(latency, 1), recognition_view(state))
+
+
+def confirmation_view(state) -> dict[str, Any] | None:
+    """The pending confirmation as the customer sees it: id, label and verified charge data, never the token."""
+    pending = state.pending
+    if pending is None:
+        return None
+    return {"confirmation_id": pending.confirmation_id, "tool": pending.tool, "label": pending.label,
+            "expires_at": pending.expires_at.isoformat(), "review": pending.must_escalate,
+            "charge": pending.charge, "reasons": list(pending.reasons),
+            "claim_window": state.claim_window if pending.tool == "open_dispute_case" else None}
+
+
+def recognition_view(state) -> dict[str, Any] | None:
+    check = state.recognition
+    if check is None:
+        return None
+    return {"recognition_id": check.recognition_id, "label": check.label, "charge": check.charge,
+            "reasons": list(check.reasons), "claim_window": state.claim_window}
+
+
+def case_view(state) -> dict[str, Any] | None:
+    if not state.case_id:
+        return None
+    return {"case_id": state.case_id,
+            "verified": any(a == "open_dispute_case" and s == "verified" for a, s, _ in state.actions),
+            "claim_window": state.claim_window}

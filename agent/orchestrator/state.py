@@ -14,19 +14,25 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Any, Literal
 
-Stage = Literal["collecting", "clarifying", "awaiting_confirmation", "resolved", "handed_off", "abstained",
-                "closed"]
-FINAL_STAGES = frozenset({"resolved", "handed_off", "abstained", "closed"})
+Stage = Literal["collecting", "clarifying", "awaiting_recognition", "awaiting_confirmation", "resolved",
+                "recognized", "handed_off", "abstained", "closed"]
+FINAL_STAGES = frozenset({"resolved", "recognized", "handed_off", "abstained", "closed"})
 
 
 @dataclass(frozen=True)
 class Option:
-    """One numbered choice shown to the customer: a charge or a card."""
+    """One numbered choice shown to the customer: a charge or a card.
+
+    `charge` holds the verified fields of a charge (evidence.charge_details) and `reasons` the match reasons that
+    fired for it (evidence.match_reasons); both are tool data, never model text.
+    """
 
     index: int
     kind: Literal["transaction", "card"]
     record_id: str
     label: str
+    charge: dict[str, Any] | None = field(default=None, compare=False, hash=False)
+    reasons: tuple[dict[str, Any], ...] = field(default=(), compare=False, hash=False)
 
 
 @dataclass
@@ -41,6 +47,25 @@ class PendingConfirmation:
     rule_ids: list[str]
     confidence: float | None
     token: str = field(repr=False, default="")
+    charge: dict[str, Any] | None = None
+    reasons: list[dict[str, Any]] = field(default_factory=list)
+
+
+@dataclass
+class RecognitionCheck:
+    """The "do you recognize it?" step: the charge and its evidence, shown before any confirmation is issued.
+
+    Holds what the confirmation will need if the customer does not recognize the charge (the narrowed policy
+    decision and the identification confidence). No token exists yet: it is issued only after that answer.
+    """
+
+    recognition_id: str
+    transaction_id: str
+    label: str
+    charge: dict[str, Any]
+    reasons: list[dict[str, Any]]
+    decision: Any  # PolicyDecision after narrow()
+    confidence: float | None
 
 
 @dataclass
@@ -104,6 +129,7 @@ class ConversationState:
     options: list[Option] = field(default_factory=list)
     clarify_rounds: int = 0
     pending: PendingConfirmation | None = None
+    recognition: RecognitionCheck | None = None
     transaction_id: str | None = None
     card_id: str | None = None
     case_id: str | None = None
@@ -111,6 +137,9 @@ class ConversationState:
     facts: list[tuple[str, str]] = field(default_factory=list)  # (fact, source)
     actions: list[tuple[str, str, str | None]] = field(default_factory=list)  # (action, status, record id)
     evidence: list[str] = field(default_factory=list)
+    claim_window: dict[str, Any] | None = None  # {"rule_id", "deadline"} from get_dispute_policy
+    reasons: dict[str, list[dict[str, Any]]] = field(default_factory=dict)  # transaction id -> match reasons shown
+    cards: dict[str, dict[str, str]] | None = None  # product id -> card type and last 4, from the profile tool
     rule_ids: list[str] = field(default_factory=list)
     handoff: dict[str, Any] | None = None
     trace_ids: list[str] = field(default_factory=list)

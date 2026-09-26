@@ -13,7 +13,7 @@ from agent.handoff import validate_handoff
 from agent.orchestrator.disposition import Disposition, LearnedDisposition, RuleDisposition, load_default
 from agent.policy.engine import READ_ACTIONS
 from tests.agent.conftest import NOW
-from tests.orchestrator.conftest import case_rows
+from tests.orchestrator.conftest import case_rows, not_recognized
 
 
 class AlwaysResolve:
@@ -32,9 +32,10 @@ def test_policy_escalation_survives_a_confident_proposal(make_orchestrator, case
     case = cases["human"]
     orch = make_orchestrator(disposition=AlwaysResolve(case.transaction_id))
     token = login(case)
-    first = orch.turn(token, "no lo reconozco, 1 peso", language="es")
-    policy = next(s for s in first.trail if s.step == "decide.policy")
+    asked = orch.turn(token, "no lo reconozco, 1 peso", language="es")
+    policy = next(s for s in asked.trail if s.step == "decide.policy")
     assert policy.outcome == "escalate" and "SYN-AMOUNT-001" in policy.rule_ids
+    first = not_recognized(orch, token, asked)
     done = orch.confirm(token, first.conversation_id, first.confirmation["confirmation_id"])
     assert done.handoff["transfer_reason"]["code"] == "amount_above_threshold"
 
@@ -62,7 +63,7 @@ def test_narrowed_writes_are_a_subset_of_the_policy_decision(rig, make_orchestra
 # ---- tool failures -----------------------------------------------------------------------------------------
 def _pending(orch, case, login):
     token = login(case)
-    first = orch.turn(token, case.opener("es"), language="es")
+    first = not_recognized(orch, token, orch.turn(token, case.opener("es"), language="es"))
     assert first.stage == "awaiting_confirmation"
     return token, first
 
@@ -116,7 +117,7 @@ def test_every_handoff_validates_and_carries_no_raw_identifiers(orch, cases, log
         produced.append(orch.turn(login(cases["normal"]), text, language="es").handoff)
     case = cases["human"]
     token = login(case)
-    first = orch.turn(token, case.opener("pt"), language="pt")
+    first = not_recognized(orch, token, orch.turn(token, case.opener("pt"), language="pt"))
     produced.append(orch.confirm(token, first.conversation_id, first.confirmation["confirmation_id"]).handoff)
     for handoff in produced:
         validate_handoff(handoff)

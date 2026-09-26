@@ -10,11 +10,12 @@ import secrets
 from typing import Any
 
 from agent.orchestrator import TurnResult
+from agent.orchestrator.core import confirmation_view, recognition_view
 from agent.security.session import AuthError
 from api.runtime import QueueItem, Runtime
 
 SESSION_CODES = {"session_invalid", "session_expired", "session_revoked"}
-TURN_ERRORS = {"conversation_not_found": 404, "no_pending_confirmation": 409}
+TURN_ERRORS = {"conversation_not_found": 404, "no_pending_confirmation": 409, "no_pending_recognition": 409}
 
 
 def verify(runtime: Runtime, body: Any, error: type) -> dict[str, Any]:
@@ -24,7 +25,8 @@ def verify(runtime: Runtime, body: Any, error: type) -> dict[str, Any]:
         except AuthError as exc:
             raise error(401, exc.code) from None
         runtime.demo_codes.pop(body.challenge_id, None)
-    return {"session_token": grant.token, "expires_at": grant.session.expires_at,
+    expires_in = max(0, int((grant.session.expires_at - runtime.clock()).total_seconds()))
+    return {"session_token": grant.token, "expires_at": grant.session.expires_at, "expires_in": expires_in,
             "customer_ref": grant.session.customer_ref}
 
 
@@ -37,7 +39,8 @@ def logout(runtime: Runtime, token: str, error: type) -> None:
 
 
 def _options(options) -> list[dict[str, Any]]:
-    return [{"index": o.index, "kind": o.kind, "label": o.label} for o in options]
+    return [{"index": o.index, "kind": o.kind, "label": o.label, "charge": o.charge, "reasons": list(o.reasons)}
+            for o in options]
 
 
 def turn_response(result: TurnResult, error: type) -> dict[str, Any]:
@@ -48,7 +51,8 @@ def turn_response(result: TurnResult, error: type) -> dict[str, Any]:
     return {
         "conversation_id": result.conversation_id, "trace_id": result.trace_id, "language": result.language,
         "stage": result.stage, "reply": result.reply, "reply_source": result.reply_source,
-        "options": _options(result.options), "confirmation": result.confirmation, "case": result.case,
+        "options": _options(result.options), "recognition": result.recognition,
+        "confirmation": result.confirmation, "case": result.case,
         "handoff_id": handoff.get("handoff_id"),
         "transfer_reason": (handoff.get("transfer_reason") or {}).get("code"),
         "trail": [s.as_dict() for s in result.trail], "llm": result.llm, "latency_ms": result.latency_ms,
@@ -67,14 +71,11 @@ def conversation(runtime: Runtime, token: str, conversation_id: str, error: type
         state = runtime.orchestrator.store.get(conversation_id, _customer(runtime, token, error))
         if state is None:
             raise error(404, "conversation_not_found")
-        pending = state.pending
         return {
             "conversation_id": state.conversation_id, "language": state.language, "stage": state.stage,
             "transcript": [{"role": role, "text": text} for role, text in state.transcript],
-            "options": _options(state.options),
-            "confirmation": None if pending is None else {
-                "confirmation_id": pending.confirmation_id, "tool": pending.tool, "label": pending.label,
-                "expires_at": pending.expires_at, "review": pending.must_escalate},
+            "options": _options(state.options), "recognition": recognition_view(state),
+            "confirmation": confirmation_view(state),
             "case_id": state.case_id, "handoff_id": (state.handoff or {}).get("handoff_id"),
         }
 

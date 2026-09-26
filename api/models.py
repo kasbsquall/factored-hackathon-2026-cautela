@@ -6,7 +6,7 @@ confirmation token: confirmations are answered by id and the token stays on the 
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -14,7 +14,11 @@ from pydantic import BaseModel, ConfigDict, Field
 Language = Literal["es", "pt"]
 ReasonCode = Literal["policy_requires_review", "amount_above_threshold", "low_confidence", "tool_failure",
                      "suspected_fraud", "customer_requested_human", "out_of_scope", "security_event"]
-Stage = Literal["collecting", "clarifying", "awaiting_confirmation", "resolved", "handed_off", "abstained", "closed"]
+Stage = Literal["collecting", "clarifying", "awaiting_recognition", "awaiting_confirmation", "resolved", "recognized",
+                "handed_off", "abstained", "closed"]
+MatchCode = Literal["amount_exact", "amount_close", "date_same_day", "date_within_days", "date_in_range", "date_near",
+                    "merchant_named", "type_match", "channel_match", "city_match", "only_fit", "customer_selected",
+                    "customer_reference"]
 
 
 class _Request(BaseModel):
@@ -51,7 +55,8 @@ class VerifyRequest(_Request):
 
 class SessionResponse(BaseModel):
     session_token: str = Field(description="Send as 'Authorization: Bearer <token>'. Expires in 15 minutes.")
-    expires_at: datetime
+    expires_at: datetime = Field(description="On the service clock (see GET /health service_clock)")
+    expires_in: int = Field(description="Seconds until expires_at, so a client does not depend on clock agreement")
     customer_ref: str
 
 
@@ -78,10 +83,61 @@ class ConfirmRequest(_Request):
     accept: bool = True
 
 
+class RecognizeRequest(_Request):
+    recognition_id: str = Field(min_length=4, max_length=64)
+    recognized: bool = Field(description="True: the customer recognizes the charge and no dispute is opened")
+
+
+class ChargeView(BaseModel):
+    """Verified fields of one charge, as the tools read them (get_transaction, list_recent_transactions, and the
+    masked card list of get_customer_profile). Nothing here is model text; a field the data lacks is null."""
+
+    transaction_date: datetime | None = Field(description="Local time of the transaction, no offset")
+    amount: float | None
+    currency: str | None
+    merchant_name: str | None
+    merchant_category: str | None = Field(description="MCC code as delivered (ISO 18245)")
+    category: str | None = Field(description="Transaction category: Food, Transport, Services, Entertainment, "
+                                             "Health or Other")
+    channel: str | None = Field(description="ATM, Branch, Web, App, POS or Transfer")
+    city: str | None
+    country: str | None
+    card_type: str | None = Field(description="Credit Card or Debit Card when the charge moved a card")
+    card_last4: str | None = Field(description="Last 4 digits of that card, from the masked profile")
+    transaction_type: str | None
+    transaction_status: str | None
+
+
+class MatchReason(BaseModel):
+    """Why a charge matched the description: one ranker feature that fired, with a label in the conversation
+    language. `value` is the number in the label (percent or days), when it has one."""
+
+    code: MatchCode
+    label: str
+    value: int | None
+
+
+class ClaimWindow(BaseModel):
+    rule_id: str = Field(description="Window rule of agent/policy/rules.yaml, e.g. MX-WINDOW-001")
+    deadline: date = Field(description="Last day to file, computed by the policy engine from the charge date")
+
+
 class OptionView(BaseModel):
     index: int
     kind: Literal["transaction", "card"]
     label: str
+    charge: ChargeView | None = Field(description="Set for transaction options")
+    reasons: list[MatchReason] = Field(description="Match reasons that fired; empty for cards or when none fired")
+
+
+class RecognitionView(BaseModel):
+    """The "do you recognize it?" step, before any confirmation is issued."""
+
+    recognition_id: str
+    label: str
+    charge: ChargeView
+    reasons: list[MatchReason]
+    claim_window: ClaimWindow | None
 
 
 class ConfirmationView(BaseModel):
@@ -90,11 +146,15 @@ class ConfirmationView(BaseModel):
     label: str
     expires_at: datetime
     review: bool = Field(description="True when policy sends the registered case to human review")
+    charge: ChargeView | None = Field(description="The charge a dispute confirmation is about; null for a card")
+    reasons: list[MatchReason]
+    claim_window: ClaimWindow | None
 
 
 class CaseRef(BaseModel):
     case_id: str
     verified: bool
+    claim_window: ClaimWindow | None
 
 
 class TrailStepView(BaseModel):
@@ -125,6 +185,7 @@ class TurnResponse(BaseModel):
     reply: str
     reply_source: Literal["llm", "template"]
     options: list[OptionView]
+    recognition: RecognitionView | None
     confirmation: ConfirmationView | None
     case: CaseRef | None
     handoff_id: str | None
@@ -145,6 +206,7 @@ class ConversationView(BaseModel):
     stage: Stage
     transcript: list[TranscriptLine]
     options: list[OptionView]
+    recognition: RecognitionView | None
     confirmation: ConfirmationView | None
     case_id: str | None
     handoff_id: str | None

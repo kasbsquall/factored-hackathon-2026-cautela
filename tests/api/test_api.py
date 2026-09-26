@@ -58,6 +58,15 @@ def _login(client, scenario: str) -> tuple[dict[str, str], dict]:
     return {"Authorization": f"Bearer {session.json()['session_token']}"}, ident
 
 
+def _not_recognized(client, auth: dict[str, str], body: dict) -> dict:
+    """Answer "I do not recognize it", which is what issues the dispute confirmation."""
+    assert body["stage"] == "awaiting_recognition" and body["confirmation"] is None, body["stage"]
+    answer = client.post(f"/conversations/{body['conversation_id']}/recognize", headers=auth,
+                         json={"recognition_id": body["recognition"]["recognition_id"], "recognized": False})
+    assert answer.status_code == 200, answer.text
+    return answer.json()
+
+
 def test_health_reports_components_without_internals(client):
     body = client.get("/health").json()
     assert body["status"] == "ok" and body["llm_provider"] == "fake"
@@ -72,7 +81,7 @@ def test_normal_flow_end_to_end_in_both_languages(client):
         first = client.post("/conversations/turn", headers=auth,
                             json={"message": ident["messages"][lang][0], "language": lang})
         assert first.status_code == 200, first.text
-        body = first.json()
+        body = _not_recognized(client, auth, first.json())
         assert body["stage"] == "awaiting_confirmation" and body["language"] == lang
         assert "token" not in json.dumps(body["confirmation"])
         done = client.post(f"/conversations/{body['conversation_id']}/confirm", headers=auth,
@@ -81,13 +90,14 @@ def test_normal_flow_end_to_end_in_both_languages(client):
         case = client.get(f"/cases/{done['case']['case_id']}", headers=auth).json()
         assert case["status"] == "open"
         view = client.get(f"/conversations/{body['conversation_id']}", headers=auth).json()
-        assert [line["role"] for line in view["transcript"]] == ["customer", "assistant", "assistant"]
+        assert [line["role"] for line in view["transcript"]] == ["customer", "assistant", "assistant", "assistant"]
         client.post("/auth/logout", headers=auth)
 
 
 def test_human_case_reaches_the_console_queue_with_audit(client):
     auth, ident = _login(client, "human")
     first = client.post("/conversations/turn", headers=auth, json={"message": ident["messages"]["es"][0]}).json()
+    first = _not_recognized(client, auth, first)
     done = client.post(f"/conversations/{first['conversation_id']}/confirm", headers=auth,
                        json={"confirmation_id": first["confirmation"]["confirmation_id"]}).json()
     assert done["stage"] == "handed_off" and done["transfer_reason"] == "amount_above_threshold"
@@ -98,7 +108,7 @@ def test_human_case_reaches_the_console_queue_with_audit(client):
     item = client.get(f"/console/handoffs/{done['handoff_id']}", headers=CONSOLE).json()
     validate_handoff({k: v for k, v in item["handoff"].items()})
     audit = client.get(f"/console/conversations/{first['conversation_id']}/audit", headers=CONSOLE).json()
-    assert audit["chain"]["status"] == "intact" and len(audit["trace_ids"]) == 2
+    assert audit["chain"]["status"] == "intact" and len(audit["trace_ids"]) == 3
     assert {"orchestrator.escalate", "orchestrator.verify", "guard", "tool"} <= {r["step"] for r in audit["records"]}
     trace = client.get(f"/console/traces/{done['trace_id']}", headers=CONSOLE).json()
     assert all(r["trace_id"] == done["trace_id"] for r in trace["records"])
@@ -107,7 +117,9 @@ def test_human_case_reaches_the_console_queue_with_audit(client):
 def test_confirmation_token_never_leaves_the_server(client):
     runtime = client.app.state.runtime
     auth, ident = _login(client, "normal")
-    first = client.post("/conversations/turn", headers=auth, json={"message": ident["messages"]["es"][0]})
+    asked = client.post("/conversations/turn", headers=auth, json={"message": ident["messages"]["es"][0]})
+    first = client.post(f"/conversations/{asked.json()['conversation_id']}/recognize", headers=auth,
+                        json={"recognition_id": asked.json()["recognition"]["recognition_id"], "recognized": False})
     state = runtime.orchestrator.store.get_any(first.json()["conversation_id"])
     secret = state.pending.token
     view = client.get(f"/conversations/{state.conversation_id}", headers=auth)
@@ -147,6 +159,7 @@ def test_expired_and_revoked_sessions(client):
 def test_other_customers_cannot_read_a_conversation_or_case(client):
     auth_a, ident = _login(client, "normal")
     first = client.post("/conversations/turn", headers=auth_a, json={"message": ident["messages"]["es"][0]}).json()
+    first = _not_recognized(client, auth_a, first)
     done = client.post(f"/conversations/{first['conversation_id']}/confirm", headers=auth_a,
                        json={"confirmation_id": first["confirmation"]["confirmation_id"]}).json()
     auth_b, _ = _login(client, "human")

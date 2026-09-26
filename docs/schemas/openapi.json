@@ -156,6 +156,16 @@
             "title": "Case Id",
             "type": "string"
           },
+          "claim_window": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClaimWindow"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "verified": {
             "title": "Verified",
             "type": "boolean"
@@ -163,7 +173,8 @@
         },
         "required": [
           "case_id",
-          "verified"
+          "verified",
+          "claim_window"
         ],
         "title": "CaseRef",
         "type": "object"
@@ -279,6 +290,199 @@
         "title": "ChallengeResponse",
         "type": "object"
       },
+      "ChargeView": {
+        "description": "Verified fields of one charge, as the tools read them (get_transaction, list_recent_transactions, and the\nmasked card list of get_customer_profile). Nothing here is model text; a field the data lacks is null.",
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "card_last4": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Last 4 digits of that card, from the masked profile",
+            "title": "Card Last4"
+          },
+          "card_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Credit Card or Debit Card when the charge moved a card",
+            "title": "Card Type"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Transaction category: Food, Transport, Services, Entertainment, Health or Other",
+            "title": "Category"
+          },
+          "channel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "ATM, Branch, Web, App, POS or Transfer",
+            "title": "Channel"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "merchant_category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "MCC code as delivered (ISO 18245)",
+            "title": "Merchant Category"
+          },
+          "merchant_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Merchant Name"
+          },
+          "transaction_date": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Local time of the transaction, no offset",
+            "title": "Transaction Date"
+          },
+          "transaction_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transaction Status"
+          },
+          "transaction_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transaction Type"
+          }
+        },
+        "required": [
+          "transaction_date",
+          "amount",
+          "currency",
+          "merchant_name",
+          "merchant_category",
+          "category",
+          "channel",
+          "city",
+          "country",
+          "card_type",
+          "card_last4",
+          "transaction_type",
+          "transaction_status"
+        ],
+        "title": "ChargeView",
+        "type": "object"
+      },
+      "ClaimWindow": {
+        "properties": {
+          "deadline": {
+            "description": "Last day to file, computed by the policy engine from the charge date",
+            "format": "date",
+            "title": "Deadline",
+            "type": "string"
+          },
+          "rule_id": {
+            "description": "Window rule of agent/policy/rules.yaml, e.g. MX-WINDOW-001",
+            "title": "Rule Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rule_id",
+          "deadline"
+        ],
+        "title": "ClaimWindow",
+        "type": "object"
+      },
       "ConfirmRequest": {
         "additionalProperties": false,
         "properties": {
@@ -302,6 +506,27 @@
       },
       "ConfirmationView": {
         "properties": {
+          "charge": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChargeView"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The charge a dispute confirmation is about; null for a card"
+          },
+          "claim_window": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClaimWindow"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "confirmation_id": {
             "title": "Confirmation Id",
             "type": "string"
@@ -314,6 +539,13 @@
           "label": {
             "title": "Label",
             "type": "string"
+          },
+          "reasons": {
+            "items": {
+              "$ref": "#/components/schemas/MatchReason"
+            },
+            "title": "Reasons",
+            "type": "array"
           },
           "review": {
             "description": "True when policy sends the registered case to human review",
@@ -330,7 +562,10 @@
           "tool",
           "label",
           "expires_at",
-          "review"
+          "review",
+          "charge",
+          "reasons",
+          "claim_window"
         ],
         "title": "ConfirmationView",
         "type": "object"
@@ -429,12 +664,24 @@
             "title": "Options",
             "type": "array"
           },
+          "recognition": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RecognitionView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "stage": {
             "enum": [
               "collecting",
               "clarifying",
+              "awaiting_recognition",
               "awaiting_confirmation",
               "resolved",
+              "recognized",
               "handed_off",
               "abstained",
               "closed"
@@ -456,6 +703,7 @@
           "stage",
           "transcript",
           "options",
+          "recognition",
           "confirmation",
           "case_id",
           "handoff_id"
@@ -791,8 +1039,65 @@
         "title": "LlmUsage",
         "type": "object"
       },
+      "MatchReason": {
+        "description": "Why a charge matched the description: one ranker feature that fired, with a label in the conversation\nlanguage. `value` is the number in the label (percent or days), when it has one.",
+        "properties": {
+          "code": {
+            "enum": [
+              "amount_exact",
+              "amount_close",
+              "date_same_day",
+              "date_within_days",
+              "date_in_range",
+              "date_near",
+              "merchant_named",
+              "type_match",
+              "channel_match",
+              "city_match",
+              "only_fit",
+              "customer_selected",
+              "customer_reference"
+            ],
+            "title": "Code",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "code",
+          "label",
+          "value"
+        ],
+        "title": "MatchReason",
+        "type": "object"
+      },
       "OptionView": {
         "properties": {
+          "charge": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChargeView"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Set for transaction options"
+          },
           "index": {
             "title": "Index",
             "type": "integer"
@@ -808,12 +1113,22 @@
           "label": {
             "title": "Label",
             "type": "string"
+          },
+          "reasons": {
+            "description": "Match reasons that fired; empty for cards or when none fired",
+            "items": {
+              "$ref": "#/components/schemas/MatchReason"
+            },
+            "title": "Reasons",
+            "type": "array"
           }
         },
         "required": [
           "index",
           "kind",
-          "label"
+          "label",
+          "charge",
+          "reasons"
         ],
         "title": "OptionView",
         "type": "object"
@@ -832,6 +1147,70 @@
         "title": "OutboxResponse",
         "type": "object"
       },
+      "RecognitionView": {
+        "description": "The \"do you recognize it?\" step, before any confirmation is issued.",
+        "properties": {
+          "charge": {
+            "$ref": "#/components/schemas/ChargeView"
+          },
+          "claim_window": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClaimWindow"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "reasons": {
+            "items": {
+              "$ref": "#/components/schemas/MatchReason"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
+          "recognition_id": {
+            "title": "Recognition Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "recognition_id",
+          "label",
+          "charge",
+          "reasons",
+          "claim_window"
+        ],
+        "title": "RecognitionView",
+        "type": "object"
+      },
+      "RecognizeRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "recognition_id": {
+            "maxLength": 64,
+            "minLength": 4,
+            "title": "Recognition Id",
+            "type": "string"
+          },
+          "recognized": {
+            "description": "True: the customer recognizes the charge and no dispute is opened",
+            "title": "Recognized",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "recognition_id",
+          "recognized"
+        ],
+        "title": "RecognizeRequest",
+        "type": "object"
+      },
       "SessionResponse": {
         "properties": {
           "customer_ref": {
@@ -839,9 +1218,15 @@
             "type": "string"
           },
           "expires_at": {
+            "description": "On the service clock (see GET /health service_clock)",
             "format": "date-time",
             "title": "Expires At",
             "type": "string"
+          },
+          "expires_in": {
+            "description": "Seconds until expires_at, so a client does not depend on clock agreement",
+            "title": "Expires In",
+            "type": "integer"
           },
           "session_token": {
             "description": "Send as 'Authorization: Bearer <token>'. Expires in 15 minutes.",
@@ -852,6 +1237,7 @@
         "required": [
           "session_token",
           "expires_at",
+          "expires_in",
           "customer_ref"
         ],
         "title": "SessionResponse",
@@ -1091,6 +1477,16 @@
             "title": "Options",
             "type": "array"
           },
+          "recognition": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RecognitionView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "reply": {
             "title": "Reply",
             "type": "string"
@@ -1107,8 +1503,10 @@
             "enum": [
               "collecting",
               "clarifying",
+              "awaiting_recognition",
               "awaiting_confirmation",
               "resolved",
+              "recognized",
               "handed_off",
               "abstained",
               "closed"
@@ -1157,6 +1555,7 @@
           "reply",
           "reply_source",
           "options",
+          "recognition",
           "confirmation",
           "case",
           "handoff_id",
@@ -2415,6 +2814,123 @@
           }
         ],
         "summary": "Confirm",
+        "tags": [
+          "conversation"
+        ]
+      }
+    },
+    "/conversations/{conversation_id}/recognize": {
+      "post": {
+        "operationId": "recognize_conversations__conversation_id__recognize_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecognizeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TurnResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Recognize",
         "tags": [
           "conversation"
         ]
