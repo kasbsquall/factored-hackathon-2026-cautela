@@ -157,3 +157,27 @@ def test_demo_runs_every_scenario_in_both_languages(warehouse, monkeypatch):
                      '"code": "out_of_scope"', "stage=abstained", "SYN-DATA-001"):
         assert expected in out, expected
     assert "LLM_PROVIDER not set" in out
+
+
+# ---- defects degrade to a handoff --------------------------------------------------------------------------
+def test_a_defect_after_a_confirmed_write_still_ends_in_a_handoff(rig, orch, cases, login, monkeypatch):
+    case = cases["normal"]
+    token, first = _pending(orch, case, login)
+
+    def broken(*args, **kwargs):
+        raise KeyError("status")
+    monkeypatch.setattr(orch, "_verify_case", broken)
+    done = orch.confirm(token, first.conversation_id, first.confirmation["confirmation_id"])
+    assert done.stage == "handed_off" and done.handoff["transfer_reason"]["code"] == "tool_failure"
+    assert any("check trace" in q for q in done.handoff["open_questions"])
+    assert any(s.step == "error" and s.outcome == "KeyError" for s in done.trail)
+    assert case_rows(rig, case.customer_id) == 1, "the write happened; the handoff tells the agent to check it"
+
+
+def test_a_defect_while_deciding_still_answers(orch, cases, login, monkeypatch):
+    def broken(*args, **kwargs):
+        raise RuntimeError("model file corrupt")
+    monkeypatch.setattr(orch.disposition, "decide", broken)
+    result = orch.turn(login(cases["normal"]), cases["normal"].opener("es"), language="es")
+    assert result.stage == "handed_off" and result.reply
+    assert "corrupt" not in result.reply and "corrupt" not in str(result.handoff)

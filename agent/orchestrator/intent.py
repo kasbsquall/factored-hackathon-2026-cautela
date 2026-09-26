@@ -98,12 +98,35 @@ def intent_schema(today: date, n_options: int = 0) -> dict[str, Any]:
     }
 
 
-def from_llm(data: dict[str, Any], message: str) -> DisputeIntent:
-    """Validate model output. Raises ValidationError; a reference not present in the message is dropped."""
-    ref = data.get("record_ref")
-    if ref and ref.upper() not in message.upper():
-        data = {**data, "record_ref": None}
-    return DisputeIntent.model_validate({**data, "source": "llm"})
+def _agrees(value: date, message: str, today: date) -> bool:
+    """A model date is kept only if it falls where the parser reads the date (when the parser reads one)."""
+    when, tolerance = parsed_date(message, today)
+    return when is None or abs((value - when).days) <= tolerance
+
+
+def from_llm(data: dict[str, Any], message: str, today: date) -> tuple[DisputeIntent, list[str]]:
+    """Validate model output (raises ValidationError), then drop every value the message does not state.
+
+    A small model tends to fill blanks: today's date, "PESOS", an id it saw elsewhere. A value survives only when
+    the text supports it: the record id and the merchant appear in it, the parser reads an amount close to the
+    model's (or its integer digits appear), a date expression is present, a currency word or code is present.
+    Returns the intent and the names of the dropped fields.
+    """
+    intent = DisputeIntent.model_validate({**data, "source": "llm"})
+    text, parsed = plain(message), parse_description(message, today)
+    digits, words = re.sub(r"\D", "", message), set(re.findall(r"[a-z0-9]+", text))
+    checks = {
+        "record_ref": lambda v: v.upper() in message.upper(),
+        "amount": lambda v: (parsed.amount is not None and abs(parsed.amount - v) <= 0.01 * v)
+        or str(int(v)) in digits,
+        "date": lambda v: v <= today and "date" in text_cues(message, today) and _agrees(v, message, today),
+        "currency": lambda v: _currency(message, parsed.currency) is not None
+        or bool(words & {"peso", "pesos", "dolar", "dolares", "reais", "real"}),
+        "merchant": lambda v: any(w in words for w in re.findall(r"[a-z0-9]+", plain(v)) if len(w) >= 3),
+    }
+    dropped = [name for name, ok in checks.items() if getattr(intent, name) is not None
+               and not ok(getattr(intent, name))]
+    return intent.model_copy(update=dict.fromkeys(dropped)), dropped
 
 
 # ---- injection markers (deterministic, checked before any model call) -----------------------------------
@@ -216,6 +239,18 @@ def _currency(message: str, parsed_currency: str | None) -> str | None:
     return parsed_currency if parsed_currency in {"USD", "PESOS", "COP", "ARS"} else None
 
 
+def parsed_date(message: str, today: date) -> tuple[date | None, int]:
+    """The date the deterministic parser reads (explicit day first, then relative ranges) and its tolerance."""
+    explicit = _explicit_date(plain(message), today)
+    if explicit is not None:
+        return explicit, 0
+    parsed = parse_description(message, today)
+    if parsed.date_lo is None or parsed.date_hi is None:
+        return None, 0
+    half = (parsed.date_hi - parsed.date_lo).days // 2
+    return parsed.date_lo + timedelta(days=half), min(15, half + 1)
+
+
 def parse_intent(message: str, today: date, n_options: int = 0, reason: str | None = None) -> DisputeIntent:
     """Deterministic understanding. Never guesses a value the text does not state."""
     text = plain(message)
@@ -236,10 +271,7 @@ def parse_intent(message: str, today: date, n_options: int = 0, reason: str | No
         if re.search(pattern, text):
             return DisputeIntent(intent="out_of_scope", topic=topic, **base)
     parsed = parse_description(message, today)
-    when, tolerance = _explicit_date(text, today), 0
-    if when is None and parsed.date_lo is not None and parsed.date_hi is not None:
-        half = (parsed.date_hi - parsed.date_lo).days // 2
-        when, tolerance = parsed.date_lo + timedelta(days=half), min(15, half + 1)
+    when, tolerance = parsed_date(message, today)
     amount = parsed.amount if parsed.amount and parsed.amount > 0 else None
     return DisputeIntent(intent="dispute_charge", amount=amount, currency=_currency(message, parsed.currency),
                          date=when, date_tolerance_days=tolerance, **base)

@@ -98,8 +98,10 @@ class ActionsMixin(StepsMixin):
         if tool == "block_card":
             return self._say(turn, "confirm_card", {"label": label}, (label,))
         lang = state.language
-        review = replies.REVIEW[lang].format(reason=replies.reason_text(reason, lang)) if reason else ""
-        return self._say(turn, "confirm_open", {"label": label, "review": review}, (label,))
+        why = replies.reason_text(reason, lang) if reason else ""
+        review = replies.REVIEW[lang].format(reason=why) if reason else ""
+        mention = (label, why) if reason else (label,)  # a policy reason is quoted, never paraphrased
+        return self._say(turn, "confirm_open", {"label": label, "review": review}, mention)
 
     def _execute_confirmed(self, turn: Turn, pending: PendingConfirmation) -> replies.Reply:
         result = self._tool(turn, pending.tool, pending.args, confirmation=pending.token)

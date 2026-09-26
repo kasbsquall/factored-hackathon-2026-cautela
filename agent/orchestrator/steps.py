@@ -8,6 +8,7 @@ confirmation token are passed to the service only; neither is written to the tra
 
 from __future__ import annotations
 
+import logging
 import secrets
 import time
 from collections.abc import Callable, Mapping
@@ -24,6 +25,7 @@ from agent.service import ToolService
 from agent.tools.contracts import ToolResult
 
 HandoffSink = Callable[[ConversationState, dict[str, Any]], None]
+log = logging.getLogger("cautela.orchestrator")
 
 
 @dataclass
@@ -120,9 +122,9 @@ class StepsMixin:
             self.handoff_sink(state, document)
         lang = state.language
         case = replies.CASE_NOTE[lang].format(case_id=state.case_id) if state.case_id else ""
-        mention = (state.case_id,) if state.case_id else ()
-        return self._say(turn, "handed_off", {"reason": replies.reason_text(reason_code, lang), "case": case},
-                         mention)
+        reason = replies.reason_text(reason_code, lang)
+        mention = (reason, state.case_id) if state.case_id else (reason,)  # the reason verbatim: no paraphrase
+        return self._say(turn, "handed_off", {"reason": reason, "case": case}, mention)
 
     def _security(self, turn: Turn, flag: str, detail: str) -> replies.Reply:
         """Flag the session (policy then removes every write) and transfer with security_event (SYN-SEC-001)."""
@@ -143,6 +145,29 @@ class StepsMixin:
         return self._escalate(turn, "tool_failure", result.rule_ids,
                               questions=[f"{result.tool} returned {result.error.code if result.error else 'error'} "
                                          f"after {result.attempts} attempt(s)."])
+
+    def _guarded(self, turn: Turn, run: Callable[[], Any]) -> None:
+        """Run a step chain; a defect degrades to a tool_failure handoff instead of a stalled conversation.
+
+        A write may already have happened (for example a crash after open_dispute_case), so the handoff keeps
+        the actions recorded so far and asks the agent to check the trace before contacting the customer.
+        """
+        try:
+            run()
+        except Exception as exc:  # noqa: BLE001 (any defect must end in a safe, audited state)
+            log.error("orchestrator step failed: %s", type(exc).__name__, exc_info=exc)
+            turn.state.pending = None
+            self._step(turn, "error", type(exc).__name__)
+            question = (f"Internal error ({type(exc).__name__}) during this turn; check trace {turn.trace_id} "
+                        "for any write before contacting the customer.")
+            try:
+                self._escalate(turn, "tool_failure", [], questions=[question])
+            except Exception:  # noqa: BLE001 (the handoff itself failed: still answer, from the template)
+                turn.state.stage = "handed_off"
+                lang = turn.state.language
+                text = replies.render_template("handed_off", lang, {
+                    "reason": replies.reason_text("tool_failure", lang), "case": ""})
+                turn.reply = replies.Reply(text, "template", "handoff_failed")
 
     # ---- usage ------------------------------------------------------------------------------------------
     def _llm_usage(self, trace_id: str) -> dict[str, Any]:

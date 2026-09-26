@@ -207,11 +207,13 @@ still need to be added to the repository's `.env.example`.
 | Step | What runs | Where |
 |---|---|---|
 | Session gate | `IdentityService.validate`; an expired, revoked or forged token stops the turn before any step | `core.py` |
-| Understand | Injection markers first (deterministic, SYN-SEC-001). Then `MaskedLLM.extract` into a `DisputeIntent` validated by JSON Schema and pydantic; a record id the customer did not write is dropped. On a model failure or invalid output, the `ml.features.parse` parser plus explicit date, currency-code and record-id patterns; the reason is in the trail. Parser escalation signals (a person, an out-of-scope topic) apply even when the model disagrees | `intent.py` |
+| Understand | Injection markers first (deterministic, SYN-SEC-001). Then `MaskedLLM.extract` into a `DisputeIntent` validated by JSON Schema and pydantic; any value the message does not state (a record id, an amount, a date, a currency, a merchant) is dropped and the dropped fields are recorded. On a model failure or invalid output, the `ml.features.parse` parser plus explicit date, currency-code and record-id patterns; the reason is in the trail. Parser escalation signals (a person, an out-of-scope topic) apply even when the model disagrees | `intent.py` |
 | Decide | `list_recent_transactions` (90 days) feeds the learned disposition model from `ml/` (resolve, clarify, escalate); without its git-ignored artifacts the labeled rule baseline runs. For the chosen charge, `get_dispute_policy` gives the deterministic decision and `narrow()` applies the proposal | `disposition.py`, `actions.py` |
 | Act | `request_confirmation`; the token stays in server-side state and the customer answers by confirmation id | `actions.py` |
 | Verify | After the write, `get_case_status` (or the card status in `get_customer_profile`) is read back; success is reported only if it matches | `actions.py` |
 | Escalate | Handoff from tool-read facts with sources, actions with verified status, rule citations as evidence, open questions, reason code and rule ids; validated against the schema | `handoffs.py` |
+
+A defect anywhere in a turn or after a confirmed write ends in a `tool_failure` handoff that tells the agent to check the trace, never in a stalled conversation.
 
 Clarify turns keep the conversation state (statements, slots, numbered options), so a reply of "2" or "a segunda"
 resolves against the options already shown and nothing is asked twice; clarification stops after two rounds with a
@@ -236,6 +238,24 @@ Known behavior worth reading before a demo: the learned disposition was trained 
 candidates, while fixture customers have 16 to 78 transactions in 90 days, so it asks more often than on its test
 set; it also treats a declined charge as matching nothing, so "I don't recognize this declined charge" can end in a
 `low_confidence` handoff instead of the SYN-STATUS-002 explanation, depending on the wording.
+
+### Local model run (qwen2.5:7b-instruct on Ollama, 2026-09-25)
+
+All ten demo scenarios in Spanish and Portuguese on the fixture, one run each, RTX 3060 12 GB. Offline
+measurement, 20 model-backed turns per language, not a statistical evaluation:
+
+- Every extraction call returned JSON that passed the schema (10 of 10 per language; the other turns used the
+  option shortcut, the injection detector or the parser override).
+- The model filled values the customer never stated (today's date and "PESOS" for "No reconozco un cargo en mi
+  cuenta"), put a date one day off ("no dia 30 de maio" as 2026-05-31), labeled "Es la transacción TX99999999" as
+  out of scope and a credit-limit request as a request for a person. Each case is now handled in code (grounding
+  of every extracted value, date agreement with the parser, reference routing before the out-of-scope route,
+  parser escalation signals over the model) and has a regression test in `tests/orchestrator/test_llm_paths.py`.
+- Replies: 19 of 20 per language passed the grounding check before the verbatim-reason rule was added; the model
+  then reworded a synthetic policy reason as "pelo regulamento vigente", which is why policy reasons must now
+  appear verbatim. Expect more template fallbacks with this model after that rule.
+- Latency per model-backed turn: p50 about 6.4 s, p95 7.9 s (pt) and 16.4 s (es, one cold call); about 3 to 5 s
+  per model call. Cost: zero (local model, `prices.yaml`).
 
 ## Limitations and deployment work
 

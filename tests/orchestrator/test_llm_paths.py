@@ -129,3 +129,53 @@ def test_reply_prompt_holds_only_the_facts_of_the_turn(make_orchestrator, cases,
     payload = json.loads(reply_prompts[-1].user)
     assert payload["message_kind"] == "confirm_open" and payload["language"] == "pt"
     assert case.customer_id not in reply_prompts[-1].user
+
+
+def test_values_the_customer_did_not_state_are_dropped(make_orchestrator, cases, login):
+    """Seen with qwen2.5:7b: 'No reconozco un cargo en mi cuenta' came back with today's date and PESOS."""
+    filled = extraction(date="2026-06-01", currency="PESOS", merchant="Marketplace Uno", amount=500.0)
+    orch = make_orchestrator(ScriptedAdapter(extracts=[filled]))
+    result = orch.turn(login(cases["normal"]), "No reconozco un cargo en mi cuenta.", language="es")
+    step = _understand(result)
+    assert step.outcome == "llm"
+    assert step.detail["fallback_reason"] == "dropped_unstated:amount,date,currency,merchant"
+    assert result.stage == "clarifying" and not result.options, "with nothing stated it asks for details"
+
+
+def test_stated_values_survive_grounding(make_orchestrator, cases, login):
+    case = cases["normal"]
+    tx = case.transaction
+    stated = extraction(amount=float(tx["amount"]), currency=tx["currency"],
+                        date=tx["transaction_date"].date().isoformat(), merchant=tx["merchant_name"])
+    orch = make_orchestrator(ScriptedAdapter(extracts=[stated]))
+    result = orch.turn(login(case), case.opener("es"), language="es")
+    assert _understand(result).detail["fallback_reason"] is None
+
+
+def test_a_quoted_reference_is_checked_before_an_out_of_scope_label(make_orchestrator, cases, login):
+    """Seen with qwen2.5:7b: 'Es la transacción TX99999999.' was labeled out_of_scope."""
+    orch = make_orchestrator(ScriptedAdapter(extracts=[extraction(intent="out_of_scope", record_ref="TX99999999")]))
+    result = orch.turn(login(cases["normal"]), "Es la transacción TX99999999.", language="es")
+    assert result.stage == "collecting" and result.handoff is None
+
+
+def test_a_model_date_that_disagrees_with_the_text_is_dropped():
+    """Seen with qwen2.5:7b: 'no dia 30 de maio' came back as 2026-05-31."""
+    from datetime import date
+
+    from agent.orchestrator.intent import from_llm
+    text = "Não reconheço uma compra de 20 reais no dia 30 de maio."
+    assert from_llm(extraction(date="2026-05-31"), text, date(2026, 5, 31))[1] == ["date"]
+    assert from_llm(extraction(date="2026-05-30"), text, date(2026, 5, 31))[1] == []
+
+
+def test_a_paraphrased_policy_reason_is_replaced_by_the_template(make_orchestrator, cases, login):
+    """Seen with qwen2.5:7b: a synthetic-policy reason was reworded as 'pelo regulamento vigente'."""
+    case = cases["human"]
+    token = login(case)
+    first = make_orchestrator().turn(token, case.opener("pt"), language="pt")
+    label = first.confirmation["label"]
+    orch = make_orchestrator(ScriptedAdapter(replies=[f"Vou registrar {label}. Pelo regulamento vigente, uma pessoa "
+                                                      "vai analisar. Confirme no botão."]))
+    result = orch.turn(login(case), case.opener("pt"), language="pt")
+    assert result.reply_source == "template" and "regulamento" not in result.reply

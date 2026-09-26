@@ -33,7 +33,7 @@ from ml.features.pairwise import merchant_similarity
 MAX_MESSAGE_CHARS = 2000
 MAX_CLARIFY_ROUNDS = 2
 POOL_ARGS = {"window_days": 90, "limit": 50}
-MERCHANT_MENTION_MIN = 0.8
+MERCHANT_MENTION_MIN = 0.88  # 0.8 let 'conta' match 'Conecta' (0.83) in a pt run
 
 
 @dataclass
@@ -88,7 +88,7 @@ class Orchestrator(ActionsMixin):
         elif not message:
             self._say(turn, "ask_details", {"missing": self._missing_text(state, set())})
         else:
-            self._route(turn, message)
+            self._guarded(turn, lambda: self._route(turn, message))
         return self._finish(turn)
 
     def confirm(self, session_token: str, conversation_id: str, confirmation_id: str,
@@ -109,7 +109,7 @@ class Orchestrator(ActionsMixin):
         self._step(turn, "confirm.answer", "accepted" if accept else "declined",
                    {"confirmation_id": confirmation_id, "tool": pending.tool})
         if accept:
-            self._execute_confirmed(turn, pending)
+            self._guarded(turn, lambda: self._execute_confirmed(turn, pending))
         else:
             state.stage = "closed"
             self._say(turn, "declined")
@@ -144,10 +144,12 @@ class Orchestrator(ActionsMixin):
             try:
                 data = self.llm.extract(message, nlu.intent_schema(today, n), known_names=self._names(turn),
                                         trace_id=turn.trace_id)
-                found = nlu.from_llm(data, message)
+                found, dropped = nlu.from_llm(data, message, today)
             except (LLMUnavailable, LLMOutputError, SchemaError, ValueError) as exc:
                 found = nlu.parse_intent(message, today, n, reason=nlu.validation_reason(exc))
             else:
+                if dropped:
+                    found = found.model_copy(update={"fallback_reason": "dropped_unstated:" + ",".join(dropped)})
                 # Escalation signals the parser reads (a person, an out-of-scope topic) apply whatever the model
                 # said: they can only make the outcome stricter, like narrow().
                 strict = nlu.parse_intent(message, today, n)
@@ -180,14 +182,14 @@ class Orchestrator(ActionsMixin):
         if state.pending is not None:
             self._say(turn, "pending_confirmation", {"label": state.pending.label}, (state.pending.label,))
             return
-        if found.intent == "out_of_scope":
-            decision = self._policy_only(intent=found.topic or "other_customer_request")
-            self._escalate(turn, "out_of_scope", decision.rule_ids, topic=found.topic)
-            return
         refs = [r for r in dict.fromkeys([*(filter(None, [found.record_ref])), *nlu.find_refs(message)])
                 if nlu.ref_kind(r) != "customer"]
         if refs:
             self._from_reference(turn, refs[0], found)
+            return
+        if found.intent == "out_of_scope":
+            decision = self._policy_only(intent=found.topic or "other_customer_request")
+            self._escalate(turn, "out_of_scope", decision.rule_ids, topic=found.topic)
             return
         if found.intent == "block_card":
             self._block_flow(turn, None)
