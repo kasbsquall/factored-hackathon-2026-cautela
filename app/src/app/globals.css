@@ -233,6 +233,13 @@ input {
   animation-delay: calc(var(--row-base, 120ms) + var(--i, 0) * 30ms);
 }
 
+/* An entrance that already played never replays (see components/providers.tsx): the element stays at rest. */
+[data-settled],
+:root[data-entrance="off"] .rise,
+:root[data-entrance="off"] .rise-row {
+  animation: none !important;
+}
+
 @keyframes rise {
   from {
     opacity: 0;

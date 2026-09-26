@@ -80,8 +80,12 @@ npm run gen:api      # regenerate src/lib/api/generated/openapi.d.ts from docs/s
 ```
 
 Both modes implement one client contract (`app/src/lib/api/client.ts`) that mirrors the service: login with a
-one-time code, then `POST /conversations/turn` and `/conversations/{id}/confirm`, `GET /cases/{id}` for the
-read-back, and the console reads. **Mock mode** (`NEXT_PUBLIC_API_MODE=mock`, the default) runs that contract in
+one-time code, then `POST /conversations/turn`, `/conversations/{id}/recognize` and `/conversations/{id}/confirm`,
+`GET /cases/{id}` for the read-back, and the console reads. When several charges fit, each candidate card shows the
+charge as the tools returned it (date, amount, merchant, channel, city, masked card) and chips for the ranker
+features that actually matched; the customer always picks, or answers "none of these" and reaches a person. Before
+any dispute, a "¿Lo reconoces?" card shows the merchant evidence: "I recognize it" ends without a dispute and
+writes nothing, "I don't" goes on to the confirmation, which carries the computed claim deadline. **Mock mode** (`NEXT_PUBLIC_API_MODE=mock`, the default) runs that contract in
 the browser with synthetic fixtures and the reply templates of `agent/orchestrator/replies.py`: four test
 identities (several similar charges, amount review, a failing case store, a 40-second session), a one-time code
 shown in a simulated channel, a real SHA-256 hash chain per trace and one deliberately tampered trace. State
@@ -94,8 +98,11 @@ Console pages also need `CAUTELA_CONSOLE_PROXY=enabled` and `CAUTELA_CONSOLE_KEY
 writes a generated key to `data/demo/console_key.txt`); enable that only on a
 deployment that is itself restricted to bank staff, because the proxy grants console access to whoever can reach it.
 
-Known gaps: options and confirmations carry only a label (date, merchant, amount), so the customer does not see
-why a charge matched; the claim window on the receipt is the rule's window, not a computed date; in live mode
-`/audit` lists only the traces behind queued handoffs (there is no trace listing endpoint) and the chain status
-does not say where a chain breaks. The demo service runs its own clock, so the client moves expiry times onto the
-browser clock with `GET /health`.
+Entrance animations play once: when one ends, the element is marked settled and CSS drops the animation
+(`app/src/components/providers.tsx`). Without that, a viewport change that toggles a responsive pane (a full-page
+screenshot does this) replayed every entrance from opacity 0, and the console's ready file looked empty.
+
+Known gaps: in live mode `/audit` lists only the traces behind queued handoffs (there is no trace listing endpoint)
+and the chain status does not say where a chain breaks. The demo service runs its own clock: session expiry uses
+`expires_in`, and the client moves confirmation expiry onto the browser clock with `GET /health`. Charges on a
+non-card product (a loan, for example) show no card digits, and some gold rows have no merchant category.
