@@ -48,3 +48,19 @@ demo-artifacts:  ## deploy/demo-bundle/ and deploy/demo-bundle.lock.json (commit
 
 release:  ## release/cautela-<sha>.tar.gz (git archive HEAD) and release/cautela-<sha>-demo-bundle.tar.gz
 	uv run python -m deploy.release
+
+# End-to-end evaluation of the agent (eval/). Needs data/warehouse_real.duckdb with gold built and data/ml/models.
+# `eval` and `eval-suite` make no network calls. `eval-llm` calls OpenAI gpt-6-luna under the USD 3.00 cap of
+# eval/budget.py (key from the git-ignored .env) and adds the llm configuration to eval/results.json.
+.PHONY: eval eval-suite eval-llm
+
+eval-suite:  ## warehouse slice for the test customers, then rebuild the held-out suite and check it against the manifest
+	uv run python -m eval.slice
+	uv run python -m eval.build --verify
+
+eval:  ## rules and learned configurations, compliant and attentive customer: eval/results.json (no LLM, no cost)
+	@test -f eval/heldout/suite.jsonl || $(MAKE) eval-suite
+	uv run python -m eval.run --configs rules,learned --attentive
+
+eval-llm:  ## llm configuration plus two repeated runs on the variance subset (paid, capped)
+	uv run python -m eval.run --configs llm --variance-runs 2 --workers 6

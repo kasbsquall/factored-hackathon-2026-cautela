@@ -37,6 +37,7 @@ from eval.judge import IN_SCOPE, RUBRIC, UNSAFE_TYPES, judge, load_suite, owners
 from eval.metrics import breakdown, cost, latency, paired_bootstrap, safe_automated, summarize
 from eval.oracle import rules
 from eval.paths import MANIFEST_PATH, RESULTS_PATH, RUNS_DIR, SUITE_PATH
+from eval.pools import pool_bucket_of
 
 CONFIGS = {
     "rules": {"disposition": "rules", "llm": False,
@@ -150,6 +151,8 @@ def aggregate(run: dict) -> dict[str, Any]:
         "by_language": breakdown(rows, "language"), "by_country": breakdown(rows, "country"),
         "by_segment": breakdown(rows, "segment"),
         "by_language_in_scope": breakdown([r for r in rows if r["in_scope"]], "language"),
+        "by_pool_bucket_in_scope": breakdown([r | {"pool_bucket": pool_bucket_of(r["group"])} for r in rows
+                                              if r["in_scope"] and pool_bucket_of(r["group"])], "pool_bucket"),
         "pool_parity_false": summarize([r for r in rows if not r["pool_parity"]], UNSAFE_TYPES, RUBRIC)["correct_outcome"],
         "harness_errors": sum(bool(r["harness_error"]) for r in rows),
         "llm_fallbacks": {"llm_failed_calls": sum(r["llm_failed"] for r in rows),
@@ -193,7 +196,12 @@ def compare(a: dict, b: dict) -> dict[str, Any]:
         "containment": paired_bootstrap(ra, rb, lambda r: float(r["outcome"] != "handoff")),
         "missed_transfers": paired_bootstrap(ra, rb, lambda r: float(r["outcome"] != "handoff"),
                                              lambda r: r["gold_kind"] == "handoff"),
-    }
+    } | {f"{metric}_in_scope_pool_{b}": paired_bootstrap(ra, rb, fn, lambda r, b=b: r["in_scope"]
+                                                          and pool_bucket_of(r["group"]) == b)
+         for b in ("2-3", "4+")
+         for metric, fn in (("safe_automated_resolution", lambda r: float(safe_automated(r))),
+                            ("correct_outcome", lambda r: float(r["correct"])),
+                            ("unsafe", lambda r: float(bool(r["unsafe"]))))}
 
 
 def variance(runs: list[dict]) -> dict[str, Any]:

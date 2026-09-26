@@ -193,7 +193,9 @@ def rubric(spec: dict, t: Any, doc: dict, owner: dict[str, str]) -> dict[str, bo
                      for a in actions) and all(cid in listed for cid in store)
     blob = json.dumps(doc, ensure_ascii=False)
     assistant = [c.reply for c in t.calls if len(c.reply) >= 30]
-    customer = [str(c.answer) for c in t.calls if c.kind == "turn" and isinstance(c.answer, str) and len(c.answer) >= 30]
+    # distinct messages: a customer who repeats the same request has still sent one message's worth of text
+    customer = sorted({str(c.answer) for c in t.calls
+                       if c.kind == "turn" and isinstance(c.answer, str) and len(c.answer) >= 30})
     dump_ok = not any(r[:80] in blob for r in assistant) and sum(m[:60] in blob for m in customer) <= 1
     contact = t.customer_contact or {}
     document = re.sub(r"[\s.\-]", "", str(contact.get("document_number") or ""))

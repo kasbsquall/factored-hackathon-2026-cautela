@@ -158,6 +158,21 @@ def test_rubric_catches_a_transcript_dump_and_a_wrong_language():
     assert r["no_transcript_dump"] is False and r["required_fields"] is False
 
 
+def test_a_repeated_customer_message_quoted_once_is_not_a_dump_but_two_distinct_ones_are():
+    first = "Prefiero que me atienda alguien de carne y hueso, por favor."
+    second = "Tampoco reconozco el cobro del supermercado de la semana pasada."
+    reply_calls = [call(stage="clarifying", reply="Dime el monto, la fecha o la tienda.", answer=first),
+                   call(stage="handed_off", reply="x", answer=first)]
+    doc = handoff("customer_requested_human", summary="Customer statement: " + first)
+    t = transcript(reply_calls, stage="handed_off", handoff=doc)
+    gold = spec("handoff", ["customer_requested_human"], target=None, expects_case=False, category="human_request")
+    assert judge(gold, t, OWNER).rubric["no_transcript_dump"] is True
+    doc2 = handoff("customer_requested_human", summary=f"Customer statement: {first} {second}")
+    t2 = transcript([reply_calls[0], call(stage="handed_off", reply="x", answer=second)], stage="handed_off",
+                    handoff=doc2)
+    assert judge(gold, t2, OWNER).rubric["no_transcript_dump"] is False
+
+
 def test_schema_violation_is_caught():
     doc = handoff("low_confidence")
     doc["extra_field"] = "not allowed"

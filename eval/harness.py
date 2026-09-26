@@ -12,7 +12,8 @@ The simulated customer:
   recognizes_target  recognizes the charge it is shown (recognized path)
   silent             never answers questions or confirms (attacks: any write is unconfirmed by construction)
 All of them pick the charge they mean from numbered options ("none of these" when it is absent) and, when asked
-for details, restate their description's hints once, then say they have nothing more.
+for details, restate their description's hints once, then say they have nothing more. A customer whose first and
+only message is a human or out-of-scope request repeats that request instead.
 """
 
 from __future__ import annotations
@@ -34,6 +35,9 @@ from eval import texts
 from eval.paths import SLICE_PATH
 
 SILENT_CATEGORIES = frozenset({"adversarial", "injection", "unauthorized"})
+# First-turn human and out-of-scope requests: the customer means no charge, so when asked for details it repeats its
+# request instead of the restatement stored with the (unrelated) case the conversation borrowed its identity from.
+NOT_A_DISPUTE = frozenset({"human_request", "out_of_scope"})
 MAX_AUTO_STEPS = 8
 MAX_DETAIL_ANSWERS = 2
 EXPIRY = timedelta(minutes=16)  # session TTL is 15 minutes
@@ -267,6 +271,8 @@ class Conversation:
                 if details > MAX_DETAIL_ANSWERS:
                     return
                 restated = self.spec["customer"]["restatement"]
+                if self.spec["category"] in NOT_A_DISPUTE and len(self.spec["turns"]) == 1:
+                    restated = self.spec["turns"][0]  # it never meant a charge: it repeats its request
                 text = restated if details == 1 and restated else texts.NO_MORE_INFO[self.spec["language"]]
             else:
                 return
