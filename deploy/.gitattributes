@@ -1,0 +1,5 @@
+# Shell scripts and server config must reach the Linux host with LF endings, whatever core.autocrlf says.
+*.sh text eol=lf
+*.example text eol=lf
+Dockerfile* text eol=lf
+*.yml text eol=lf

@@ -1,0 +1,76 @@
+# Cautela API behind the host's reverse proxy (OpenLiteSpeed owns 80/443). See deploy/README.md.
+#
+# Exposure: the API is published on 127.0.0.1:8330 only. Nothing here listens on a public interface.
+# Secrets: only in deploy/.env (git-ignored, chmod 600), loaded with env_file. This file holds no credential.
+# Validate with `docker compose -f deploy/docker-compose.behind-proxy.yml config --quiet` (without --quiet,
+# `config` prints the resolved environment, secrets included).
+#
+# There is no helper container. The 30-minute demo reset is done by the API process ending itself and the
+# restart policy starting a fresh one (deploy/serve.py). A helper able to restart another container would need
+# the Docker socket, which is root on this shared host.
+
+name: cautela
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: cautela-api:${CAUTELA_IMAGE_TAG:-local}
+    container_name: cautela-api
+    init: true
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: true
+    environment:
+      CAUTELA_API_HOST: 0.0.0.0          # inside the container only; published to loopback below
+      CAUTELA_API_PORT: "8000"
+      CAUTELA_TRUSTED_PROXY: ${CAUTELA_PROXY_GATEWAY:-10.83.30.1}
+      CAUTELA_DEMO_RESET_S: ${CAUTELA_DEMO_RESET_S:-1800}
+      LLM_DAILY_MAX_CALLS: ${LLM_DAILY_MAX_CALLS:-2000}
+      LLM_DAILY_MAX_USD: ${LLM_DAILY_MAX_USD:-1.00}
+    ports:
+      - "127.0.0.1:8330:8000"
+    volumes:
+      - cautela_state:/var/lib/cautela
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777,noexec,nosuid,nodev
+    user: "10001:10001"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 640m
+    memswap_limit: 640m                  # no swap for this container: the host is already swapping
+    cpus: 0.75
+    pids_limit: 128
+    stop_grace_period: 15s
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=4).status == 200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - cautela
+
+volumes:
+  cautela_state:
+
+networks:
+  cautela:
+    driver: bridge
+    ipam:
+      config:
+        # Pinned, and outside Docker's default pools (172.17-31.x, 192.168.x), so the address the proxy's
+        # connections arrive from (the gateway) is known and trusted for X-Forwarded-For. If it overlaps a route
+        # on the host (`ip route`), set CAUTELA_SUBNET and CAUTELA_PROXY_GATEWAY in deploy/.env together.
+        - subnet: ${CAUTELA_SUBNET:-10.83.30.0/24}
+          gateway: ${CAUTELA_PROXY_GATEWAY:-10.83.30.1}

@@ -1,0 +1,15 @@
+# Build context allowlist for deploy/Dockerfile (BuildKit reads <Dockerfile>.dockerignore next to the Dockerfile).
+# Everything is excluded unless listed, so .env files, data/, .venv/, mlruns/ and app/ never reach the builder,
+# even when the image is built from a working copy instead of a release tarball.
+*
+!pyproject.toml
+!uv.lock
+!agent/
+!api/
+!ml/
+!data_engineering/
+!deploy/serve.py
+**/__pycache__
+**/*.pyc
+**/.env
+**/.env.*
