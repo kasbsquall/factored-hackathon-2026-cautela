@@ -134,6 +134,7 @@ class ConversationState:
     card_id: str | None = None
     case_id: str | None = None
     confidence: float | None = None
+    cued: bool = False  # the description names a charge (amount, date, merchant or type): decide may act on one
     facts: list[tuple[str, str]] = field(default_factory=list)  # (fact, source)
     actions: list[tuple[str, str, str | None]] = field(default_factory=list)  # (action, status, record id)
     evidence: list[str] = field(default_factory=list)

@@ -46,6 +46,11 @@ class ActionsMixin(StepsMixin):
     def _act_on_transaction(self, turn: Turn, transaction_id: str, confidence: float | None,
                             source: str) -> replies.Reply:
         state = turn.state
+        if source not in SOURCE_REASON and not state.cued:
+            # Only a description that names a charge, or the customer's own choice (an option or a quoted id),
+            # may lead to a write. decide() checks this first; this keeps it true for any other caller.
+            self._step(turn, "decide.gate", "no_charge_cue", {"source": source})
+            return self._clarify_details(turn, set())
         state.options, state.transaction_id, state.confidence = [], transaction_id, confidence
         tx = self._tool(turn, "get_transaction", {"transaction_id": transaction_id})
         if not tx.ok:

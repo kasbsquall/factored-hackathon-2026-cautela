@@ -19,13 +19,11 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
-from jsonschema import SchemaError
-
-from agent.llm.port import LanguageModel, LLMOutputError, LLMUnavailable
+from agent.llm.port import LanguageModel
 from agent.orchestrator import evidence, fmt, replies
 from agent.orchestrator import intent as nlu
-from agent.orchestrator.actions import ActionsMixin
 from agent.orchestrator.disposition import DispositionModel, load_default, non_disputable_fit
+from agent.orchestrator.routing import RoutingMixin, names_a_charge
 from agent.orchestrator.state import FINAL_STAGES, ConversationStore, Option, TrailStep
 from agent.orchestrator.steps import HandoffSink, Turn, tx_label
 from agent.security.audit import new_trace_id
@@ -37,6 +35,16 @@ MAX_MESSAGE_CHARS = 2000
 MAX_CLARIFY_ROUNDS = 2
 POOL_ARGS = {"window_days": 90, "limit": 50}
 MERCHANT_MENTION_MIN = 0.88  # 0.8 let 'conta' match 'Conecta' (0.83) in a pt run
+
+
+def mentions_merchant(tokens: tuple[str, ...], merchant: str | None) -> bool:
+    """Whether the text names this merchant: a close spelling of one of its words that starts with the same letter.
+    The first-letter rule keeps ordinary words that contain a merchant word out ("atienda" is not "Tienda")."""
+    if not merchant:
+        return False
+    words = [w for w in nlu.plain(merchant).split() if len(w) >= 4] or nlu.plain(merchant).split()
+    return any(merchant_similarity((t,), w)[0] >= MERCHANT_MENTION_MIN and t[:1] == w[:1]
+               for t in tokens for w in words)
 
 
 @dataclass
@@ -58,7 +66,7 @@ class TurnResult:
     recognition: dict[str, Any] | None = None
 
 
-class Orchestrator(ActionsMixin):
+class Orchestrator(RoutingMixin):
     def __init__(self, service: ToolService, llm: LanguageModel | None = None,
                  disposition: DispositionModel | None = None, store: ConversationStore | None = None,
                  handoff_sink: HandoffSink | None = None) -> None:
@@ -88,7 +96,7 @@ class Orchestrator(ActionsMixin):
         state.transcript.append(("customer", message))
         self._step(turn, "gate", "session_valid", {"conversation_id": state.conversation_id})
         if state.stage in FINAL_STAGES:
-            self._say(turn, "closed")
+            self._guarded(turn, lambda: self._closed_turn(turn, message))
         elif not message:
             self._say(turn, "ask_details", {"missing": self._missing_text(state, set())})
         else:
@@ -159,107 +167,6 @@ class Orchestrator(ActionsMixin):
         stage = "auth_required" if auth else "error"
         return TurnResult(conversation_id, trace_id, lang, stage, text, "template", error=code)
 
-    # ---- understand ----------------------------------------------------------------------------------------
-    def _understand(self, turn: Turn, message: str) -> nlu.DisputeIntent:
-        started, today, n = time.perf_counter(), self.service.clock().date(), len(turn.state.options)
-        if n and (choice := nlu.pick_option(message, n)) is not None:
-            found = nlu.DisputeIntent(intent="select_option", selected_option=choice, fallback_reason="option_pick")
-        elif self.llm is None:
-            found = nlu.parse_intent(message, today, n, reason="no_llm_configured")
-        else:
-            try:
-                data = self.llm.extract(message, nlu.intent_schema(today, n), known_names=self._names(turn),
-                                        trace_id=turn.trace_id)
-                found, dropped = nlu.from_llm(data, message, today)
-            except (LLMUnavailable, LLMOutputError, SchemaError, ValueError) as exc:
-                found = nlu.parse_intent(message, today, n, reason=nlu.validation_reason(exc))
-            else:
-                if dropped:
-                    found = found.model_copy(update={"fallback_reason": "dropped_unstated:" + ",".join(dropped)})
-                # Escalation signals the parser reads (a person, an out-of-scope topic) apply whatever the model
-                # said: they can only make the outcome stricter, like narrow().
-                strict = nlu.parse_intent(message, today, n)
-                if strict.intent in ("request_human", "out_of_scope") and found.intent != strict.intent:
-                    found = strict.model_copy(update={"fallback_reason": f"parser_escalation_over_llm:{found.intent}"})
-        self._step(turn, "understand", found.source,
-                   {"intent": found.intent, "fallback_reason": found.fallback_reason, "topic": found.topic,
-                    "amount": found.amount, "currency": found.currency,
-                    "date": found.date.isoformat() if found.date else None, "merchant": found.merchant,
-                    "selected_option": found.selected_option, "record_ref": found.record_ref}, started=started)
-        return found
-
-    # ---- route ---------------------------------------------------------------------------------------------
-    def _route(self, turn: Turn, message: str) -> None:
-        state = turn.state
-        marker = nlu.detect_injection(message)
-        if marker:
-            self._step(turn, "understand", "injection_detector", {"marker": marker})
-            self._security(turn, "prompt_injection", marker)
-            return
-        foreign = [r for r in nlu.find_refs(message)
-                   if nlu.ref_kind(r) == "customer" and r != turn.session.customer_id]
-        if foreign:
-            self._security(turn, "cross_customer_reference", "customer id of another customer in the message")
-            return
-        found = self._understand(turn, message)
-        if found.intent == "request_human":
-            self._escalate(turn, "customer_requested_human", self._policy_only(human=True).rule_ids)
-            return
-        if state.pending is not None:
-            self._say(turn, "pending_confirmation", {"label": state.pending.label}, (state.pending.label,))
-            return
-        if state.recognition is not None:
-            label = state.recognition.label
-            self._say(turn, "pending_recognition", {"label": label}, (label,))
-            return
-        refs = [r for r in dict.fromkeys([*(filter(None, [found.record_ref])), *nlu.find_refs(message)])
-                if nlu.ref_kind(r) != "customer"]
-        if refs:
-            self._from_reference(turn, refs[0], found)
-            return
-        if found.intent == "out_of_scope":
-            decision = self._policy_only(intent=found.topic or "other_customer_request")
-            self._escalate(turn, "out_of_scope", decision.rule_ids, topic=found.topic)
-            return
-        if found.intent == "block_card":
-            self._block_flow(turn, None)
-            return
-        if state.options and found.intent == "select_option" and found.selected_option:
-            if found.selected_option <= len(state.options):
-                self._select(turn, state.options[found.selected_option - 1])
-                return
-        if state.options and found.intent == "reject_options":
-            state.options = []
-        state.statements.append(message)
-        state.slots.merge(found)
-        self._decide(turn)
-
-    def _from_reference(self, turn: Turn, ref: str, found: nlu.DisputeIntent) -> None:
-        kind = nlu.ref_kind(ref)
-        if kind == "product" or found.intent == "block_card":
-            self._block_flow(turn, ref if kind == "product" else None)
-            return
-        if kind == "case":
-            result = self._tool(turn, "get_case_status", {"case_id": ref})
-            if not result.ok:
-                self._reference_problem(turn, result)
-                return
-            turn.state.add_fact(f"Case {ref} has status {result.data['status']}", f"get_case_status:{ref}")
-            self._escalate(turn, "customer_requested_human", self._policy_only(human=True).rule_ids,
-                           questions=[f"Customer asked about case {ref} (status {result.data['status']})."])
-            return
-        turn.state.statements.append(f"[reference {ref}]")
-        self._act_on_transaction(turn, ref, None, "customer_reference")
-
-    def _select(self, turn: Turn, option: Option) -> None:
-        self._step(turn, "decide.selection", "customer_selected", {"option": option.index, "kind": option.kind})
-        turn.state.options = []
-        if option.kind == "card":
-            self._request_confirmation(turn, "block_card", {"product_id": option.record_id,
-                                                            "reason": "customer_request"}, option.label, None, None)
-            return
-        self._act_on_transaction(turn, option.record_id, None, "customer_selection")
-
     # ---- decide (learned disposition) ------------------------------------------------------------------------
     def _decide(self, turn: Turn) -> None:
         state = turn.state
@@ -269,11 +176,12 @@ class Orchestrator(ActionsMixin):
             return
         pool = pool_result.data["transactions"]
         cues = self._cues(state, pool)
-        if not cues:
+        state.cued = names_a_charge(cues, state.text)
+        if not state.cued:  # nothing names a charge: never act on one (see actions._act_on_transaction)
             self._clarify_details(turn, cues)
             return
-        started = time.perf_counter()
-        spent = non_disputable_fit(state.text, self.service.clock().date(), state.slots.overrides(), pool)
+        started, text = time.perf_counter(), nlu.without_refs(state.text)
+        spent = non_disputable_fit(text, self.service.clock().date(), state.slots.overrides(), pool)
         if spent is not None:  # a charge that moved no money: policy explains it, no model is asked
             self._step(turn, "decide.status_check", "fits_non_disputable_charge",
                        {"status": spent.get("transaction_status"), "cues": sorted(cues), "pool_size": len(pool)},
@@ -281,11 +189,12 @@ class Orchestrator(ActionsMixin):
             self._act_on_transaction(turn, spent["transaction_id"], None,
                                      "status check (the only charge that fits every cue moved no money)")
             return
-        disposition = self.disposition.decide(state.text, self.service.clock().date(), state.slots.overrides(), pool)
+        disposition = self.disposition.decide(text, self.service.clock().date(), state.slots.overrides(), pool)
         state.confidence = disposition.confidence
         self._step(turn, "decide.disposition", disposition.decision,
                    {"model": disposition.model, "confidence": disposition.confidence, "cues": sorted(cues),
-                    "pool_size": len(pool), "probabilities": disposition.probabilities}, started=started)
+                    "pool_size": len(pool), "probabilities": disposition.probabilities, "note": disposition.note},
+                   started=started)
         if disposition.decision == "resolve":
             self._match_reasons(turn, pool, disposition.top_k[:1])
             self._act_on_transaction(turn, disposition.top_k[0], disposition.confidence, disposition.model)
@@ -312,7 +221,8 @@ class Orchestrator(ActionsMixin):
         """Why each charge matched, from the ranker features that fired (agent/orchestrator/evidence.py)."""
         state, started = turn.state, time.perf_counter()
         try:
-            found = evidence.match_reasons(state.text, self.service.clock().date(), state.slots.overrides(), pool,
+            found = evidence.match_reasons(nlu.without_refs(state.text), self.service.clock().date(),
+                                           state.slots.overrides(), pool,
                                            ids, state.language, POOL_ARGS["window_days"])
         except (KeyError, TypeError, ValueError) as exc:  # a charge the feature code cannot read: show no reasons
             self._step(turn, "decide.reasons", "unavailable", {"error": type(exc).__name__}, started=started)
@@ -328,8 +238,8 @@ class Orchestrator(ActionsMixin):
         slots = state.slots
         cues = {k for k, v in (("amount", slots.amount), ("date", slots.date), ("merchant", slots.merchant)) if v}
         cues |= nlu.text_cues(state.text, self.service.clock().date())
-        tokens = tuple(w.strip(".,;:?!") for w in nlu.plain(state.text).split() if len(w) >= 3)
-        if any(merchant_similarity(tokens, tx.get("merchant_name"))[0] >= MERCHANT_MENTION_MIN for tx in pool):
+        tokens = tuple(w.strip(".,;:?!") for w in nlu.plain(nlu.without_refs(state.text)).split() if len(w) >= 3)
+        if any(mentions_merchant(tokens, tx.get("merchant_name")) for tx in pool):
             cues.add("merchant")
         return cues
 
