@@ -115,9 +115,14 @@ def test_cost_is_computed_from_a_filled_price_row(tmp_path):
 
 
 def test_price_file_invents_no_prices():
+    # A real provider row is either an unfilled placeholder or carries its official source URL and read date.
     for entry in PriceTable.load().entries:
-        if entry.provider != "fake":
-            assert entry.input_per_mtok is None and entry.output_per_mtok is None and "TODO" in entry.source
+        if entry.provider in ("fake", "ollama"):
+            continue
+        if entry.input_per_mtok is None or entry.output_per_mtok is None:
+            assert "TODO" in entry.source
+        else:
+            assert "https://" in entry.source and "read 2026-" in entry.source
 
 
 def test_provider_failure_is_recorded_and_raised_as_unavailable():

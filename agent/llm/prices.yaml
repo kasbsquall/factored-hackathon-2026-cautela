@@ -7,17 +7,36 @@ currency: USD
 unit: per_million_tokens
 
 prices:
+  # All rows read on 2026-09-25 from the provider's official pricing page (standard tier, no batch, no cache).
   - provider: anthropic
-    model: TODO
-    input_per_mtok: null
-    output_per_mtok: null
-    source: TODO official pricing URL and date read
+    model: claude-haiku-4-5
+    input_per_mtok: 1.00
+    output_per_mtok: 5.00
+    source: https://platform.claude.com/docs/en/about-claude/pricing (read 2026-09-25)
+
+  - provider: anthropic
+    model: claude-haiku-4-5-20251001
+    input_per_mtok: 1.00
+    output_per_mtok: 5.00
+    source: https://platform.claude.com/docs/en/about-claude/pricing (read 2026-09-25)
 
   - provider: openai
-    model: TODO
-    input_per_mtok: null
-    output_per_mtok: null
-    source: TODO official pricing URL and date read
+    model: gpt-6-luna
+    input_per_mtok: 0.10
+    output_per_mtok: 0.50
+    source: https://developers.openai.com/api/docs/pricing (read 2026-09-25)
+
+  - provider: openai
+    model: gpt-4o-mini
+    input_per_mtok: 0.15
+    output_per_mtok: 0.60
+    source: https://developers.openai.com/api/docs/pricing, "All models" table (read 2026-09-25)
+
+  - provider: gemini
+    model: gemini-2.5-flash-lite
+    input_per_mtok: 0.10
+    output_per_mtok: 0.40
+    source: https://ai.google.dev/gemini-api/docs/pricing, paid tier (read 2026-09-25); the free tier is 0 with limits shown only in AI Studio
 
   - provider: groq
     model: TODO
@@ -25,18 +44,13 @@ prices:
     output_per_mtok: null
     source: TODO official pricing URL and date read
 
-  - provider: gemini
-    model: TODO
-    input_per_mtok: null
-    output_per_mtok: null
-    source: TODO official pricing URL and date read
-
   - provider: ollama
     model: "*"
-    input_per_mtok: null
-    output_per_mtok: null
+    input_per_mtok: 0
+    output_per_mtok: 0
     source: >-
-      TODO decide how to cost local inference (no API charge; hardware and energy are not per-token prices)
+      Local inference on the team's GPU has no per-token API charge. Hardware and energy are not counted and
+      this is stated as a limitation wherever cost per case is reported.
 
   - provider: fake
     model: "*"

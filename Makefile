@@ -4,7 +4,7 @@ SOURCE ?= data/fixture
 TARGET ?= data/warehouse.duckdb
 TARGET_S3 ?= data/warehouse_s3.duckdb
 
-.PHONY: fixture pipeline pipeline-s3 test all
+.PHONY: fixture pipeline pipeline-s3 cases test all
 
 fixture:  ## synthetic test fixture (team-generated, not organizer data)
 	uv run python -m data_engineering.fixtures.generate --out data/fixture --seed $(SEED)
@@ -14,6 +14,9 @@ pipeline:  ## bronze and silver, incremental; SOURCE can be a local path or s3:/
 
 pipeline-s3:  ## real data: source and credentials come from .env (LATAM_BANK_S3_URI, AWS_*)
 	uv run python -m data_engineering.pipelines.run --target $(TARGET_S3)
+
+cases:  ## rebuild the held-out dispute cases and check them against the committed manifest
+	uv run python -m ml.scenarios.build --verify
 
 test:
 	uv run pytest
