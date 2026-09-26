@@ -64,11 +64,11 @@ Nothing of this project listens on a public interface, and no firewall rule is o
 - Demo mode publishes the demo logins and their one-time codes, so anyone can log in as the synthetic customers.
   That is the point of the demo; none of them is a real person.
 - The console key is one shared secret, and the console endpoints are reachable from the internet (key-gated).
-- One process, one lock: turns are serialized. Memory after startup and one conversation was about 130 MB
+- One process, one lock: turns are serialized. Memory after startup and two conversations was 130 to 150 MB
   locally; the 640 MB ceiling kills and restarts the container if it is reached, rather than letting it swap.
 - The audit trail is emptied at every reset. It is demo evidence, not the retention the code describes.
 - Image: about 216 MB compressed, 920 MB on disk (scipy, scikit-learn, pyarrow and duckdb are most of it). The
-  build took about 3 minutes on a laptop; its memory use on the server was not measured.
+  build took 2 to 3 minutes on a laptop; its memory use on the server was not measured.
 - Not verified from here, because nothing connected to the server: the OpenLiteSpeed header syntax, whether it
   sends X-Forwarded-For, and the exact paths CyberPanel writes. Steps 4 and 5 check each one.
 
