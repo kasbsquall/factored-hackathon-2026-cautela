@@ -1,0 +1,123 @@
+.queue {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--bg);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-12);
+  padding: var(--s-12) var(--s-16);
+  border-bottom: 1px solid var(--line);
+  font-size: var(--t-12);
+  color: var(--ink2);
+}
+
+.heading {
+  flex: 1;
+  display: grid;
+  gap: var(--s-2);
+  min-width: 0;
+}
+
+.title {
+  font-family: var(--f-disp);
+  font-variation-settings: "opsz" 96;
+  font-size: var(--t-20);
+  letter-spacing: -0.015em;
+  color: var(--ink);
+}
+
+.refresh {
+  flex: 0 0 auto;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pad {
+  padding: var(--s-16);
+}
+
+.row {
+  display: grid;
+  gap: var(--s-6);
+  padding: var(--s-12) var(--s-16);
+  border-bottom: 1px solid var(--line-soft);
+  text-decoration: none;
+  position: relative;
+  transition: background-color var(--d-ui) var(--ease-out);
+}
+
+.row:hover {
+  background: var(--sf);
+}
+
+.row:active {
+  transform: scale(0.995);
+}
+
+.row:focus-visible {
+  outline-offset: -2px;
+}
+
+.row[aria-current="page"] {
+  background: var(--sf);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--ring) 60%, transparent);
+}
+
+@media (min-width: 1024px) {
+  .row[data-preview] {
+    background: var(--sf);
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--ring) 60%, transparent);
+  }
+}
+
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--s-8);
+}
+
+.lang {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  font-size: var(--t-11);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink2);
+  padding: 0 var(--s-6);
+  border: 1px solid var(--line);
+  border-radius: var(--r-data);
+}
+
+.summary {
+  font-size: var(--t-13);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.meta {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-8);
+  font-size: var(--t-11);
+  color: var(--ink2);
+}
+
+.skeletonRow {
+  display: grid;
+  gap: var(--s-8);
+  padding: var(--s-16);
+  border-bottom: 1px solid var(--line-soft);
+}

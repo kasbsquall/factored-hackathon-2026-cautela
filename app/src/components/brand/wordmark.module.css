@@ -1,0 +1,34 @@
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-8);
+  font-family: var(--f-disp);
+  font-weight: 650;
+  font-variation-settings: "opsz" 96;
+  letter-spacing: -0.03em;
+  text-decoration: none;
+  color: var(--ink);
+  border-radius: var(--r);
+  transition: opacity var(--d-ui) var(--ease-out);
+}
+
+.wordmark:hover {
+  opacity: 0.86;
+}
+
+.wordmark:active {
+  transform: scale(0.97);
+}
+
+.sm {
+  font-size: var(--t-16);
+}
+
+.md {
+  font-size: var(--t-20);
+}
+
+.lg {
+  font-size: var(--t-49);
+  gap: var(--s-16);
+}

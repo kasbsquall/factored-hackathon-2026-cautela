@@ -1,0 +1,55 @@
+/* Chips sit on --bg or --sf only (see contrast note in globals.css). */
+.chip {
+  --c: var(--ink2);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-6);
+  height: 28px;
+  padding: 0 var(--s-12) 0 var(--s-8);
+  border-radius: var(--r-btn);
+  border: 1px solid color-mix(in oklab, var(--c) 35%, transparent);
+  background: color-mix(in oklab, var(--c) 10%, transparent);
+  color: var(--c-ink, var(--c));
+  font-size: var(--t-13);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.chip svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
+.sm {
+  height: 24px;
+  font-size: var(--t-12);
+  padding: 0 var(--s-8) 0 var(--s-6);
+  gap: var(--s-4);
+}
+
+.sm svg {
+  width: 14px;
+  height: 14px;
+}
+
+.ok {
+  --c: var(--ok);
+}
+
+.cf {
+  --c: var(--cf);
+}
+
+.stop {
+  --c: var(--stop);
+}
+
+.bad {
+  --c: var(--bad);
+}
+
+.hu {
+  --c: var(--ink2);
+  --c-ink: var(--ink);
+}

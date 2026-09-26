@@ -1,0 +1,45 @@
+.state {
+  display: grid;
+  justify-items: start;
+  gap: var(--s-16);
+  padding: var(--s-64) var(--s-16);
+}
+
+.icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: color-mix(in oklab, var(--stop) 12%, transparent);
+  color: var(--stop);
+}
+
+.icon svg {
+  width: 32px;
+  height: 32px;
+}
+
+.title {
+  font-family: var(--f-disp);
+  font-variation-settings: "opsz" 96;
+  font-size: var(--t-31);
+  line-height: 1.02;
+  letter-spacing: -0.022em;
+}
+
+.body {
+  color: var(--ink2);
+  max-width: 40ch;
+  margin-bottom: var(--s-8);
+}
+
+.title:focus {
+  outline: none;
+}
+
+@media (min-width: 768px) {
+  .state {
+    padding-inline: var(--s-32);
+  }
+}

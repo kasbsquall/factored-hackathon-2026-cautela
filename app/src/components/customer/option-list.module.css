@@ -1,0 +1,117 @@
+.wrap {
+  display: grid;
+  gap: var(--s-12);
+}
+
+.list {
+  display: grid;
+  gap: var(--s-8);
+}
+
+.cand {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--s-4) var(--s-12);
+  align-items: baseline;
+  width: 100%;
+  min-height: 44px;
+  padding: var(--s-12) var(--s-16);
+  text-align: left;
+  border-radius: var(--r-card);
+  border: 1px solid var(--line);
+  background: var(--sf2);
+  cursor: pointer;
+  transition: border-color var(--d-ui) var(--ease-out), background-color var(--d-ui) var(--ease-out), transform var(--d-fast) var(--ease-out), opacity var(--d-ui) var(--ease-out);
+}
+
+.cand:hover:not([aria-disabled="true"]) {
+  border-color: var(--ink2);
+}
+
+.cand:active:not([aria-disabled="true"]) {
+  transform: scale(0.985);
+}
+
+.cand[aria-pressed="true"] {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.cand[aria-disabled="true"] {
+  cursor: default;
+}
+
+/* Dim the other rows only once one was picked; a busy list keeps full contrast. */
+.list:has([aria-pressed="true"]) .cand:not([aria-pressed="true"]) {
+  opacity: 0.5;
+}
+
+.rank {
+  grid-row: 1 / span 2;
+  align-self: start;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--f-mono);
+  font-size: var(--t-12);
+  color: var(--ink2);
+  border: 1px solid var(--line);
+}
+
+.merchant {
+  font-size: var(--t-13);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.amount {
+  font-size: var(--t-15);
+  font-weight: 500;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.when {
+  grid-column: 2 / -1;
+  display: flex;
+  align-items: center;
+  gap: var(--s-6);
+  font-size: var(--t-13);
+  color: var(--ink2);
+}
+
+.when svg {
+  width: 14px;
+  height: 14px;
+}
+
+.none {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  background: transparent;
+  border-style: dashed;
+  color: var(--ink);
+  font-size: var(--t-15);
+}
+
+.none svg {
+  width: 20px;
+  height: 20px;
+  color: var(--ink2);
+}
+
+.note {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--s-8);
+  font-size: var(--t-13);
+  color: var(--ink2);
+}
+
+.note svg {
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+}

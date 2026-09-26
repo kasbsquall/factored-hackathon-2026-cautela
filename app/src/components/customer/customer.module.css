@@ -1,0 +1,42 @@
+.shell {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.layout {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.phone {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--sf);
+}
+
+@media (min-width: 768px) {
+  .layout {
+    padding: var(--s-32) var(--s-32) var(--s-64);
+    justify-content: center;
+    grid-template-columns: minmax(0, 480px);
+    gap: var(--s-48);
+  }
+
+  .phone {
+    min-height: 760px;
+    border-radius: var(--r-phone);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow), var(--highlight);
+  }
+}
+
+@media (min-width: 1024px) {
+  .layout {
+    grid-template-columns: minmax(0, 480px) minmax(0, 340px);
+    gap: var(--s-96);
+    align-items: start;
+  }
+}

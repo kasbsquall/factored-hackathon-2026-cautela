@@ -1,0 +1,16 @@
+.mark {
+  display: block;
+  flex: 0 0 auto;
+}
+
+.turning {
+  transform-box: view-box;
+  transform-origin: 48px 48px;
+  animation: spin 2.4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .turning {
+    animation: none;
+  }
+}

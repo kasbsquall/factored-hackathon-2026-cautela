@@ -62,3 +62,40 @@ To be completed. Metrics follow the problem statement definitions: safe automate
 ## Limitations and route to production
 
 To be completed honestly as the build progresses.
+
+## Frontend
+
+`app/` is a Next.js App Router project (TypeScript, CSS Modules) with three surfaces: the customer conversation
+(Spanish and Portuguese, mobile first), the agent console (handoff queue and ready file) and the audit trail (one
+trace per conversation with its hash-chain status). Customer text is in the customer's language; the console and
+audit pages are in English and show customer content as received.
+
+```bash
+cd app
+npm install
+npm run dev          # http://localhost:3100, mock mode by default
+npm test             # Vitest component and unit tests
+npm run e2e          # Playwright smoke of the customer flow (mock mode, reuses the dev server)
+npm run gen:api      # regenerate src/lib/api/generated/openapi.d.ts from docs/schemas/openapi.json
+```
+
+Both modes implement one client contract (`app/src/lib/api/client.ts`) that mirrors the service: login with a
+one-time code, then `POST /conversations/turn` and `/conversations/{id}/confirm`, `GET /cases/{id}` for the
+read-back, and the console reads. **Mock mode** (`NEXT_PUBLIC_API_MODE=mock`, the default) runs that contract in
+the browser with synthetic fixtures and the reply templates of `agent/orchestrator/replies.py`: four test
+identities (several similar charges, amount review, a failing case store, a 40-second session), a one-time code
+shown in a simulated channel, a real SHA-256 hash chain per trace and one deliberately tampered trace. State
+resets on reload.
+
+**Live mode** talks to the service in `api/` through a same-origin proxy (`src/app/api/cautela/[...path]/route.ts`),
+so no CORS setup is needed and the console key never reaches the browser. Copy `app/.env.example` to
+`app/.env.local` and set `NEXT_PUBLIC_API_MODE=live` and `CAUTELA_API_URL` (for example `http://127.0.0.1:8000`).
+Console pages also need `CAUTELA_CONSOLE_PROXY=enabled` and `CAUTELA_CONSOLE_KEY` (in demo mode the service
+writes a generated key to `data/demo/console_key.txt`); enable that only on a
+deployment that is itself restricted to bank staff, because the proxy grants console access to whoever can reach it.
+
+Known gaps: options and confirmations carry only a label (date, merchant, amount), so the customer does not see
+why a charge matched; the claim window on the receipt is the rule's window, not a computed date; in live mode
+`/audit` lists only the traces behind queued handoffs (there is no trace listing endpoint) and the chain status
+does not say where a chain breaks. The demo service runs its own clock, so the client moves expiry times onto the
+browser clock with `GET /health`.

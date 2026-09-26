@@ -1,0 +1,60 @@
+.notice {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--s-12);
+  padding: var(--s-16);
+  border-radius: var(--r-card);
+  background: var(--sf);
+  box-shadow: var(--highlight);
+}
+
+.empty {
+  background: transparent;
+  border: 1px dashed var(--line);
+  box-shadow: none;
+}
+
+.error {
+  background: color-mix(in oklab, var(--bad) 8%, var(--sf));
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--ink2);
+}
+
+.error .icon {
+  color: var(--bad);
+}
+
+.icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.body {
+  display: grid;
+  gap: var(--s-6);
+  min-width: 0;
+}
+
+.title {
+  font-weight: 700;
+}
+
+.text {
+  color: var(--ink2);
+  font-size: var(--t-15);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-8);
+  margin-top: var(--s-6);
+}

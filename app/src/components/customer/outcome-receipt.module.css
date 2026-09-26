@@ -1,0 +1,32 @@
+.stack {
+  display: grid;
+  gap: var(--s-12);
+}
+
+.note {
+  font-size: var(--t-13);
+  color: var(--ink2);
+}
+
+.trace {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-4);
+  min-height: 24px;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--line);
+  border-radius: var(--r-data);
+  transition: text-decoration-color var(--d-ui) var(--ease-out);
+}
+
+.trace:hover {
+  text-decoration-color: currentColor;
+}
+
+.trace svg {
+  width: 14px;
+  height: 14px;
+}
+

@@ -1,0 +1,106 @@
+.bezel {
+  padding: var(--s-6);
+  border-radius: var(--r-bezel);
+  background: rgba(234, 229, 214, 0.04);
+  box-shadow: inset 0 0 0 1px rgba(234, 229, 214, 0.07);
+}
+
+.card {
+  --c: var(--ink);
+  /* sf2 lifts the card off the phone (sf). Receipts carry no chips, and every text token passes AA on sf2. */
+  background: var(--sf2);
+  border-radius: var(--r-card);
+  box-shadow: var(--highlight);
+  padding: var(--s-16) var(--s-16) var(--s-12);
+  display: grid;
+  gap: var(--s-12);
+}
+
+.ok {
+  --c: var(--ok);
+}
+
+.cf {
+  --c: var(--cf);
+}
+
+.stop {
+  --c: var(--stop);
+}
+
+.bad {
+  --c: var(--bad);
+}
+
+.hu {
+  --c: var(--ink);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-8);
+  font-family: var(--f-body);
+  font-size: var(--t-16);
+  font-weight: 700;
+  color: var(--c);
+}
+
+.head svg {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+}
+
+.stamp path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 30;
+  --dash: 30;
+  animation: draw 520ms var(--ease-out) 260ms both;
+}
+
+/* Values are body text; ids, amounts and rule ids carry the .mono class themselves. */
+.rows {
+  margin: 0;
+  display: grid;
+  gap: var(--s-6);
+  font-size: var(--t-13);
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--s-12);
+  min-width: 0;
+}
+
+.row dt {
+  font-family: var(--f-body);
+  font-size: var(--t-13);
+  color: var(--ink2);
+  white-space: nowrap;
+}
+
+.row dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums slashed-zero;
+  overflow-wrap: anywhere;
+}
+
+.foot {
+  border-top: 1px dashed var(--line);
+  padding-top: var(--s-8);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--s-8);
+  font-family: var(--f-mono);
+  font-size: var(--t-11);
+  color: var(--ink2);
+}
