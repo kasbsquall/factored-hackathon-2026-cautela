@@ -9,6 +9,7 @@ import { DialMark } from "@/components/brand/dial-mark";
 import type { Entry, Flow } from "./flow-types";
 import { ConfirmCard } from "./confirm-card";
 import { OptionList } from "./option-list";
+import { RecognizeCard } from "./recognize-card";
 import { OutcomeReceipt } from "./outcome-receipt";
 import styles from "./conversation.module.css";
 
@@ -37,6 +38,8 @@ export function EntryView({ entry, isLast, flow, copy, lang, canAskHuman }: Prop
       );
     case "options":
       return <OptionList entry={entry} copy={copy} lang={lang} disabled={flow.busy} onPick={(o) => flow.pickOption(entry.id, o)} />;
+    case "recognize":
+      return <RecognizeCard entry={entry} copy={copy} lang={lang} onAnswer={(recognized) => flow.recognize(entry, recognized)} />;
     case "confirm":
       return <ConfirmCard entry={entry} copy={copy} lang={lang} onConfirm={() => flow.confirm(entry)} onCancel={() => flow.cancel(entry)} />;
     case "receipt":

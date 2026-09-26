@@ -18,7 +18,12 @@ test("customer picks one of several charges and gets a verified case, in Spanish
   await expect(options).toHaveCount(4);
   for (const button of await options.all()) await expect(button).toHaveAttribute("aria-pressed", "false");
 
-  await page.getByRole("button", { name: /MERCANUBE/ }).click();
+  const mercanube = page.getByRole("button", { name: /MERCANUBE/ });
+  await expect(mercanube.getByRole("list", { name: "En qué coincide" }).getByRole("listitem")).toHaveCount(2);
+  await mercanube.click();
+  await expect(page.getByRole("heading", { name: "¿Reconoces este cargo?" })).toBeVisible();
+  await expect(page.getByText("Débito •••• 4821").last()).toBeVisible();
+  await page.getByRole("button", { name: /No lo reconozco/ }).click();
   await expect(page.getByText("Confirma antes de abrir la disputa")).toBeVisible();
   await page.getByRole("button", { name: "Confirmar disputa" }).click();
 
@@ -39,6 +44,8 @@ test("a high amount is registered for review and handed to a person, in Portugue
   await login(page, /Valor de USD 450 ou mais/, "Entrar");
 
   await page.getByRole("button", { name: /quase 10 mil pesos/ }).click();
+  await expect(page.getByRole("heading", { name: "Você reconhece esta cobrança?" })).toBeVisible();
+  await page.getByRole("button", { name: /Não reconheço/ }).click();
   await expect(page.getByText("Confirme antes de abrir a contestação")).toBeVisible();
   await page.getByRole("button", { name: "Confirmar contestação" }).click();
 
@@ -47,4 +54,18 @@ test("a high amount is registered for review and handed to a person, in Portugue
   await expect(receipt.getByText("SYN-AMOUNT-001", { exact: true })).toBeVisible();
   await expect(receipt.getByText(/^ho_[0-9a-f]{16}$/)).toBeVisible();
   await expect(page.getByRole("button", { name: "Falar com uma pessoa" })).toHaveCount(0);
+});
+
+test("a customer who recognizes the charge stops before any dispute", async ({ page }) => {
+  await page.goto("/customer");
+  await login(page, /Valor de USD 450|Monto de USD 450/, "Ingresar");
+
+  await page.getByRole("button", { name: /casi 10 mil pesos/ }).click();
+  await expect(page.getByRole("heading", { name: "¿Reconoces este cargo?" })).toBeVisible();
+  await page.getByRole("button", { name: "Sí, lo reconozco" }).click();
+
+  const receipt = page.getByRole("region", { name: "Sin disputa" });
+  await expect(receipt).toBeVisible();
+  await expect(receipt.getByText("ninguno", { exact: true })).toBeVisible();
+  await expect(page.getByText("Confirma antes de abrir la disputa")).toHaveCount(0);
 });

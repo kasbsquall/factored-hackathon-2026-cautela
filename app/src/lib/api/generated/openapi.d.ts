@@ -191,6 +191,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/conversations/{conversation_id}/recognize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Recognize */
+        post: operations["recognize_conversations__conversation_id__recognize_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/demo/identities": {
         parameters: {
             query?: never;
@@ -297,6 +314,7 @@ export interface components {
         CaseRef: {
             /** Case Id */
             case_id: string;
+            claim_window: components["schemas"]["ClaimWindow"] | null;
             /** Verified */
             verified: boolean;
         };
@@ -354,6 +372,71 @@ export interface components {
              */
             expires_at: string;
         };
+        /**
+         * ChargeView
+         * @description Verified fields of one charge, as the tools read them (get_transaction, list_recent_transactions, and the
+         *     masked card list of get_customer_profile). Nothing here is model text; a field the data lacks is null.
+         */
+        ChargeView: {
+            /** Amount */
+            amount: number | null;
+            /**
+             * Card Last4
+             * @description Last 4 digits of that card, from the masked profile
+             */
+            card_last4: string | null;
+            /**
+             * Card Type
+             * @description Credit Card or Debit Card when the charge moved a card
+             */
+            card_type: string | null;
+            /**
+             * Category
+             * @description Transaction category: Food, Transport, Services, Entertainment, Health or Other
+             */
+            category: string | null;
+            /**
+             * Channel
+             * @description ATM, Branch, Web, App, POS or Transfer
+             */
+            channel: string | null;
+            /** City */
+            city: string | null;
+            /** Country */
+            country: string | null;
+            /** Currency */
+            currency: string | null;
+            /**
+             * Merchant Category
+             * @description MCC code as delivered (ISO 18245)
+             */
+            merchant_category: string | null;
+            /** Merchant Name */
+            merchant_name: string | null;
+            /**
+             * Transaction Date
+             * @description Local time of the transaction, no offset
+             */
+            transaction_date: string | null;
+            /** Transaction Status */
+            transaction_status: string | null;
+            /** Transaction Type */
+            transaction_type: string | null;
+        };
+        /** ClaimWindow */
+        ClaimWindow: {
+            /**
+             * Deadline
+             * Format: date
+             * @description Last day to file, computed by the policy engine from the charge date
+             */
+            deadline: string;
+            /**
+             * Rule Id
+             * @description Window rule of agent/policy/rules.yaml, e.g. MX-WINDOW-001
+             */
+            rule_id: string;
+        };
         /** ConfirmRequest */
         ConfirmRequest: {
             /**
@@ -366,6 +449,9 @@ export interface components {
         };
         /** ConfirmationView */
         ConfirmationView: {
+            /** @description The charge a dispute confirmation is about; null for a card */
+            charge: components["schemas"]["ChargeView"] | null;
+            claim_window: components["schemas"]["ClaimWindow"] | null;
             /** Confirmation Id */
             confirmation_id: string;
             /**
@@ -375,6 +461,8 @@ export interface components {
             expires_at: string;
             /** Label */
             label: string;
+            /** Reasons */
+            reasons: components["schemas"]["MatchReason"][];
             /**
              * Review
              * @description True when policy sends the registered case to human review
@@ -411,11 +499,12 @@ export interface components {
             language: "es" | "pt";
             /** Options */
             options: components["schemas"]["OptionView"][];
+            recognition: components["schemas"]["RecognitionView"] | null;
             /**
              * Stage
              * @enum {string}
              */
-            stage: "collecting" | "clarifying" | "awaiting_confirmation" | "resolved" | "handed_off" | "abstained" | "closed";
+            stage: "collecting" | "clarifying" | "awaiting_recognition" | "awaiting_confirmation" | "resolved" | "recognized" | "handed_off" | "abstained" | "closed";
             /** Transcript */
             transcript: components["schemas"]["TranscriptLine"][];
         };
@@ -569,8 +658,26 @@ export interface components {
             /** Provider */
             provider?: string | null;
         };
+        /**
+         * MatchReason
+         * @description Why a charge matched the description: one ranker feature that fired, with a label in the conversation
+         *     language. `value` is the number in the label (percent or days), when it has one.
+         */
+        MatchReason: {
+            /**
+             * Code
+             * @enum {string}
+             */
+            code: "amount_exact" | "amount_close" | "date_same_day" | "date_within_days" | "date_in_range" | "date_near" | "merchant_named" | "type_match" | "channel_match" | "city_match" | "only_fit" | "customer_selected" | "customer_reference";
+            /** Label */
+            label: string;
+            /** Value */
+            value: number | null;
+        };
         /** OptionView */
         OptionView: {
+            /** @description Set for transaction options */
+            charge: components["schemas"]["ChargeView"] | null;
             /** Index */
             index: number;
             /**
@@ -580,6 +687,11 @@ export interface components {
             kind: "transaction" | "card";
             /** Label */
             label: string;
+            /**
+             * Reasons
+             * @description Match reasons that fired; empty for cards or when none fired
+             */
+            reasons: components["schemas"]["MatchReason"][];
         };
         /** OutboxResponse */
         OutboxResponse: {
@@ -589,6 +701,30 @@ export interface components {
              */
             code: string;
         };
+        /**
+         * RecognitionView
+         * @description The "do you recognize it?" step, before any confirmation is issued.
+         */
+        RecognitionView: {
+            charge: components["schemas"]["ChargeView"];
+            claim_window: components["schemas"]["ClaimWindow"] | null;
+            /** Label */
+            label: string;
+            /** Reasons */
+            reasons: components["schemas"]["MatchReason"][];
+            /** Recognition Id */
+            recognition_id: string;
+        };
+        /** RecognizeRequest */
+        RecognizeRequest: {
+            /** Recognition Id */
+            recognition_id: string;
+            /**
+             * Recognized
+             * @description True: the customer recognizes the charge and no dispute is opened
+             */
+            recognized: boolean;
+        };
         /** SessionResponse */
         SessionResponse: {
             /** Customer Ref */
@@ -596,8 +732,14 @@ export interface components {
             /**
              * Expires At
              * Format: date-time
+             * @description On the service clock (see GET /health service_clock)
              */
             expires_at: string;
+            /**
+             * Expires In
+             * @description Seconds until expires_at, so a client does not depend on clock agreement
+             */
+            expires_in: number;
             /**
              * Session Token
              * @description Send as 'Authorization: Bearer <token>'. Expires in 15 minutes.
@@ -681,6 +823,7 @@ export interface components {
             llm: components["schemas"]["LlmUsage"];
             /** Options */
             options: components["schemas"]["OptionView"][];
+            recognition: components["schemas"]["RecognitionView"] | null;
             /** Reply */
             reply: string;
             /**
@@ -692,7 +835,7 @@ export interface components {
              * Stage
              * @enum {string}
              */
-            stage: "collecting" | "clarifying" | "awaiting_confirmation" | "resolved" | "handed_off" | "abstained" | "closed";
+            stage: "collecting" | "clarifying" | "awaiting_recognition" | "awaiting_confirmation" | "resolved" | "recognized" | "handed_off" | "abstained" | "closed";
             /** Trace Id */
             trace_id: string;
             /** Trail */
@@ -1593,6 +1736,95 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ConfirmRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TurnResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    recognize_conversations__conversation_id__recognize_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecognizeRequest"];
             };
         };
         responses: {

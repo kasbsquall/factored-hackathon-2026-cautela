@@ -20,10 +20,22 @@ const TEMPLATES = {
     pt: "Pronto. Registrei a contestação da cobrança {label} com o número de caso {case_id}. Conferi no sistema que o caso está aberto.",
   },
   handed_off: {
-    es: "Te paso con una persona del banco: {reason}. {case}Le dejé el resumen de tu caso, así que no tendrás que repetir lo que ya me contaste.",
-    pt: "Vou te passar para uma pessoa do banco: {reason}. {case}Deixei o resumo do seu caso, então você não vai precisar repetir o que já me contou.",
+    es: "Te paso con una persona del banco: {reason}. {case}Quien te atienda recibe los datos que ya comprobé de tu caso.",
+    pt: "Vou te passar para uma pessoa do banco: {reason}. {case}Quem for te atender recebe os dados que já conferi do seu caso.",
   },
   declined: { es: "Entendido, no registré nada.", pt: "Entendido, não registrei nada." },
+  recognize_check: {
+    es: "Antes de abrir una disputa, revisa cómo aparece este cargo en tu cuenta: {label}. ¿Lo reconoces?",
+    pt: "Antes de abrir uma contestação, veja como esta cobrança aparece na sua conta: {label}. Você a reconhece?",
+  },
+  recognized: {
+    es: "Gracias por revisarlo. No abrí ninguna disputa por el cargo {label} y no cambié nada en tu cuenta.",
+    pt: "Obrigado por conferir. Não abri contestação para a cobrança {label} e não mudei nada na sua conta.",
+  },
+  pending_recognition: {
+    es: "Antes de seguir, dime con los botones si reconoces el cargo {label}.",
+    pt: "Antes de continuar, me diga nos botões se você reconhece a cobrança {label}.",
+  },
   pending_confirmation: {
     es: "Tienes una confirmación pendiente para {label}. Usa los botones para confirmar o cancelar.",
     pt: "Há uma confirmação pendente para {label}. Use os botões para confirmar ou cancelar.",

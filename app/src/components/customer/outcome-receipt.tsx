@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { ArrowUpRight } from "@phosphor-icons/react";
-import type { Language } from "@/lib/api/types";
+import type { ClaimWindow, Language } from "@/lib/api/types";
+import { dateOnly } from "@/lib/format";
 import type { CustomerCopy } from "@/lib/i18n/customer";
 import { Receipt, type ReceiptRow } from "@/components/ui/receipt";
 import type { Entry } from "./flow-types";
-import { ChargeText } from "./charge-label";
+import { ChargeLine } from "./charge-label";
 import { RuleRef } from "./rule-ref";
 import styles from "./outcome-receipt.module.css";
 
@@ -22,9 +23,19 @@ function writeAttempts(turn: ReceiptEntry["turn"]): number | null {
   return typeof step?.detail.attempts === "number" ? step.detail.attempts : null;
 }
 
-/** Claim window of each window rule (agent/policy/rules.yaml), then every rule id with its source. */
-function ruleRows(ruleIds: string[], copy: CustomerCopy): ReceiptRow[] {
-  const windows = ruleIds.filter((id) => copy.ruleWindow[id]).map((id) => ({ label: copy.rowClaimDeadline, value: copy.ruleWindow[id] ?? "" }));
+/**
+ * The claim deadline the policy engine computed for this charge, with what its window rule says
+ * (agent/policy/rules.yaml); without a computed date, the rule's window alone. Then every rule id with its source.
+ */
+function ruleRows(ruleIds: string[], claim: ClaimWindow | null, copy: CustomerCopy, lang: Language): ReceiptRow[] {
+  const windows = claim
+    ? [{ label: copy.rowClaimDeadline, value: (
+      <span className={styles.deadline}>
+        <span className="num">{copy.claimUntil(dateOnly(claim.deadline, lang))}</span>
+        {copy.ruleWindow[claim.rule_id] ? <small>{copy.ruleWindow[claim.rule_id]}</small> : null}
+      </span>
+    ) }]
+    : ruleIds.filter((id) => copy.ruleWindow[id]).map((id) => ({ label: copy.rowClaimDeadline, value: copy.ruleWindow[id] ?? "" }));
   return [...windows, ...ruleIds.map((id) => ({ label: copy.rowRule, value: <RuleRef id={id} copy={copy} /> }))];
 }
 
@@ -32,7 +43,8 @@ function ruleRows(ruleIds: string[], copy: CustomerCopy): ReceiptRow[] {
 export function OutcomeReceipt({ entry, copy, lang }: { entry: ReceiptEntry; copy: CustomerCopy; lang: Language }) {
   const { turn, caseView } = entry;
   const reason = turn.transfer_reason;
-  const charge: ReceiptRow[] = entry.charge ? [{ label: copy.rowCharge, value: <ChargeText label={entry.charge} lang={lang} /> }] : [];
+  const charge: ReceiptRow[] = entry.charge || entry.chargeView
+    ? [{ label: copy.rowCharge, value: <ChargeLine label={entry.charge} charge={entry.chargeView} lang={lang} /> }] : [];
   const handoff: ReceiptRow[] = turn.handoff_id ? [{ label: copy.rowHandoff, value: <Mono>{turn.handoff_id}</Mono> }] : [];
   const foot = (
     <>
@@ -54,7 +66,7 @@ export function OutcomeReceipt({ entry, copy, lang }: { entry: ReceiptEntry; cop
             { label: copy.rowCase, value: <Mono>{turn.case.case_id}</Mono> },
             ...(caseView ? [{ label: copy.rowStatus, value: review ? copy.statusReview : copy.statusOpen }] : []),
             ...charge,
-            ...ruleRows(caseView?.policy_rule_ids ?? [], copy),
+            ...ruleRows(caseView?.policy_rule_ids ?? [], turn.case.claim_window, copy, lang),
             ...handoff,
           ]}
           foot={foot}
@@ -66,6 +78,15 @@ export function OutcomeReceipt({ entry, copy, lang }: { entry: ReceiptEntry; cop
             rows={[{ label: copy.rowReason, value: copy.transferReason[reason] ?? reason }, { label: copy.rowNext, value: copy.nextPerson }]} />
         ) : null}
       </div>
+    );
+  }
+
+  if (turn.stage === "recognized") {
+    return (
+      <Receipt kind="ok" title={copy.receiptRecognized}
+        rows={[...charge, { label: copy.rowChanges, value: copy.noChanges }]} foot={foot}>
+        <p className={styles.note}>{copy.recognizedBody}</p>
+      </Receipt>
     );
   }
 

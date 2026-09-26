@@ -20,18 +20,50 @@ describe("MockCautelaApi, same contract as POST /conversations/turn", () => {
     expect(turn.options[1]?.label).toBe("22/09/2026, MERCANUBE*APP SYN, 48900.00 COP");
   });
 
+  it("gives every option its charge data and the reasons that fired, like the live service", async () => {
+    const api = new MockCautelaApi({ latency: [0, 0] });
+    const { token } = await login(api, "1020000001");
+    const turn = await api.turn(token, "No reconozco un cargo de unos 50 mil pesos", null, "es");
+    const second = turn.options[1]!;
+    expect(second.charge).toMatchObject({ merchant_name: "MERCANUBE*APP SYN", amount: 48900, currency: "COP", channel: "App",
+      city: "Bogotá", card_type: "Debit Card", card_last4: "4821", category: "Other", merchant_category: "5399" });
+    expect(second.reasons.map((r) => r.code)).toEqual(["amount_close", "date_in_range"]);
+    expect(second.reasons[0]!.label).toBe("Monto a 2% del que indicaste");
+    expect(turn.options.flatMap((o) => o.reasons.map((r) => r.code))).not.toContain("only_fit");
+  });
+
+  it("asks whether the customer recognizes the charge before any confirmation", async () => {
+    const api = new MockCautelaApi({ latency: [0, 0] });
+    const { token } = await login(api, "1020000002");
+    const asked = await api.turn(token, "Tengo un cargo de casi 10 mil pesos de viajes", null, "pt");
+    expect(asked.stage).toBe("awaiting_recognition");
+    expect(asked.confirmation).toBeNull();
+    expect(asked.recognition?.charge.merchant_name).toBe("VIAJES PACIFICO ONLINE SYN");
+    expect(asked.recognition?.reasons.map((r) => r.code)).toEqual(["amount_close", "merchant_named", "only_fit"]);
+    expect(asked.recognition?.claim_window).toEqual({ rule_id: "MX-WINDOW-001", deadline: "2026-12-17" });
+    const done = await api.recognize(token, asked.conversation_id, asked.recognition!.recognition_id, true);
+    expect(done).toMatchObject({ stage: "recognized", confirmation: null, case: null, handoff_id: null });
+    expect(done.reply).toMatch(/^Obrigado por conferir/);
+    await expect(api.recognize(token, asked.conversation_id, asked.recognition!.recognition_id, false)).rejects.toMatchObject({ code: "not_found" });
+  });
+
   it("opens a case only after the customer confirms, and reports it verified", async () => {
     const api = new MockCautelaApi({ latency: [0, 0] });
     const { token } = await login(api, "1020000001");
     const first = await api.turn(token, "No reconozco un cargo", null, "es");
-    const picked = await api.turn(token, "2", first.conversation_id, "es");
+    const asked = await api.turn(token, "2", first.conversation_id, "es");
+    expect(asked.stage).toBe("awaiting_recognition");
+    expect(asked.recognition?.reasons.at(-1)?.code).toBe("customer_selected");
+    const picked = await api.recognize(token, asked.conversation_id, asked.recognition!.recognition_id, false);
     expect(picked.stage).toBe("awaiting_confirmation");
     expect(picked.case).toBeNull();
+    expect(picked.confirmation?.charge?.merchant_name).toBe("MERCANUBE*APP SYN");
     const done = await api.confirm(token, picked.conversation_id, picked.confirmation!.confirmation_id, true);
     expect(done.stage).toBe("resolved");
     expect(done.case?.verified).toBe(true);
     const readBack = await api.getCaseStatus(token, done.case!.case_id);
     expect(readBack).toMatchObject({ status: "open", transaction_id: "TX00004182" });
+    expect(done.case?.claim_window).toEqual({ rule_id: "CO-WINDOW-001", deadline: "2026-09-29" });
   });
 
   it("refuses a confirmation id it did not issue", async () => {
@@ -44,7 +76,8 @@ describe("MockCautelaApi, same contract as POST /conversations/turn", () => {
   it("hands a failing write to a person with the reason tool_failure", async () => {
     const api = new MockCautelaApi({ latency: [0, 0] });
     const { token } = await login(api, "1020000003");
-    const turn = await api.turn(token, "No reconozco un cobro de 85 mil pesos", null, "pt");
+    const asked = await api.turn(token, "No reconozco un cobro de 85 mil pesos", null, "pt");
+    const turn = await api.recognize(token, asked.conversation_id, asked.recognition!.recognition_id, false);
     const done = await api.confirm(token, turn.conversation_id, turn.confirmation!.confirmation_id, true);
     expect(done).toMatchObject({ stage: "handed_off", transfer_reason: "tool_failure", case: null });
     expect(done.reply).toMatch(/^Vou te passar para uma pessoa do banco/);

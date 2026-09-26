@@ -19,13 +19,14 @@ interface Props {
   onStage: (stage: number) => void;
 }
 
-const INTERACTIVE = new Set<Entry["kind"]>(["options", "confirm"]);
+const INTERACTIVE = new Set<Entry["kind"]>(["options", "recognize", "confirm"]);
 /** Cards that take focus when they arrive while the customer is working inside the log. */
 const FOCUS_ON_ARRIVAL = new Set<Entry["kind"]>([...INTERACTIVE, "receipt", "error"]);
 
 /** A card the customer moved past (a newer message exists) can no longer be answered. */
 function freeze(entry: Entry): Entry {
   if (entry.kind === "confirm" && entry.state === "pending") return { ...entry, state: "cancelled" };
+  if (entry.kind === "recognize" && entry.state === "pending") return { ...entry, state: "cancelled" };
   return entry;
 }
 

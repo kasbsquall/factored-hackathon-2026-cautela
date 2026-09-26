@@ -38,6 +38,12 @@ export function dateOnly(value: string | null | undefined, lang: Language | "en"
   return new Intl.DateTimeFormat(locale(lang), { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(asUtc(value));
 }
 
+/** Wall-clock "HH:MM" of a transaction timestamp as the service sent it (no offset, no conversion). */
+export function wallTime(value: string | null | undefined): string {
+  const match = /T(\d{2}:\d{2})/.exec(value ?? "");
+  return match?.[1] ?? "";
+}
+
 export function timeOnly(value: string, lang: Language | "en", timeZone?: string): string {
   return new Intl.DateTimeFormat(locale(lang), { hour: "2-digit", minute: "2-digit", second: undefined, hour12: false, timeZone }).format(new Date(value));
 }

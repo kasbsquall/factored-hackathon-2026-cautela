@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, Check, HandTap, IdentificationCard, ListMagnifyingGlass, Receipt } from "@phosphor-icons/react";
+import { ArrowUpRight, Check, HandTap, IdentificationCard, ListMagnifyingGlass, Receipt, SealQuestion } from "@phosphor-icons/react";
 import type { CustomerCopy } from "@/lib/i18n/customer";
 import styles from "./walkthrough.module.css";
 
-const ICONS = [IdentificationCard, ListMagnifyingGlass, HandTap, Receipt];
+const ICONS = [IdentificationCard, ListMagnifyingGlass, SealQuestion, HandTap, Receipt];
 
 export function Walkthrough({ copy, stage }: { copy: CustomerCopy; stage: number }) {
   return (

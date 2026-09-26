@@ -47,7 +47,7 @@
 }
 
 .rank {
-  grid-row: 1 / span 2;
+  grid-row: 1 / span 3;
   align-self: start;
   width: 24px;
   height: 24px;
@@ -71,6 +71,16 @@
   font-weight: 500;
   text-align: right;
   white-space: nowrap;
+}
+
+.detail {
+  grid-column: 2 / -1;
+  display: block;
+  margin-top: var(--s-2);
+}
+
+.detail + .detail {
+  margin-top: var(--s-4);
 }
 
 .when {

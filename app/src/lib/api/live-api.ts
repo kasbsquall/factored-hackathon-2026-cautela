@@ -7,11 +7,11 @@
  * /console/* only, from CAUTELA_CONSOLE_KEY, and only when CAUTELA_CONSOLE_PROXY=enabled.
  *
  * Known limits (documented in README "Frontend"):
- *  - the service does not expose per-option match reasons or the merchant details behind a confirmation label;
  *  - there is no endpoint that lists traces, so /audit lists the traces of queued handoffs;
  *  - the chain status covers the whole log and does not report where it breaks;
- *  - the demo service runs its own clock (it starts the day after the last fixture charge), so expiry times it
- *    returns are moved onto the browser clock using GET /health service_clock before the UI schedules anything.
+ *  - the demo service runs its own clock (it starts the day after the last fixture charge). The session expiry is
+ *    taken from `expires_in`; a confirmation expiry is moved onto the browser clock using GET /health
+ *    service_clock before the UI schedules anything.
  */
 import { ApiError, type ApiErrorCode, type CautelaApi, type TestIdentity } from "./client";
 import type { components } from "./generated/openapi";
@@ -25,7 +25,7 @@ const KNOWN_CODES: ApiErrorCode[] = [
 ];
 
 function toCode(code: unknown): ApiErrorCode {
-  if (code === "conversation_not_found" || code === "no_pending_confirmation") return "not_found";
+  if (code === "conversation_not_found" || code === "no_pending_confirmation" || code === "no_pending_recognition") return "not_found";
   return KNOWN_CODES.includes(code as ApiErrorCode) ? (code as ApiErrorCode) : "unknown";
 }
 
@@ -106,7 +106,8 @@ export class LiveCautelaApi implements CautelaApi {
 
   async verifyOtp(challengeId: string, code: string): Promise<SessionGrant> {
     const s = await this.request<Schemas["SessionResponse"]>("POST", "/auth/verify", { body: { challenge_id: challengeId, code } });
-    return { token: s.session_token, expires_at: await this.local(s.expires_at), customer_ref: s.customer_ref };
+    // expires_in is relative, so it does not depend on the service and browser clocks agreeing.
+    return { token: s.session_token, expires_at: new Date(Date.now() + s.expires_in * 1000).toISOString(), customer_ref: s.customer_ref };
   }
 
   logout(token: string): Promise<void> {
@@ -116,6 +117,13 @@ export class LiveCautelaApi implements CautelaApi {
   /* ---------- conversation ---------- */
   async turn(token: string, message: string, conversationId: string | null, language: Language): Promise<TurnResponse> {
     const turn = await this.request<TurnResponse>("POST", "/conversations/turn", { token, body: { message, conversation_id: conversationId, language } });
+    return this.localTurn(turn);
+  }
+
+  async recognize(token: string, conversationId: string, recognitionId: string, recognized: boolean): Promise<TurnResponse> {
+    const turn = await this.request<TurnResponse>("POST", `/conversations/${encodeURIComponent(conversationId)}/recognize`, {
+      token, body: { recognition_id: recognitionId, recognized },
+    });
     return this.localTurn(turn);
   }
 

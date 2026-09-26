@@ -20,6 +20,8 @@ export const POLICY_VERSION = "2026-09-25.1";
 
 export interface MockCustomer {
   identity: TestIdentity;
+  /** Card products by product id, as get_customer_profile masks them (type and last 4 only). */
+  cards: Record<string, { card_type: string; card_last4: string }>;
   hints: FindCandidateChargesInput;
   transactions: TransactionView[];
   candidates: Omit<CandidateChargesResult, "candidates"> & { ranked: { id: string; score: number; reasons: string[] }[] };
@@ -55,13 +57,13 @@ const confirmRule = {
 /* ---------------- 1. Colombia, ambiguous match, dispute opened and verified ---------------- */
 const valentinaTx = [
   tx({ transaction_id: "TX00004169", transaction_date: "2026-09-20T18:05:00", amount: 49990, currency: "COP",
-    merchant_name: "SUPERMERCADO EL PORTAL SYN", channel: "POS", product_id: "PRD-SYN-CO-01",
+    merchant_name: "SUPERMERCADO EL PORTAL SYN", merchant_category: "5411", transaction_category: "Food", channel: "POS", product_id: "PRD-SYN-CO-01",
     transaction_country: "Colombia", transaction_city: "Bogotá" }),
   tx({ transaction_id: "TX00004182", transaction_date: "2026-09-22T19:42:00", amount: 48900, currency: "COP",
-    merchant_name: "MERCANUBE*APP SYN", channel: "App", product_id: "PRD-SYN-CO-01",
+    merchant_name: "MERCANUBE*APP SYN", merchant_category: "5399", transaction_category: "Other", channel: "App", product_id: "PRD-SYN-CO-01",
     transaction_country: "Colombia", transaction_city: "Bogotá" }),
   tx({ transaction_id: "TX00004177", transaction_date: "2026-09-21T12:10:00", amount: 52300, currency: "COP",
-    merchant_name: "TIENDA ANDINA WEB SYN", channel: "Web", product_id: "PRD-SYN-CO-01",
+    merchant_name: "TIENDA ANDINA WEB SYN", merchant_category: "5311", transaction_category: "Other", channel: "Web", product_id: "PRD-SYN-CO-01",
     transaction_country: "Colombia", transaction_city: "Medellín" }),
 ];
 
@@ -69,6 +71,7 @@ const valentina: MockCustomer = {
   identity: { document: "1020000001", person: "Valentina R. · Colombia", scenario: "ambiguous",
     label: "Ambiguous: three similar charges; asks which one, then opens a verified case",
     messages: { es: ["Me cobraron algo que no reconozco, como 50 mil pesos, el domingo o el lunes."], pt: ["Me cobraram algo que não reconheço, uns 50 mil pesos, no domingo ou na segunda."] } },
+  cards: { "PRD-SYN-CO-01": { card_type: "Debit Card", card_last4: "4821" } },
   hints: { amount: 50000, currency: "COP", date_hint: "2026-09-21", date_tolerance_days: 3 },
   transactions: valentinaTx,
   candidates: {
@@ -112,10 +115,10 @@ const valentina: MockCustomer = {
 /* ---------------- 2. Mexico, clear match, above the review threshold ---------------- */
 const rafaelTx = [
   tx({ transaction_id: "TX00007730", transaction_date: "2026-09-18T22:14:00", amount: 9840, currency: "MXN",
-    merchant_name: "VIAJES PACIFICO ONLINE SYN", channel: "Web", product_id: "PRD-SYN-MX-07",
+    merchant_name: "VIAJES PACIFICO ONLINE SYN", merchant_category: "4722", transaction_category: "Transport", channel: "Web", product_id: "PRD-SYN-MX-07",
     transaction_country: "Mexico", transaction_city: "Guadalajara" }),
   tx({ transaction_id: "TX00007712", transaction_date: "2026-09-15T09:31:00", amount: 1250, currency: "MXN",
-    merchant_name: "FARMACIA CENTRO SYN", channel: "POS", product_id: "PRD-SYN-MX-07",
+    merchant_name: "FARMACIA CENTRO SYN", merchant_category: "5912", transaction_category: "Health", channel: "POS", product_id: "PRD-SYN-MX-07",
     transaction_country: "Mexico", transaction_city: "Guadalajara" }),
 ];
 
@@ -124,6 +127,7 @@ const rafael: MockCustomer = {
     label: "Human review: a charge at or above USD 450 (SYN-AMOUNT-001)",
     messages: { es: ["Tengo un cargo de casi 10 mil pesos de una agencia de viajes que no hice."],
       pt: ["Tenho uma cobrança de quase 10 mil pesos de uma agência de viagens que eu não fiz."] } },
+  cards: { "PRD-SYN-MX-07": { card_type: "Credit Card", card_last4: "3107" } },
   hints: { amount: 10000, currency: "MXN", merchant_hint: "viajes", date_tolerance_days: 3 },
   transactions: rafaelTx,
   candidates: {
@@ -162,10 +166,10 @@ const rafael: MockCustomer = {
 /* ---------------- 3. Argentina, clear match, the case store fails ---------------- */
 const luciaTx = [
   tx({ transaction_id: "TX00009911", transaction_date: "2026-09-19T21:03:00", amount: 84500, currency: "ARS",
-    merchant_name: "PLATAFORMA STREAM SYN", channel: "App", product_id: "PRD-SYN-AR-03",
+    merchant_name: "PLATAFORMA STREAM SYN", merchant_category: "4899", transaction_category: "Services", channel: "App", product_id: "PRD-SYN-AR-03",
     transaction_country: "Argentina", transaction_city: "Rosario" }),
   tx({ transaction_id: "TX00009904", transaction_date: "2026-09-16T08:47:00", amount: 12300, currency: "ARS",
-    merchant_name: "KIOSCO SYN", channel: "POS", product_id: "PRD-SYN-AR-03",
+    merchant_name: "KIOSCO SYN", merchant_category: "5411", transaction_category: "Food", channel: "POS", product_id: "PRD-SYN-AR-03",
     transaction_country: "Argentina", transaction_city: "Rosario" }),
 ];
 
@@ -174,6 +178,7 @@ const lucia: MockCustomer = {
     label: "Tool failure: the case store fails after bounded retries; handoff tool_failure",
     messages: { es: ["No reconozco un cobro de unos 85 mil pesos del viernes a la noche."],
       pt: ["Não reconheço uma cobrança de uns 85 mil pesos de sexta à noite."] } },
+  cards: { "PRD-SYN-AR-03": { card_type: "Credit Card", card_last4: "5530" } },
   hints: { amount: 85000, currency: "ARS", date_hint: "2026-09-19", date_tolerance_days: 3 },
   transactions: luciaTx,
   candidates: {

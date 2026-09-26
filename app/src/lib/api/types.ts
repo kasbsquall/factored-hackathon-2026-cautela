@@ -40,6 +40,10 @@ export interface TransactionView {
   amount: number | null;
   currency: string | null;
   merchant_name: string | null;
+  /** MCC code as delivered (ISO 18245). */
+  merchant_category?: string | null;
+  /** Food, Transport, Services, Entertainment, Health or Other. */
+  transaction_category?: string | null;
   channel: string | null;
   transaction_type: string | null;
   transaction_status: string | null;
@@ -251,4 +255,11 @@ export interface TraceView {
 export type TurnResponse = components["schemas"]["TurnResponse"];
 export type OptionView = components["schemas"]["OptionView"];
 export type ConfirmationView = components["schemas"]["ConfirmationView"];
+export type RecognitionView = components["schemas"]["RecognitionView"];
+/** Verified fields of one charge (tool reads only), on options, the recognition question and the confirmation. */
+export type ChargeView = components["schemas"]["ChargeView"];
+/** One ranker feature that fired for a charge, with its es/pt label (agent/orchestrator/evidence.py). */
+export type MatchReason = components["schemas"]["MatchReason"];
+export type MatchCode = MatchReason["code"];
+export type ClaimWindow = components["schemas"]["ClaimWindow"];
 export type TurnStage = TurnResponse["stage"];

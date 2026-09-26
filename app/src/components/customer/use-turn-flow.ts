@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { ApiError, getApi } from "@/lib/api";
-import type { Language, OptionView, TurnResponse } from "@/lib/api/types";
+import type { ChargeView, Language, OptionView, TurnResponse } from "@/lib/api/types";
 import type { CustomerCopy } from "@/lib/i18n/customer";
 import { type Entry, type Flow, entryId } from "./flow-types";
 
@@ -14,11 +14,13 @@ interface TurnFlowOptions {
 }
 
 type ConfirmEntry = Extract<Entry, { kind: "confirm" }>;
+type RecognizeEntry = Extract<Entry, { kind: "recognize" }>;
 
 /**
  * The service orchestrates the conversation (api/ in live mode, src/lib/api/mock in mock mode). Each customer action
- * is one turn or one answer to a confirmation; the UI renders what the turn returns: the reply as sent, the options,
- * the pending confirmation, the case (read back with GET /cases/{id}) and the handoff.
+ * is one turn, one answer to the recognition question or one answer to a confirmation; the UI renders what the turn
+ * returns: the reply as sent, the options with their charge data and match reasons, the recognition question, the
+ * pending confirmation, the case (read back with GET /cases/{id}) and the handoff.
  */
 export function useTurnFlow({ token, language, copy, onSessionEnd }: TurnFlowOptions): Flow {
   const api = getApi();
@@ -28,8 +30,9 @@ export function useTurnFlow({ token, language, copy, onSessionEnd }: TurnFlowOpt
   const inFlight = useRef(false);
   const conversation = useRef<string | null>(null);
   const shown = useRef(new Set<string>());
-  /** The label of the last charge the service asked to confirm, shown again on the receipt. */
+  /** The last charge the service asked about (label and structured data), shown again on the receipt. */
   const charge = useRef<string | null>(null);
+  const chargeView = useRef<ChargeView | null>(null);
 
   const push = useCallback((...items: Entry[]) => setEntries((prev) => [...prev.filter((e) => e.kind !== "thinking"), ...items]), []);
   const patch = useCallback((id: string, change: Partial<Entry>) => {
@@ -45,17 +48,27 @@ export function useTurnFlow({ token, language, copy, onSessionEnd }: TurnFlowOpt
       : turn.reply;
     const items: Entry[] = [{ id: entryId(), kind: "system", say: () => reply }];
     if (turn.options.length) items.push({ id: entryId(), kind: "options", options: turn.options });
+    // A reminder repeats the question as a new card after the customer's message (older cards are frozen).
+    if (turn.recognition) {
+      charge.current = turn.recognition.label;
+      chargeView.current = turn.recognition.charge;
+      items.push({ id: entryId(), kind: "recognize", recognition: turn.recognition, conversationId: turn.conversation_id, state: "pending" });
+    }
     if (turn.confirmation) {
       charge.current = turn.confirmation.label;
+      chargeView.current = turn.confirmation.charge ?? chargeView.current;
       items.push({ id: entryId(), kind: "confirm", confirmation: turn.confirmation, conversationId: turn.conversation_id, state: "pending" });
     }
     // A turn after a handoff repeats the same handoff id; its receipt is already on screen.
-    const outcomeKey = turn.case?.case_id ?? turn.handoff_id;
+    const recognized = turn.stage === "recognized" ? `recognized:${turn.conversation_id}` : null;
+    const outcomeKey = turn.case?.case_id ?? turn.handoff_id ?? recognized;
     if (outcomeKey && !shown.current.has(outcomeKey)) {
       shown.current.add(outcomeKey);
       // Read the case back through its own endpoint before calling it registered.
       const caseView = turn.case ? await api.getCaseStatus(token, turn.case.case_id).catch(() => null) : null;
-      items.push({ id: entryId(), kind: "receipt", turn, caseView, charge: turn.case || turn.transfer_reason === "tool_failure" ? charge.current : null });
+      const withCharge = Boolean(turn.case || recognized || turn.transfer_reason === "tool_failure");
+      items.push({ id: entryId(), kind: "receipt", turn, caseView, charge: withCharge ? charge.current : null,
+        chargeView: withCharge ? chargeView.current : null });
     }
     push(...items);
   }, [api, token, push]);
@@ -97,6 +110,31 @@ export function useTurnFlow({ token, language, copy, onSessionEnd }: TurnFlowOpt
     else say(copy.none);
   }, [patch, say, copy.none]);
 
+  const recognize = useCallback((entry: RecognizeEntry, recognized: boolean) => {
+    if (inFlight.current) return;
+    patch(entry.id, { state: recognized ? "working-yes" : "working-no" } as Partial<Entry>);
+    void run(async () => {
+      let turn: TurnResponse;
+      try {
+        turn = await api.recognize(token, entry.conversationId, entry.recognition.recognition_id, recognized);
+      } catch (err) {
+        if (err instanceof ApiError && err.isSessionEnd) throw err;
+        if (err instanceof ApiError && err.code === "not_found") {
+          // Already answered, or the conversation moved on: this card cannot be answered again.
+          patch(entry.id, { state: "cancelled" } as Partial<Entry>);
+          push({ id: entryId(), kind: "error", title: (c) => c.recognizeGoneTitle, body: (c) => c.recognizeGoneBody, retryLabel: (c) => c.understood, retry: dismissError });
+          return;
+        }
+        // Nothing is written by this answer, so the customer can simply answer again.
+        patch(entry.id, { state: "pending" } as Partial<Entry>);
+        push({ id: entryId(), kind: "error", retry: dismissError, retryLabel: (c) => c.understood });
+        return;
+      }
+      patch(entry.id, { state: recognized ? "yes" : "no" } as Partial<Entry>);
+      await render(turn);
+    }, dismissError);
+  }, [api, token, patch, push, run, render, dismissError]);
+
   const answer = useCallback((entry: ConfirmEntry, accept: boolean) => {
     if (inFlight.current) return;
     patch(entry.id, { state: accept ? "working" : "cancelled" } as Partial<Entry>);
@@ -126,6 +164,7 @@ export function useTurnFlow({ token, language, copy, onSessionEnd }: TurnFlowOpt
     conversation.current = null;
     shown.current.clear();
     charge.current = null;
+    chargeView.current = null;
     setEntries([greeting()]);
   }, []);
 
@@ -136,6 +175,7 @@ export function useTurnFlow({ token, language, copy, onSessionEnd }: TurnFlowOpt
     askHuman: () => say(copy.askHumanMessage),
     restart,
     pickOption,
+    recognize,
     confirm: (entry) => answer(entry, true),
     cancel: (entry) => answer(entry, false),
   };

@@ -64,11 +64,13 @@ export interface ConsoleApi {
 }
 
 /**
- * The conversation contract of api/app.py: the service orchestrates, the client sends turns and answers
- * confirmations. Mock mode implements the same contract in the browser.
+ * The conversation contract of api/app.py: the service orchestrates, the client sends turns, answers the
+ * recognition question and answers confirmations. Mock mode implements the same contract in the browser.
  */
 export interface TurnFlowApi {
   turn(token: string, message: string, conversationId: string | null, language: Language): Promise<TurnResponse>;
+  /** Answer "do you recognize this charge?": true ends without a dispute, false issues the confirmation. */
+  recognize(token: string, conversationId: string, recognitionId: string, recognized: boolean): Promise<TurnResponse>;
   confirm(token: string, conversationId: string, confirmationId: string, accept: boolean): Promise<TurnResponse>;
   getCaseStatus(token: string, caseId: string): Promise<CaseView>;
 }

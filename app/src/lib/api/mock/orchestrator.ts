@@ -1,11 +1,12 @@
 /**
- * Server-driven conversation for mock mode, mirroring POST /conversations/turn and /conversations/{id}/confirm
- * (agent/orchestrator). The UI only sends turns and answers confirmations; every decision happens here, from the
- * fixtures, and every step is written to the audit log with the same step names the live service uses.
+ * Server-driven conversation for mock mode, mirroring POST /conversations/turn, /recognize and /confirm
+ * (agent/orchestrator). The UI only sends turns and answers; every decision happens here, from the fixtures, and
+ * every step is written to the audit log with the same step names the live service uses.
  */
 import { ApiError } from "../client";
-import type { CaseView, Language, OptionView, TransactionView, TransferReasonCode, TurnResponse, TurnStage } from "../types";
+import type { CaseView, Language, MatchReason, OptionView, TransactionView, TransferReasonCode, TurnResponse, TurnStage } from "../types";
 import type { MockCustomer } from "./fixtures/customers";
+import { chargeOf, matchReasons, reason } from "./evidence";
 import { caseNote, reasonText, reply, reviewNote } from "./replies";
 import { hex, intentOf, randomLatency } from "./util";
 
@@ -32,20 +33,29 @@ export interface MockBackend {
   createHandoff(s: MockSession, traceId: string, language: Language, reason: TransferReasonCode, ruleIds: string[], tx?: TransactionView, caseView?: CaseView): string;
 }
 
+interface Pending {
+  id: string;
+  transactionId: string;
+  label: string;
+  review: boolean;
+  reasons: MatchReason[];
+}
+
 interface Conversation {
   id: string;
   session: MockSession;
   language: Language;
   stage: TurnStage;
   options: { index: number; transactionId: string }[];
-  pending: { id: string; transactionId: string; label: string; expiresAt: number; review: boolean } | null;
+  recognition: Pending | null;
+  pending: (Pending & { expiresAt: number }) | null;
   caseRef: TurnResponse["case"];
   handoffId: string | null;
   reason: TransferReasonCode | null;
 }
 
 const CONFIRMATION_MS = 5 * 60_000;
-const ENDED: TurnStage[] = ["resolved", "handed_off", "closed"];
+const ENDED: TurnStage[] = ["resolved", "recognized", "handed_off", "closed"];
 const NONE = /\b(ningun[oa]?|nenhum[a]?|none)\b/i;
 
 /** Same format as agent/orchestrator/steps.py tx_label. */
@@ -103,6 +113,9 @@ export class MockOrchestrator {
     if (conv.stage === "awaiting_confirmation" && conv.pending) {
       return this.respond(conv, turn, "pending_confirmation", reply("pending_confirmation", conv.language, { label: conv.pending.label }));
     }
+    if (conv.stage === "awaiting_recognition" && conv.recognition) {
+      return this.respond(conv, turn, "pending_recognition", reply("pending_recognition", conv.language, { label: conv.recognition.label }));
+    }
     if (conv.stage === "clarifying") {
       if (NONE.test(message)) {
         turn.step("decide.selection", "none_of_these");
@@ -111,10 +124,30 @@ export class MockOrchestrator {
       const picked = conv.options.find((o) => o.index === Number(message.match(/\d+/)?.[0]));
       if (picked) {
         turn.step("decide.selection", "customer_selected", { option: picked.index, kind: "transaction" });
-        return this.propose(conv, turn, picked.transactionId);
+        const reasons = [...matchReasons(conv.session.customer, picked.transactionId, conv.language), reason("customer_selected", conv.language)];
+        return this.propose(conv, turn, picked.transactionId, reasons);
       }
     }
     return this.search(conv, turn);
+  }
+
+  recognize(session: MockSession, conversationId: string, recognitionId: string, recognized: boolean): TurnResponse {
+    const conv = this.find(session, conversationId);
+    const check = conv.recognition;
+    if (!check || check.id !== recognitionId) throw new ApiError("not_found", "No pending recognition question with that id");
+    const turn = new Turn(this.backend, session);
+    turn.step("gate", "session_valid", { conversation_id: conv.id });
+    turn.step("recognize.answer", recognized ? "recognized" : "not_recognized", { recognition_id: check.id, transaction_id: check.transactionId });
+    conv.recognition = null;
+    if (recognized) {
+      conv.stage = "recognized";
+      return this.respond(conv, turn, "recognized", reply("recognized", conv.language, { label: check.label }));
+    }
+    conv.pending = { ...check, id: hex(16), expiresAt: Date.now() + CONFIRMATION_MS };
+    conv.stage = "awaiting_confirmation";
+    turn.step("confirm.request", "issued", { tool: "open_dispute_case", review: check.review }, ["SYN-CONFIRM-001"]);
+    const note = check.review ? reviewNote("amount_above_threshold", conv.language) : "";
+    return this.respond(conv, turn, "confirm_open", reply("confirm_open", conv.language, { label: check.label, review: note }));
   }
 
   confirm(session: MockSession, conversationId: string, confirmationId: string, accept: boolean): TurnResponse {
@@ -125,10 +158,10 @@ export class MockOrchestrator {
     }
     const turn = new Turn(this.backend, session);
     turn.step("gate", "session_valid", { conversation_id: conv.id });
-    turn.step("confirm.answer", accept ? "accepted" : "rejected", { confirmation_id: confirmationId, tool: "open_dispute_case" });
+    turn.step("confirm.answer", accept ? "accepted" : "declined", { confirmation_id: confirmationId, tool: "open_dispute_case" });
     conv.pending = null;
     if (!accept) {
-      conv.stage = "collecting";
+      conv.stage = "closed";
       return this.respond(conv, turn, "declined", reply("declined", conv.language));
     }
     const customer = session.customer;
@@ -143,15 +176,15 @@ export class MockOrchestrator {
     turn.tool("open_dispute_case", args, { outcome: "ok", rule_ids: rules });
     turn.tool("get_case_status", { case_id: opened.case_id });
     turn.step("verify", "verified", { case_id: opened.case_id, expected_status: opened.status, read_status: opened.status });
-    conv.caseRef = { case_id: opened.case_id, verified: true };
+    conv.caseRef = { case_id: opened.case_id, verified: true, claim_window: this.claimWindow(conv, pending.transactionId) };
     if (opened.status === "pending_human_review") return this.handOff(conv, turn, "amount_above_threshold", rules, tx, opened);
     conv.stage = "resolved";
     return this.respond(conv, turn, "resolved", reply("resolved", conv.language, { label: pending.label, case_id: opened.case_id }));
   }
 
   private start(session: MockSession, language: Language): Conversation {
-    const conv: Conversation = { id: `cv_${hex(16)}`, session, language, stage: "collecting", options: [], pending: null,
-      caseRef: null, handoffId: null, reason: null };
+    const conv: Conversation = { id: `cv_${hex(16)}`, session, language, stage: "collecting", options: [], recognition: null,
+      pending: null, caseRef: null, handoffId: null, reason: null };
     this.conversations.set(conv.id, conv);
     return conv;
   }
@@ -164,16 +197,22 @@ export class MockOrchestrator {
   }
 
   private search(conv: Conversation, turn: Turn): TurnResponse {
-    const { hints, candidates, transactions } = conv.session.customer;
+    const { customer } = conv.session;
+    const { hints, candidates, transactions } = customer;
     turn.tool("find_candidate_charges", { ...hints });
     const detail = { ranker: candidates.ranker, pool_size: candidates.searched, ambiguity_rule: candidates.ambiguity_rule };
+    const shown = !candidates.is_ambiguous && candidates.best_transaction_id ? [candidates.best_transaction_id] : candidates.ranked.map((r) => r.id);
+    turn.step("decide.reasons", "computed", {
+      reasons: Object.fromEntries(shown.map((id) => [id, matchReasons(customer, id, conv.language).map((r) => r.code)])),
+    });
     if (!candidates.is_ambiguous && candidates.best_transaction_id) {
       turn.step("decide.disposition", "resolve", detail);
-      return this.propose(conv, turn, candidates.best_transaction_id);
+      return this.propose(conv, turn, candidates.best_transaction_id, matchReasons(customer, candidates.best_transaction_id, conv.language));
     }
-    conv.options = candidates.ranked.map((r, i) => ({ index: i + 1, transactionId: r.id }));
+    conv.options = shown.map((id, i) => ({ index: i + 1, transactionId: id }));
     conv.stage = "clarifying";
     turn.step("decide.disposition", "clarify", detail);
+    turn.tool("get_customer_profile", {});
     const lines = conv.options.map((o) => {
       const t = transactions.find((x) => x.transaction_id === o.transactionId);
       return `${o.index}) ${t ? txLabel(t) : o.transactionId}`;
@@ -181,7 +220,7 @@ export class MockOrchestrator {
     return this.respond(conv, turn, "clarify_options", reply("clarify_options", conv.language, { options: lines.join("\n") }));
   }
 
-  private propose(conv: Conversation, turn: Turn, transactionId: string): TurnResponse {
+  private propose(conv: Conversation, turn: Turn, transactionId: string, reasons: MatchReason[]): TurnResponse {
     const customer = conv.session.customer;
     const tx = customer.transactions.find((t) => t.transaction_id === transactionId);
     const policy = customer.policies[transactionId];
@@ -191,12 +230,11 @@ export class MockOrchestrator {
     if (!tx || !policy?.decision.allowed_actions.includes("open_dispute_case")) {
       return this.handOff(conv, turn, "policy_requires_review", rules, tx);
     }
-    const review = policy.decision.must_escalate;
-    conv.pending = { id: hex(16), transactionId, label: txLabel(tx), expiresAt: Date.now() + CONFIRMATION_MS, review };
-    conv.stage = "awaiting_confirmation";
-    turn.step("confirm.issue", "issued", { tool: "open_dispute_case" }, ["SYN-CONFIRM-001"]);
-    const note = review ? reviewNote("amount_above_threshold", conv.language) : "";
-    return this.respond(conv, turn, "confirm_open", reply("confirm_open", conv.language, { label: conv.pending.label, review: note }));
+    conv.options = [];
+    conv.recognition = { id: `rc_${hex(16)}`, transactionId, label: txLabel(tx), review: policy.decision.must_escalate, reasons };
+    conv.stage = "awaiting_recognition";
+    turn.step("recognize.request", "shown", { recognition_id: conv.recognition.id, transaction_id: transactionId, reasons: reasons.map((r) => r.code) });
+    return this.respond(conv, turn, "recognize_check", reply("recognize_check", conv.language, { label: conv.recognition.label }));
   }
 
   private handOff(conv: Conversation, turn: Turn, reason: TransferReasonCode, rules: string[], tx?: TransactionView, caseView?: CaseView): TurnResponse {
@@ -206,25 +244,42 @@ export class MockOrchestrator {
     conv.handoffId = id;
     conv.reason = reason;
     conv.pending = null;
+    conv.recognition = null;
     const text = reply("handed_off", conv.language, {
       reason: reasonText(reason, conv.language), case: caseView ? caseNote(caseView.case_id, conv.language) : "",
     });
     return this.respond(conv, turn, "handed_off", text);
   }
 
+  /** The claim window the policy engine computed for a charge (window rule id and deadline). */
+  private claimWindow(conv: Conversation, transactionId: string): { rule_id: string; deadline: string } | null {
+    const facts = conv.session.customer.policies[transactionId]?.decision.facts;
+    return facts?.window_rule && facts.window_deadline ? { rule_id: facts.window_rule, deadline: facts.window_deadline } : null;
+  }
+
   private respond(conv: Conversation, turn: Turn, kind: string, text: string): TurnResponse {
     turn.step("reply", "template", { kind, note: "mock_mode" });
     turn.step("turn", conv.stage);
+    const customer = conv.session.customer;
+    const txOf = (id: string) => customer.transactions.find((x) => x.transaction_id === id);
     const options: OptionView[] = conv.stage === "clarifying" ? conv.options.map((o) => {
-      const t = conv.session.customer.transactions.find((x) => x.transaction_id === o.transactionId);
-      return { index: o.index, kind: "transaction", label: t ? txLabel(t) : o.transactionId };
+      const t = txOf(o.transactionId);
+      return { index: o.index, kind: "transaction", label: t ? txLabel(t) : o.transactionId, charge: t ? chargeOf(customer, t) : null,
+        reasons: matchReasons(customer, o.transactionId, conv.language) };
     }) : [];
+    const r = conv.recognition;
+    const rt = r ? txOf(r.transactionId) : undefined;
     const p = conv.pending;
+    const pt = p ? txOf(p.transactionId) : undefined;
     return {
       conversation_id: conv.id, trace_id: turn.traceId, language: conv.language, stage: conv.stage, reply: text,
       reply_source: "template", options,
-      confirmation: p ? { confirmation_id: p.id, tool: "open_dispute_case", label: p.label, expires_at: new Date(p.expiresAt).toISOString(), review: p.review } : null,
-      case: conv.caseRef, handoff_id: conv.handoffId, transfer_reason: conv.reason, trail: turn.trail,
+      recognition: r && rt ? { recognition_id: r.id, label: r.label, charge: chargeOf(customer, rt), reasons: r.reasons,
+        claim_window: this.claimWindow(conv, r.transactionId) } : null,
+      confirmation: p ? { confirmation_id: p.id, tool: "open_dispute_case", label: p.label, expires_at: new Date(p.expiresAt).toISOString(),
+        review: p.review, charge: pt ? chargeOf(customer, pt) : null, reasons: p.reasons, claim_window: this.claimWindow(conv, p.transactionId) } : null,
+      case: conv.caseRef,
+      handoff_id: conv.handoffId, transfer_reason: conv.reason, trail: turn.trail,
       llm: { calls: 0, failed: 0, input_tokens: 0, output_tokens: 0, latency_ms: 0, cost_usd: 0, provider: null, model: null },
       latency_ms: turn.elapsed(),
     };

@@ -3,10 +3,10 @@
 import { ArrowRight, HandTap, UserSwitch } from "@phosphor-icons/react";
 import type { Language } from "@/lib/api/types";
 import type { CustomerCopy } from "@/lib/i18n/customer";
-import { timeOnly } from "@/lib/format";
+import { dateOnly, timeOnly } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import type { Entry } from "./flow-types";
-import { ChargeLabel } from "./charge-label";
+import { ChargeBlock, ChargeLabel } from "./charge-label";
 import styles from "./confirm-card.module.css";
 
 interface Props {
@@ -28,14 +28,17 @@ export function ConfirmCard({ entry, copy, lang, onConfirm, onCancel }: Props) {
         <HandTap aria-hidden />
         {block ? copy.confirmBlockTitle : copy.confirmTitle}
       </h2>
-      <ChargeLabel label={c.label} lang={lang} />
+      {c.charge ? <ChargeBlock charge={c.charge} copy={copy} lang={lang} /> : <ChargeLabel label={c.label} lang={lang} />}
       <p className={styles.body}>{block ? copy.confirmBlockBody : copy.confirmBody}</p>
       {c.review ? (
         <ul className={styles.points}>
           <li><UserSwitch aria-hidden /><span>{copy.confirmReviewLive}</span></li>
         </ul>
       ) : null}
-      <p className={`${styles.valid} num`}>{copy.confirmValid(timeOnly(c.expires_at, lang))}</p>
+      <p className={`${styles.valid} num`}>
+        {copy.confirmValid(timeOnly(c.expires_at, lang))}
+        {c.claim_window ? <> {copy.claimNote(dateOnly(c.claim_window.deadline, lang), c.claim_window.rule_id)}</> : null}
+      </p>
       <div className={styles.actions}>
         <Button loading={state === "working"} loadingLabel={copy.opening} aria-disabled={locked || undefined}
           onClick={locked ? undefined : onConfirm} trailing={<ArrowRight aria-hidden />}

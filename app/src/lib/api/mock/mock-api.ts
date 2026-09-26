@@ -148,6 +148,11 @@ export class MockCautelaApi implements CautelaApi, MockBackend {
     return this.orchestrator.turn(this.session(token), message, conversationId, language);
   }
 
+  async recognize(token: string, conversationId: string, recognitionId: string, recognized: boolean): Promise<TurnResponse> {
+    await this.wait();
+    return this.orchestrator.recognize(this.session(token), conversationId, recognitionId, recognized);
+  }
+
   async confirm(token: string, conversationId: string, confirmationId: string, accept: boolean): Promise<TurnResponse> {
     const s = this.session(token);
     // A failing case store retries three times before giving up.
