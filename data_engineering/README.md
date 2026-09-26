@@ -36,7 +36,8 @@ Without `--source`, the pipeline reads `LATAM_BANK_S3_URI`. The real data gets i
 | `pipelines/warehouse.py` | Warehouse schemas, file ledger, watermarks |
 | `pipelines/report.py` | Quality report JSON |
 | `pipelines/run.py` | CLI entry point |
-| `pipelines/gold.py` | Placeholder, see below |
+| `pipelines/gold.py` | Old placeholder, superseded by `gold/` |
+| `gold/` | Gold layer: contracts, SQL, incremental build, checks and CLI (see the gold section) |
 
 ## Design and the reasons behind it
 
@@ -144,9 +145,9 @@ A source is a local directory or an `s3://bucket/prefix`. Both go through DuckDB
 
 It injects the issues the dictionary announces, each on a distinct row so the counts are exact: about 2% exact duplicates, about 5% nulls in nullable columns, orphan keys, invalid values, null keys, out-of-range values, text amounts with a decimal comma, late rows, re-delivered versions of pending transactions and open complaints, and a new `installments` column in the last 15 transaction partitions. Dispute complaints are tied to a real fixture transaction (same customer, product, amount and currency, created afterwards), and the manifest records these links as ground truth.
 
-### Gold is a placeholder
+### Gold
 
-`pipelines/gold.py` is intentionally empty. Gold tables serve the agent tools and the analytics and ML datasets, and their shape depends on the workflow decision that waits on the exploratory analysis of `contact_reason` and `complaints.category`.
+The gold layer is built from silver by `gold/`; see the gold layer section below.
 
 ## Result on the fixture (seed 42)
 
@@ -218,6 +219,55 @@ The first run's customer quarantine (149,995 orphans) was not a cascade from the
 - **Uniqueness.** `service_agents.employee_code` repeats 13 values over 26 rows and `products.product_number` 6 values over 12 rows (reported, not quarantined).
 
 After reconciliation the full refresh quarantines 0 of 6,127,393 rows. Remaining warnings are the 149,995 and 831 branch orphans and the 24,029 null transcript durations. The run takes about 10 minutes on a laptop; about 80 seconds of it is per-file CSV header sniffing.
+
+## Gold layer
+
+```bash
+make gold                                        # uv run python -m data_engineering.gold.run --target data/warehouse.duckdb
+make gold TARGET=data/warehouse_real.duckdb      # organizer data
+```
+
+Gold is built from silver inside the same warehouse, in the `gold` schema. Each table has a contract in `gold/contracts/<table>.yaml` and one SELECT in `gold/sql/<table>.sql`. The workflow is unrecognized-charge disputes ("Cargo no reconocido"); the evidence for that choice is in `data_analytics/reports/why-this-workflow.md`.
+
+| Table | Kind | Serves | Grain |
+|---|---|---|---|
+| `customer_profile` | row | `get_customer_profile` | one customer: country, segment, status, product and card counts; no contact details |
+| `customer_transactions` | row | `list_recent_transactions`, `get_transaction`, `find_candidate_charges` | one transaction with merchant, channel and the product it moved |
+| `dispute_policy_inputs` | view | `get_dispute_policy` | one transaction with the customer country and segment and the product state the policy rules read |
+| `complaint_facts` | row | analytics, ML | one complaint with the workflow label, country, segment, timing and measured repeat contact |
+| `complaint_outcomes` | aggregate | analytics | complaint type by overall, country, segment and reception channel: SLA breach, escalation, resolution time, repeat contact |
+| `interaction_outcomes` | aggregate | analytics | contact reason by overall, country, segment and channel: FCR, escalation, follow-up, handling time |
+| `demand_by_hour` | aggregate | analytics | contacts by source, workflow, country, channel, weekday and hour |
+| `demand_by_day` | aggregate | analytics | contacts by source, workflow, country, channel and calendar day |
+| `workflow_selection` | view | analytics | one complaint type with volume, share and outcomes, ranked by volume |
+
+The agent tools in `agent/tools/repository.py` still read silver; pointing them at these tables is the AI engineering team's call.
+
+**Workflow label.** `is_unrecognized_charge` matches the literal "Cargo no reconocido" in `category` or `subcategory`. The organizer data puts it in `subcategory` under category "Transactions" (12,297 complaints); the fixture puts it in `category`. The 1,283 "Transactions" complaints without a subcategory are not counted, since nothing says what they are.
+
+**Contracts are enforced, not documented.** Before a table is written, the build describes the SQL result and refuses it when a column is missing, extra, or of another type than the contract says. After writing, and inside the same transaction, `gold/checks.py` checks the primary key (unique, not null), NOT NULL columns, value lists, numeric ranges, lineage on every row, and the contract's reconciliation queries (for example: one gold row per silver transaction, complaint types adding up to the silver total, every breakdown adding up to its overall row). Gold is derived data, so every check blocks: a failure rolls the table back and the run fails. The run writes `data/reports/gold_<run_id>.json` with the mode, row counts and every check result per table.
+
+**Lineage.** Every gold row carries `_source_table` (the silver or gold table it comes from), `_source_key` (the primary key for row tables, the group key for aggregates), `_source_run_ids` (the silver `_run_id` of every silver row that contributed, so a joined row lists the transaction's and the product's runs) and `_gold_run_id`. `control.gold_runs` records each run.
+
+**Incremental and idempotent.** `control.gold_state` keeps, per gold table, the definition hash (contract plus SQL) and, per silver source, the highest `_ingested_at` and the row count seen at the last build.
+
+| Situation | What the build does |
+|---|---|
+| Nothing changed | Skips the table; a rerun changes nothing |
+| First build, or contract or SQL changed | Full build |
+| Row table, a source moved | Each contract lists, per source, the query that finds the gold keys touched since the old watermark; those keys are deleted and re-inserted, and keys that left silver are deleted |
+| Row table, a source moved unsafely | Full build. A source whose high-water mark did not advance, that lost rows, or whose every row was reloaded (a silver full refresh, the only way silver drops keys) cannot be patched by key: the key queries only see new rows |
+| A gold input was rebuilt | Full rebuild of what reads it; a gold source is marked by the run that last changed it |
+| Aggregate, a source moved | Full rebuild; these tables are small and their percentiles cannot be patched |
+| View | Recreated every run |
+
+A new complaint changes the prior and next complaint features of the same customer's other complaints, so `complaint_facts` recomputes every complaint of a touched customer. `tests/gold/test_gold_incremental.py` loads the fixture in the same two waves as the silver test, builds gold after each, and requires the result to equal gold built once over a full load, row for row, apart from the run ids.
+
+**Freshness policy.** Gold runs after every silver load (`make pipeline` then `make gold`). The data is delivered as static files, so there is no schedule to meet; the serving tables are as fresh as the last silver load, and the policy tools compute transaction age at request time, which is why no age is stored.
+
+**Result on the organizer data.** First build 32 s on a laptop, rerun 3 s (every table skipped). Rows: 4,425,008 transactions, 150,000 customer profiles, 67,095 complaint facts, 154 complaint outcome rows, 98 interaction outcome rows, 32,053 hour cells and 111,771 day cells. Every check passes.
+
+**Findings the gold build surfaced.** `is_repeat_complainer` does not match the complaint history: of 10,086 flagged complaints, 333 have an earlier complaint within 90 days, while 2,315 complaints have one. `sla_breached` does not follow resolution time (median 15 days when breached, 16 when not). `resolution_days` exists only for Resolved and Closed complaints. The claimed-amount currency of a complaint does not follow the customer's country (Argentine customers file in MXN and COP), and MXN appears in complaints although no product or transaction is in MXN. These are reported in the analytics, not corrected.
 
 ## Capacity limits and route to production
 

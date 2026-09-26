@@ -1,0 +1,53 @@
+# Analytics: contact-center outcomes by contact reason and breakdown. SQL: ../sql/interaction_outcomes.sql
+table: interaction_outcomes
+kind: aggregate
+purpose: analytics
+description: First-contact resolution, escalation, follow-up and handling time per contact reason, overall and by country, segment and channel.
+primary_key: [reason_category, contact_reason, dimension, dimension_value]
+sources: [call_center_interactions, customers]
+lineage_source: call_center_interactions
+notes:
+  - FCR is the dictionary's was_resolved ("Resolved on first call"); fcr_denominator counts non-null values.
+  - duration_seconds is the only handling-time field in the data; it is null in some rows (with_duration is its denominator).
+columns:
+  - {name: reason_category, type: VARCHAR, nullable: false, description: "Reason category (normalized in silver), or (all reasons)"}
+  - {name: contact_reason, type: VARCHAR, nullable: false, description: "Contact reason as delivered, or (all reasons)"}
+  - {name: dimension, type: VARCHAR, nullable: false, allowed_values: [overall, customer_country, customer_segment, channel], description: Breakdown}
+  - {name: dimension_value, type: VARCHAR, nullable: false, description: "Breakdown value, all for overall"}
+  - {name: interactions, type: BIGINT, nullable: false, min: 1, description: Interactions in the group}
+  - {name: fcr_denominator, type: BIGINT, nullable: false, min: 0, description: Interactions with a non-null was_resolved}
+  - {name: resolved_first_contact, type: BIGINT, nullable: false, min: 0, description: Interactions with was_resolved true}
+  - {name: fcr_rate, type: DOUBLE, min: 0, max: 1, description: resolved_first_contact / fcr_denominator}
+  - {name: escalated, type: BIGINT, nullable: false, min: 0, description: Interactions escalated to a supervisor}
+  - {name: escalation_rate, type: DOUBLE, nullable: false, min: 0, max: 1, description: escalated / interactions}
+  - {name: requires_followup, type: BIGINT, nullable: false, min: 0, description: Interactions that require follow-up}
+  - {name: with_duration, type: BIGINT, nullable: false, min: 0, description: Interactions with duration_seconds}
+  - {name: duration_p50_seconds, type: DOUBLE, min: 0, description: Median handling duration}
+  - {name: duration_p90_seconds, type: DOUBLE, min: 0, description: 90th percentile handling duration}
+  - {name: duration_mean_seconds, type: DOUBLE, min: 0, description: Mean handling duration}
+  - {name: with_wait, type: BIGINT, nullable: false, min: 0, description: Interactions with wait_time_seconds}
+  - {name: wait_p50_seconds, type: DOUBLE, min: 0, description: Median wait before service}
+  - {name: wait_p90_seconds, type: DOUBLE, min: 0, description: 90th percentile wait before service}
+reconciliation:
+  - name: total_matches_silver
+    description: The overall total equals the silver interaction count.
+    sql: >-
+      SELECT abs((SELECT count(*) FROM silver.call_center_interactions)
+      - (SELECT interactions FROM gold.interaction_outcomes WHERE contact_reason = '(all reasons)' AND dimension = 'overall'))
+  - name: reasons_add_up_to_total
+    description: The contact reasons partition the total.
+    sql: >-
+      SELECT abs((SELECT interactions FROM gold.interaction_outcomes WHERE contact_reason = '(all reasons)' AND dimension = 'overall')
+      - (SELECT sum(interactions) FROM gold.interaction_outcomes WHERE contact_reason <> '(all reasons)' AND dimension = 'overall'))
+  - name: breakdowns_add_up
+    description: Every breakdown of a reason sums to that reason's overall row.
+    sql: >-
+      SELECT count(*) FROM (SELECT reason_category, contact_reason, dimension, sum(interactions) AS s
+      FROM gold.interaction_outcomes WHERE dimension <> 'overall' GROUP BY ALL) b JOIN gold.interaction_outcomes o
+      ON o.reason_category = b.reason_category AND o.contact_reason = b.contact_reason AND o.dimension = 'overall'
+      WHERE b.s <> o.interactions
+  - name: numerators_within_denominators
+    description: No count exceeds its denominator.
+    sql: >-
+      SELECT count(*) FROM gold.interaction_outcomes WHERE resolved_first_contact > fcr_denominator
+      OR greatest(fcr_denominator, escalated, requires_followup, with_duration, with_wait) > interactions

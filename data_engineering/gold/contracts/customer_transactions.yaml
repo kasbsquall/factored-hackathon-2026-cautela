@@ -1,0 +1,47 @@
+# Serving table for list_recent_transactions, get_transaction and find_candidate_charges.
+# SQL: ../sql/customer_transactions.sql
+table: customer_transactions
+kind: row
+purpose: serving
+description: One row per transaction with merchant, channel and the product it moved.
+primary_key: [transaction_id]
+sources: [transactions, products]
+lineage_source: transactions
+changed_keys:
+  transactions: "SELECT transaction_id FROM silver.transactions WHERE _ingested_at > {wm}"
+  products: >-
+    SELECT t.transaction_id FROM silver.transactions t JOIN silver.products p USING (product_id)
+    WHERE p._ingested_at > {wm}
+notes:
+  - The recent-window filter is applied by the tool at request time; the table holds the full history.
+  - product_type and product_status are null when the product row was quarantined in silver.
+columns:
+  - {name: transaction_id, type: VARCHAR, nullable: false, description: Transaction ID}
+  - {name: customer_id, type: VARCHAR, nullable: false, description: Owner of the transaction}
+  - {name: product_id, type: VARCHAR, nullable: false, description: Product moved}
+  - {name: product_type, type: VARCHAR, description: Product type (normalized in silver)}
+  - {name: product_status, type: VARCHAR, description: Product status}
+  - {name: transaction_date, type: TIMESTAMP, nullable: false, description: Event time as stored (no timezone in the dictionary)}
+  - {name: transaction_type, type: VARCHAR, nullable: false, description: "Purchase, Withdrawal, Transfer, Payment, Deposit or Adjustment"}
+  - {name: transaction_status, type: VARCHAR, nullable: false, allowed_values: [Approved, Declined, Pending, Reversed], description: Transaction status}
+  - {name: transaction_category, type: VARCHAR, description: Spending category (60.9% null in the organizer data)}
+  - {name: amount, type: "DECIMAL(15,2)", nullable: false, description: Amount in the transaction currency}
+  - {name: currency, type: VARCHAR, nullable: false, description: Transaction currency}
+  - {name: amount_usd, type: "DECIMAL(15,2)", description: Amount in USD}
+  - {name: channel, type: VARCHAR, nullable: false, allowed_values: [ATM, Branch, Web, App, POS, Transfer], description: Transaction channel}
+  - {name: merchant_name, type: VARCHAR, description: "Merchant, when the transaction has one"}
+  - {name: merchant_category, type: VARCHAR, description: Merchant category code}
+  - {name: transaction_country, type: VARCHAR, description: Country where the transaction happened}
+  - {name: transaction_city, type: VARCHAR, description: City where the transaction happened}
+  - {name: branch_id, type: VARCHAR, description: "Branch, for branch and ATM transactions"}
+  - {name: fraud_score, type: "DECIMAL(5,2)", min: 0, max: 100, description: Fraud score (0-100)}
+  - {name: is_fraud, type: BOOLEAN, nullable: false, description: Fraud label as delivered}
+reconciliation:
+  - name: one_row_per_silver_transaction
+    description: Gold has exactly the silver transactions.
+    sql: "SELECT abs((SELECT count(*) FROM silver.transactions) - (SELECT count(*) FROM gold.customer_transactions))"
+  - name: amounts_add_up
+    description: The total amount is unchanged by the enrichment joins.
+    sql: >-
+      SELECT abs((SELECT coalesce(sum(amount), 0) FROM silver.transactions)
+      - (SELECT coalesce(sum(amount), 0) FROM gold.customer_transactions))

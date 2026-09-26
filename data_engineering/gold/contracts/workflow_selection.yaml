@@ -1,0 +1,28 @@
+# Analytics view: the workflow comparison. SQL: ../sql/workflow_selection.sql
+table: workflow_selection
+kind: view
+purpose: analytics
+description: One row per complaint type with volume, share, SLA breach, escalation, resolution time and repeat contact, ranked by volume.
+primary_key: [complaint_type]
+sources: [gold.complaint_outcomes]
+lineage_source: gold.complaint_outcomes
+columns:
+  - {name: complaint_type, type: VARCHAR, nullable: false, description: "category / subcategory"}
+  - {name: is_unrecognized_charge, type: BOOLEAN, nullable: false, description: The type is the unrecognized-charge workflow}
+  - {name: volume_rank, type: INTEGER, nullable: false, min: 1, description: "Rank by complaint volume, 1 = largest"}
+  - {name: complaints, type: BIGINT, nullable: false, min: 1, description: Complaints of this type}
+  - {name: all_complaints, type: BIGINT, nullable: false, min: 1, description: All complaints (denominator of the share)}
+  - {name: share_of_complaints, type: DOUBLE, nullable: false, min: 0, max: 1, description: complaints / all_complaints}
+  - {name: sla_breached, type: BIGINT, nullable: false, min: 0, description: Complaints with sla_breached}
+  - {name: sla_breach_rate, type: DOUBLE, nullable: false, min: 0, max: 1, description: sla_breached / complaints}
+  - {name: escalated, type: BIGINT, nullable: false, min: 0, description: Complaints currently Escalated}
+  - {name: escalation_rate, type: DOUBLE, nullable: false, min: 0, max: 1, description: escalated / complaints}
+  - {name: with_resolution_days, type: BIGINT, nullable: false, min: 0, description: Denominator of the resolution percentiles}
+  - {name: resolution_days_p50, type: DOUBLE, min: 0, description: Median resolution days}
+  - {name: resolution_days_p90, type: DOUBLE, min: 0, description: 90th percentile resolution days}
+  - {name: next_complaint_30d, type: BIGINT, nullable: false, min: 0, description: Complaints followed by another within 30 days}
+  - {name: repeat_30d_rate, type: DOUBLE, nullable: false, min: 0, max: 1, description: next_complaint_30d / complaints}
+reconciliation:
+  - name: shares_add_up_to_one
+    description: The complaint types cover every complaint once.
+    sql: "SELECT CASE WHEN abs(sum(share_of_complaints) - 1) < 1e-9 THEN 0 ELSE 1 END FROM gold.workflow_selection"

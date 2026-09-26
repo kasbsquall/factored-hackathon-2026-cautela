@@ -1,0 +1,60 @@
+# Row-level complaint facts for the analytics tables and the ML datasets. SQL: ../sql/complaint_facts.sql
+table: complaint_facts
+kind: row
+purpose: analytics
+description: One row per complaint with the workflow label, customer country and segment, timing and measured repeat contact.
+primary_key: [complaint_id]
+sources: [complaints, customers]
+lineage_source: complaints
+changed_keys:
+  # A new complaint changes the prior/next features of the same customer's other complaints, so every complaint of
+  # a touched customer is recomputed. Customers come from bronze, which keeps every delivered version, so a
+  # complaint re-delivered under another customer also refreshes the previous one.
+  complaints: >-
+    SELECT complaint_id FROM silver.complaints
+    WHERE customer_id IN (SELECT customer_id FROM bronze.complaints WHERE complaint_id IN
+                          (SELECT complaint_id FROM silver.complaints WHERE _ingested_at > {wm}))
+  customers: >-
+    SELECT complaint_id FROM silver.complaints
+    WHERE customer_id IN (SELECT customer_id FROM silver.customers WHERE _ingested_at > {wm})
+notes:
+  - is_unrecognized_charge matches the literal label "Cargo no reconocido" in category or subcategory.
+  - is_repeat_complainer is kept as delivered; prior_complaint_90d recomputes the same idea from the complaint history.
+columns:
+  - {name: complaint_id, type: VARCHAR, nullable: false, description: Complaint ID}
+  - {name: customer_id, type: VARCHAR, nullable: false, description: Customer ID}
+  - {name: creation_date, type: TIMESTAMP, nullable: false, description: Creation time as stored}
+  - {name: event_date, type: DATE, nullable: false, description: Creation date}
+  - {name: iso_dow, type: INTEGER, nullable: false, min: 1, max: 7, description: "ISO day of week, Monday = 1"}
+  - {name: hour_of_day, type: INTEGER, nullable: false, min: 0, max: 23, description: Hour of creation_date}
+  - {name: category, type: VARCHAR, nullable: false, description: Category as delivered}
+  - {name: subcategory, type: VARCHAR, description: Subcategory as delivered}
+  - {name: complaint_type, type: VARCHAR, nullable: false, description: "category / subcategory, the workflow grain"}
+  - {name: is_unrecognized_charge, type: BOOLEAN, nullable: false, description: The complaint is a "Cargo no reconocido" (unrecognized charge)}
+  - {name: case_type, type: VARCHAR, nullable: false, allowed_values: [Complaint, Claim, Request, Suggestion], description: Case type}
+  - {name: reception_channel, type: VARCHAR, nullable: false, allowed_values: [Call Center, Email, Web, App, Branch, Regulator], description: Reception channel}
+  - {name: priority, type: VARCHAR, nullable: false, allowed_values: [Low, Medium, High, Critical], description: Priority}
+  - {name: status, type: VARCHAR, nullable: false, description: Current status}
+  - {name: is_escalated, type: BOOLEAN, nullable: false, description: Current status is Escalated}
+  - {name: customer_country, type: VARCHAR, nullable: false, description: "Customer country, Unknown when the customer is not in silver"}
+  - {name: customer_segment, type: VARCHAR, nullable: false, description: "Customer segment, Unknown when the customer is not in silver"}
+  - {name: claimed_amount, type: "DECIMAL(15,2)", description: Claimed amount}
+  - {name: currency, type: VARCHAR, description: Claimed amount currency}
+  - {name: sla_breached, type: BOOLEAN, nullable: false, description: SLA breached as delivered (threshold undocumented)}
+  - {name: resolution_days, type: INTEGER, description: "Days to resolution, present only for resolved or closed cases"}
+  - {name: first_response_hours, type: DOUBLE, description: Hours from creation to first response}
+  - {name: resolution_satisfaction, type: INTEGER, min: 1, max: 5, description: Resolution satisfaction (1-5)}
+  - {name: compensation_granted, type: "DECIMAL(15,2)", description: Compensation granted}
+  - {name: is_repeat_complainer, type: BOOLEAN, nullable: false, description: Repeat flag as delivered (previous complaints in 90 days)}
+  - {name: prior_complaint_90d, type: BOOLEAN, nullable: false, description: "Measured, the customer has an earlier complaint within 90 days"}
+  - {name: next_complaint_30d, type: BOOLEAN, nullable: false, description: "Measured, the customer complains again within 30 days"}
+reconciliation:
+  - name: one_row_per_silver_complaint
+    description: Gold has exactly the silver complaints.
+    sql: "SELECT abs((SELECT count(*) FROM silver.complaints) - (SELECT count(*) FROM gold.complaint_facts))"
+  - name: unrecognized_charge_label_matches_silver
+    description: The workflow flag selects exactly the complaints carrying the literal label in silver.
+    sql: >-
+      SELECT abs((SELECT count(*) FROM silver.complaints
+                  WHERE category = 'Cargo no reconocido' OR subcategory = 'Cargo no reconocido')
+      - (SELECT count(*) FILTER (WHERE is_unrecognized_charge) FROM gold.complaint_facts))

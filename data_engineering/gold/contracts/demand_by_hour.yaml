@@ -1,0 +1,31 @@
+# Analytics: contact volume by weekday and hour. SQL: ../sql/demand_by_hour.sql
+table: demand_by_hour
+kind: aggregate
+purpose: analytics
+description: Contacts per source system, workflow, country, channel, ISO weekday and hour of day.
+primary_key: [source_system, workflow, country, channel, iso_dow, hour_of_day]
+sources: [gold.complaint_facts, call_center_interactions, complaints, customers]
+lineage_source: gold.complaint_facts
+notes:
+  - For complaints, workflow is complaint_type and channel is reception_channel; for interactions, workflow is contact_reason.
+  - Hours are as stored; the dictionary does not state a timezone.
+columns:
+  - {name: source_system, type: VARCHAR, nullable: false, allowed_values: [complaints, interactions], description: Where the contact was recorded}
+  - {name: workflow, type: VARCHAR, nullable: false, description: Complaint type or contact reason}
+  - {name: is_unrecognized_charge, type: BOOLEAN, nullable: false, description: The workflow is the unrecognized-charge workflow}
+  - {name: country, type: VARCHAR, nullable: false, description: "Customer country, Unknown when the customer is not in silver"}
+  - {name: channel, type: VARCHAR, nullable: false, description: Reception or contact channel}
+  - {name: iso_dow, type: INTEGER, nullable: false, min: 1, max: 7, description: "ISO day of week, Monday = 1"}
+  - {name: hour_of_day, type: INTEGER, nullable: false, min: 0, max: 23, description: Hour of the event time}
+  - {name: contacts, type: BIGINT, nullable: false, min: 1, description: Contacts in the cell}
+reconciliation:
+  - name: complaints_add_up
+    description: Complaint contacts equal the silver complaint count.
+    sql: >-
+      SELECT abs((SELECT count(*) FROM silver.complaints)
+      - (SELECT coalesce(sum(contacts), 0) FROM gold.demand_by_hour WHERE source_system = 'complaints'))
+  - name: interactions_add_up
+    description: Interaction contacts equal the silver interaction count.
+    sql: >-
+      SELECT abs((SELECT count(*) FROM silver.call_center_interactions)
+      - (SELECT coalesce(sum(contacts), 0) FROM gold.demand_by_hour WHERE source_system = 'interactions'))

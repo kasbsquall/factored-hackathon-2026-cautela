@@ -1,0 +1,47 @@
+# Serving table for get_customer_profile. SQL: ../sql/customer_profile.sql
+table: customer_profile
+kind: row
+purpose: serving
+description: One row per customer with country, segment, status and product counts; no contact details.
+primary_key: [customer_id]
+sources: [customers, products, branches]
+lineage_source: customers
+changed_keys:
+  customers: "SELECT customer_id FROM silver.customers WHERE _ingested_at > {wm}"
+  # Bronze keeps every delivered version, so a product that changed owner also refreshes its previous owner.
+  products: >-
+    SELECT customer_id FROM bronze.products
+    WHERE product_id IN (SELECT product_id FROM silver.products WHERE _ingested_at > {wm})
+  branches: >-
+    SELECT c.customer_id FROM silver.customers c JOIN silver.branches b ON b.branch_id = c.registration_branch_id
+    WHERE b._ingested_at > {wm}
+notes:
+  - Email, phones, address and document number stay in silver; only the identity service reads them.
+  - registration_branch_known is false for 149,995 of 150,000 organizer customers (orphan branch ids, see the reconciliation table).
+columns:
+  - {name: customer_id, type: VARCHAR, nullable: false, description: Customer ID}
+  - {name: first_name, type: VARCHAR, nullable: false, description: First name}
+  - {name: last_name, type: VARCHAR, nullable: false, description: Last name}
+  - {name: country, type: VARCHAR, nullable: false, description: Country of residence (normalized in silver)}
+  - {name: state, type: VARCHAR, nullable: false, description: State or department}
+  - {name: city, type: VARCHAR, nullable: false, description: City}
+  - {name: segment, type: VARCHAR, nullable: false, allowed_values: [Premium, Plus, Basic, Student], description: Customer segment}
+  - {name: customer_status, type: VARCHAR, nullable: false, allowed_values: [Active, Inactive, Suspended, Closed], description: Customer status}
+  - {name: registration_date, type: TIMESTAMP, nullable: false, description: Registration date}
+  - {name: products_total, type: BIGINT, nullable: false, min: 0, description: Products held}
+  - {name: products_active, type: BIGINT, nullable: false, min: 0, description: Products with status Active}
+  - {name: cards_total, type: BIGINT, nullable: false, min: 0, description: Credit and debit cards held}
+  - {name: product_currencies, type: "VARCHAR[]", nullable: false, description: Distinct currencies of the customer's products}
+  - {name: registration_branch_known, type: BOOLEAN, nullable: false, description: The registration branch id exists in branches}
+reconciliation:
+  - name: one_row_per_silver_customer
+    description: Gold has exactly the silver customers.
+    sql: "SELECT abs((SELECT count(*) FROM silver.customers) - (SELECT count(*) FROM gold.customer_profile))"
+  - name: product_counts_add_up
+    description: Every silver product of a known customer is counted once.
+    sql: >-
+      SELECT abs((SELECT count(*) FROM silver.products WHERE customer_id IN (SELECT customer_id FROM silver.customers))
+      - (SELECT coalesce(sum(products_total), 0) FROM gold.customer_profile))
+  - name: subsets_within_total
+    description: Active products and cards are subsets of all products.
+    sql: "SELECT count(*) FROM gold.customer_profile WHERE products_active > products_total OR cards_total > products_total"

@@ -1,0 +1,61 @@
+# Analytics: complaint outcomes by type and breakdown. SQL: ../sql/complaint_outcomes.sql
+table: complaint_outcomes
+kind: aggregate
+purpose: analytics
+description: Volume, SLA breach, escalation, resolution time and repeat contact per complaint type, overall and by country, segment and channel.
+primary_key: [complaint_type, dimension, dimension_value]
+sources: [gold.complaint_facts, complaints, customers]
+lineage_source: gold.complaint_facts
+notes:
+  - resolution_days exists only for Resolved and Closed complaints; with_resolution_days is the denominator of its percentiles.
+  - is_escalated reflects the current status (a snapshot), not whether the case was ever escalated.
+columns:
+  - {name: complaint_type, type: VARCHAR, nullable: false, description: "category / subcategory, or (all complaints)"}
+  - {name: is_unrecognized_charge, type: BOOLEAN, description: Null on the (all complaints) rows}
+  - {name: dimension, type: VARCHAR, nullable: false, allowed_values: [overall, customer_country, customer_segment, reception_channel], description: Breakdown}
+  - {name: dimension_value, type: VARCHAR, nullable: false, description: "Breakdown value, all for overall"}
+  - {name: complaints, type: BIGINT, nullable: false, min: 1, description: Complaints in the group}
+  - {name: distinct_customers, type: BIGINT, nullable: false, min: 1, description: Distinct customers}
+  - {name: sla_breached, type: BIGINT, nullable: false, min: 0, description: Complaints with sla_breached}
+  - {name: sla_breach_rate, type: DOUBLE, nullable: false, min: 0, max: 1, description: sla_breached / complaints}
+  - {name: escalated, type: BIGINT, nullable: false, min: 0, description: Complaints whose status is Escalated}
+  - {name: escalation_rate, type: DOUBLE, nullable: false, min: 0, max: 1, description: escalated / complaints}
+  - {name: with_resolution_days, type: BIGINT, nullable: false, min: 0, description: Complaints with resolution_days}
+  - {name: resolution_days_p50, type: DOUBLE, min: 0, description: Median resolution days over with_resolution_days}
+  - {name: resolution_days_p90, type: DOUBLE, min: 0, description: 90th percentile resolution days}
+  - {name: with_first_response, type: BIGINT, nullable: false, min: 0, description: Complaints with a first response date}
+  - {name: first_response_hours_p50, type: DOUBLE, description: Median hours to first response}
+  - {name: first_response_hours_p90, type: DOUBLE, description: 90th percentile hours to first response}
+  - {name: repeat_flag_delivered, type: BIGINT, nullable: false, min: 0, description: Complaints flagged is_repeat_complainer}
+  - {name: prior_complaint_90d, type: BIGINT, nullable: false, min: 0, description: Complaints with a measured earlier complaint within 90 days}
+  - {name: repeat_flag_confirmed, type: BIGINT, nullable: false, min: 0, description: Flagged and confirmed by the history}
+  - {name: next_complaint_30d, type: BIGINT, nullable: false, min: 0, description: Complaints followed by another within 30 days}
+  - {name: repeat_30d_rate, type: DOUBLE, nullable: false, min: 0, max: 1, description: next_complaint_30d / complaints}
+  - {name: with_claimed_amount, type: BIGINT, nullable: false, min: 0, description: Complaints with a claimed amount}
+  - {name: with_satisfaction, type: BIGINT, nullable: false, min: 0, description: Complaints with a satisfaction score}
+  - {name: satisfaction_mean, type: DOUBLE, min: 1, max: 5, description: Mean satisfaction over with_satisfaction}
+  - {name: first_date, type: DATE, nullable: false, description: First creation date in the group}
+  - {name: last_date, type: DATE, nullable: false, description: Last creation date in the group}
+reconciliation:
+  - name: total_matches_silver
+    description: The overall total equals the silver complaint count.
+    sql: >-
+      SELECT abs((SELECT count(*) FROM silver.complaints)
+      - (SELECT complaints FROM gold.complaint_outcomes WHERE complaint_type = '(all complaints)' AND dimension = 'overall'))
+  - name: types_add_up_to_total
+    description: The complaint types partition the total.
+    sql: >-
+      SELECT abs((SELECT complaints FROM gold.complaint_outcomes WHERE complaint_type = '(all complaints)' AND dimension = 'overall')
+      - (SELECT sum(complaints) FROM gold.complaint_outcomes WHERE complaint_type <> '(all complaints)' AND dimension = 'overall'))
+  - name: breakdowns_add_up
+    description: Every breakdown of a type sums to that type's overall row.
+    sql: >-
+      SELECT count(*) FROM (SELECT complaint_type, dimension, sum(complaints) AS s FROM gold.complaint_outcomes
+      WHERE dimension <> 'overall' GROUP BY ALL) b JOIN gold.complaint_outcomes o
+      ON o.complaint_type = b.complaint_type AND o.dimension = 'overall' WHERE b.s <> o.complaints
+  - name: numerators_within_denominators
+    description: No count exceeds its group size.
+    sql: >-
+      SELECT count(*) FROM gold.complaint_outcomes WHERE greatest(sla_breached, escalated, with_resolution_days,
+      with_first_response, repeat_flag_delivered, prior_complaint_90d, next_complaint_30d, with_claimed_amount,
+      with_satisfaction, distinct_customers) > complaints OR repeat_flag_confirmed > least(repeat_flag_delivered, prior_complaint_90d)

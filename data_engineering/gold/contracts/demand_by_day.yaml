@@ -1,0 +1,29 @@
+# Analytics: daily contact volume. SQL: ../sql/demand_by_day.sql
+table: demand_by_day
+kind: aggregate
+purpose: analytics
+description: Contacts per source system, workflow, country, channel and calendar day.
+primary_key: [source_system, workflow, country, channel, event_date]
+sources: [gold.complaint_facts, call_center_interactions, complaints, customers]
+lineage_source: gold.complaint_facts
+notes:
+  - Days without contacts have no row; a daily series must be densified against the calendar before computing percentiles.
+columns:
+  - {name: source_system, type: VARCHAR, nullable: false, allowed_values: [complaints, interactions], description: Where the contact was recorded}
+  - {name: workflow, type: VARCHAR, nullable: false, description: Complaint type or contact reason}
+  - {name: is_unrecognized_charge, type: BOOLEAN, nullable: false, description: The workflow is the unrecognized-charge workflow}
+  - {name: country, type: VARCHAR, nullable: false, description: "Customer country, Unknown when the customer is not in silver"}
+  - {name: channel, type: VARCHAR, nullable: false, description: Reception or contact channel}
+  - {name: event_date, type: DATE, nullable: false, description: Calendar day of the event time}
+  - {name: contacts, type: BIGINT, nullable: false, min: 1, description: Contacts in the cell}
+reconciliation:
+  - name: complaints_add_up
+    description: Complaint contacts equal the silver complaint count.
+    sql: >-
+      SELECT abs((SELECT count(*) FROM silver.complaints)
+      - (SELECT coalesce(sum(contacts), 0) FROM gold.demand_by_day WHERE source_system = 'complaints'))
+  - name: interactions_add_up
+    description: Interaction contacts equal the silver interaction count.
+    sql: >-
+      SELECT abs((SELECT count(*) FROM silver.call_center_interactions)
+      - (SELECT coalesce(sum(contacts), 0) FROM gold.demand_by_day WHERE source_system = 'interactions'))

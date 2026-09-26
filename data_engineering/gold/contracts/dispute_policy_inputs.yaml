@@ -1,0 +1,33 @@
+# Serving view for get_dispute_policy: the facts agent/policy/engine.py evaluates. SQL: ../sql/dispute_policy_inputs.sql
+table: dispute_policy_inputs
+kind: view
+purpose: serving
+description: One row per transaction with the customer country and segment and the product state the policy rules read.
+primary_key: [transaction_id]
+sources: [gold.customer_transactions, gold.customer_profile]
+lineage_source: gold.customer_transactions
+notes:
+  - A view over two gold tables, so it is always as fresh as they are and needs no incremental logic of its own.
+  - Transaction age is not stored because it depends on the request time; the policy engine computes it.
+columns:
+  - {name: transaction_id, type: VARCHAR, nullable: false, description: Transaction ID}
+  - {name: customer_id, type: VARCHAR, nullable: false, description: Owner of the transaction}
+  - {name: customer_country, type: VARCHAR, description: Customer country; selects the claim window rule}
+  - {name: customer_segment, type: VARCHAR, description: "Customer segment, for segment-level reporting"}
+  - {name: customer_status, type: VARCHAR, description: Customer status}
+  - {name: product_id, type: VARCHAR, nullable: false, description: Product moved}
+  - {name: product_type, type: VARCHAR, description: Product type; some windows apply to cards only}
+  - {name: product_status, type: VARCHAR, description: Product status as delivered (sandbox blocks are overlaid by the tool)}
+  - {name: channel, type: VARCHAR, nullable: false, description: Transaction channel; some windows apply to remote channels only}
+  - {name: transaction_type, type: VARCHAR, nullable: false, description: Transaction type}
+  - {name: transaction_status, type: VARCHAR, nullable: false, description: Transaction status}
+  - {name: transaction_date, type: TIMESTAMP, nullable: false, description: Anchor for the claim window}
+  - {name: amount, type: "DECIMAL(15,2)", nullable: false, description: Amount in the transaction currency}
+  - {name: currency, type: VARCHAR, nullable: false, description: Transaction currency}
+  - {name: amount_usd, type: "DECIMAL(15,2)", description: Amount in USD; drives the human-review threshold}
+  - {name: fraud_score, type: "DECIMAL(5,2)", min: 0, max: 100, description: Fraud score; drives forced escalation}
+  - {name: is_fraud, type: BOOLEAN, nullable: false, description: Fraud label as delivered}
+reconciliation:
+  - name: one_row_per_gold_transaction
+    description: The view neither drops nor duplicates transactions.
+    sql: "SELECT abs((SELECT count(*) FROM gold.customer_transactions) - (SELECT count(*) FROM gold.dispute_policy_inputs))"
