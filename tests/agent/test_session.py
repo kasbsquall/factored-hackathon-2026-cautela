@@ -206,3 +206,23 @@ def test_fresh_challenges_are_throttled_per_document(idp, clock):
     clock.advance(minutes=16)
     idp.start_login(DOC)
     assert len(idp.channel.outbox) == sent + 1
+
+
+def test_login_throttle_is_configurable_for_the_public_demo(monkeypatch):
+    from agent.orchestrator.wiring import login_challenges_per_window
+    from agent.security.session import MAX_CHALLENGES_PER_WINDOW
+
+    monkeypatch.delenv("CAUTELA_LOGIN_CHALLENGES", raising=False)
+    assert login_challenges_per_window() == MAX_CHALLENGES_PER_WINDOW == 3
+    monkeypatch.setenv("CAUTELA_LOGIN_CHALLENGES", "30")
+    assert login_challenges_per_window() == 30
+    for bad in ("0", "-2", "many"):
+        monkeypatch.setenv("CAUTELA_LOGIN_CHALLENGES", bad)
+        assert login_challenges_per_window() == 3
+
+
+def test_identity_service_rejects_a_zero_challenge_cap():
+    from agent.security.session import IdentityService
+
+    with pytest.raises(ValueError):
+        IdentityService(b"x" * 48, directory=None, max_challenges=0)

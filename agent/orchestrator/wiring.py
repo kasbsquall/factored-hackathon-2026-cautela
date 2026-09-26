@@ -14,7 +14,7 @@ from pathlib import Path
 
 from agent.clock import Clock
 from agent.security.audit import AuditLog
-from agent.security.session import IdentityService, MockChannel
+from agent.security.session import MAX_CHALLENGES_PER_WINDOW, IdentityService, MockChannel
 from agent.service import ToolService
 from agent.tools.faults import FaultInjector
 from agent.tools.repository import CaseStore, WarehouseRepository
@@ -57,6 +57,13 @@ def session_secret(environ: dict[str, str] | None = None) -> tuple[bytes, bool]:
     return secrets.token_bytes(48), False
 
 
+def login_challenges_per_window() -> int:
+    """Login codes per document per 15 minutes. 3 by default; the public demo raises it because its test
+    identities are shared by every visitor and their codes are shown on screen, so there is nothing to guess."""
+    raw = os.environ.get("CAUTELA_LOGIN_CHALLENGES", "").strip()
+    return int(raw) if raw.isdigit() and int(raw) >= 1 else MAX_CHALLENGES_PER_WINDOW
+
+
 def build_stack(warehouse: str | Path, clock: Clock, secret: bytes, cases_db: str | Path = ":memory:",
                 audit_dir: str | Path | None = None, faults: FaultInjector | None = None,
                 sleep=None) -> Stack:
@@ -64,7 +71,7 @@ def build_stack(warehouse: str | Path, clock: Clock, secret: bytes, cases_db: st
     repo = WarehouseRepository(warehouse, faults)
     cases = CaseStore(cases_db, faults)
     channel = MockChannel()
-    identity = IdentityService(secret, repo, channel, clock)
+    identity = IdentityService(secret, repo, channel, clock, max_challenges=login_challenges_per_window())
     audit = AuditLog(secret, audit_dir, clock)
     kwargs = {"sleep": sleep} if sleep is not None else {}
     service = ToolService(secret, identity, repo, cases, audit, clock, **kwargs)

@@ -115,7 +115,10 @@ class IdentityService:
     ACTIVE_STATUSES = frozenset({"Active"})
 
     def __init__(self, secret: bytes, directory: CustomerDirectory, channel: MockChannel | None = None,
-                 clock: Clock = system_clock) -> None:
+                 clock: Clock = system_clock, max_challenges: int = MAX_CHALLENGES_PER_WINDOW) -> None:
+        if max_challenges < 1:
+            raise ValueError("max_challenges must be at least 1")
+        self._max_challenges = max_challenges
         self._tokens = Signer(secret, "session")
         self._otp = Signer(secret, "otp")
         self._directory = directory
@@ -153,7 +156,7 @@ class IdentityService:
     def _throttled(self, document: str, now: datetime) -> bool:
         """Cap challenges per document so the 6-digit code cannot be brute-forced across fresh challenges."""
         recent = [t for t in self._recent_logins.get(document, []) if now - t < LOGIN_WINDOW]
-        throttled = len(recent) >= MAX_CHALLENGES_PER_WINDOW
+        throttled = len(recent) >= self._max_challenges
         self._recent_logins[document] = recent if throttled else [*recent, now]
         return throttled
 
