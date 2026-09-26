@@ -169,11 +169,23 @@ Every value below is a team choice where no approved bank policy was supplied. E
 | Fraud escalation at `fraud_score` 50 or `is_fraud` true | SYN-FRAUD-001 | In the same month no non-fraud transaction scored above 30.0; 54 of 137 flagged ones scored 50 or more |
 | Only Approved and Pending charges are disputable | SYN-STATUS-001 to 003 | Declined moved no money; Reversed was already returned |
 | Missing USD amount or required field goes to review | SYN-DATA-001 | Cannot apply the threshold safely |
+| Fixed FX rates when a charge has no USD amount: MXN 17.7100, COP 3329.61, ARS 1525.50, BRL 5.1991 per USD (2026-09-25) | SYN-FX-001 | Read on 2026-09-26 in Banxico FIX, the TRM on datos.gov.co (Superfinanciera; the Banco de la República page answered with a bot check), the BCRA cambiarias API and the BCB PTAX (sell); URLs in `rules.yaml`. One date's rate for every charge date is the synthetic part. An unlisted currency keeps SYN-DATA-001. The organizer data's own `amount_usd` implies 4000 COP and 350 ARS per USD, so for ARS a converted amount is about 4.4 times smaller than the dataset's convention would give |
 | Colombia face-to-face window 90 days | CO-WINDOW-002 | No statutory window verified |
 | Argentina non-credit window 30 days | AR-WINDOW-002 | Mirrors Ley 25.065; not verified for debit |
 | Confirmation for `open_dispute_case` and `block_card` | SYN-CONFIRM-001 | Both write on the customer's behalf |
 | Session 15 min, OTP 5 min and 3 attempts, confirmation 5 min | `session.py`, `permissions.py` | Common practice, not a regulation |
 | Audit retention 3650 days | `audit.py` | Mirrors BCRA PUSF 3.1.3 |
+
+## Amounts and dates in replies
+
+Reply text and the app's charge cards print amounts and dates the same way (`orchestrator/fmt.py`,
+`app/src/lib/format/index.ts`, both tested on `docs/format-vectors.json`). Amounts: ISO code, a space, the number.
+Spanish uses the number format of the currency's country: COP and ARS as in Colombia and Argentina (`COP 48.900`,
+`ARS 1.234,50`), MXN, USD and every other code as in Mexico and Latin American Spanish (`MXN 5,335.32`,
+`USD 980.10`). Portuguese uses the Brazilian format for every code (`MXN 5.335,32`). COP has no decimals. Dates:
+`30 may 2026` in Spanish, `30 de mai. de 2026` in Portuguese. The API fields (`label` of options, recognition and
+confirmation) keep the machine form `30/05/2026, Marketplace Uno, 5335.32 MXN`, which the app parses and formats
+itself. Console and handoff text stay in English ("1 day since the charge", "3 days since the charge").
 
 ## LLM port (`agent/llm/`)
 

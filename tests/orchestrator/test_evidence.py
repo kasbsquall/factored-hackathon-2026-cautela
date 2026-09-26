@@ -11,7 +11,7 @@ from datetime import date
 
 import pytest
 
-from agent.orchestrator import evidence
+from agent.orchestrator import evidence, fmt
 from tests.orchestrator.conftest import ScriptedAdapter, case_rows, not_recognized, steps
 
 CHARGE_FIELDS = {"transaction_date", "amount", "currency", "merchant_name", "merchant_category", "category", "channel",
@@ -47,7 +47,7 @@ def test_recognition_step_shows_verified_charge_and_fired_reasons(rig, orch, cas
     # the opener states the exact amount, the day and the merchant: those three features fired
     assert {"amount_exact", "date_same_day", "merchant_named"} <= set(codes)
     assert all(r["label"] == evidence.reason(r["code"], lang, r["value"])["label"] for r in check["reasons"])
-    assert check["label"] in asked.reply
+    assert fmt.label_text(check["label"], lang) in asked.reply
     fired = next(s for s in asked.trail if s.step == "decide.reasons")
     assert fired.detail["reasons"][case.transaction_id] == codes
     policy = next(s for s in asked.trail if s.step == "tool.get_dispute_policy")
@@ -62,7 +62,7 @@ def test_recognized_charge_ends_without_a_dispute_and_is_audited(rig, orch, case
     asked = orch.turn(token, case.opener("es"), language="es")
     done = orch.recognize(token, asked.conversation_id, asked.recognition["recognition_id"], recognized=True)
     assert done.stage == "recognized" and done.confirmation is None and done.case is None and done.handoff is None
-    assert done.recognition is None and asked.recognition["label"] in done.reply
+    assert done.recognition is None and fmt.label_text(asked.recognition["label"], "es") in done.reply
     assert "confirm.request" not in steps(done) and not any(s.step.startswith("tool.") for s in done.trail)
     assert case_rows(rig, case.customer_id) == 0
     answer = [r for r in rig.audit.records(done.trace_id) if r.step == "orchestrator.recognize.answer"]
@@ -112,7 +112,7 @@ def test_a_message_while_the_question_is_open_repeats_it(orch, cases, login):
     reminder = orch.turn(token, "¿Y ahora?", asked.conversation_id)
     assert reminder.stage == "awaiting_recognition"
     assert reminder.recognition["recognition_id"] == asked.recognition["recognition_id"]
-    assert asked.recognition["label"] in reminder.reply
+    assert fmt.label_text(asked.recognition["label"], "es") in reminder.reply
     human = orch.turn(token, "Quiero hablar con una persona", asked.conversation_id)
     assert human.stage == "handed_off" and human.recognition is None
 

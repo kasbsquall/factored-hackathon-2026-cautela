@@ -6,6 +6,7 @@ from __future__ import annotations
 import pytest
 
 from agent.handoff import validate_handoff
+from agent.orchestrator import fmt
 from tests.orchestrator.conftest import case_rows, not_recognized, steps
 
 LANGS = ["es", "pt"]
@@ -45,7 +46,7 @@ def test_ambiguous_case_asks_then_carries_state(rig, orch, cases, login, lang):
     token = login(case)
     first = orch.turn(token, case.opener(lang), language=lang)
     assert first.stage == "clarifying" and 2 <= len(first.options) <= 3
-    assert all(o.label in first.reply for o in first.options), "the question lists the candidates"
+    assert all(fmt.label_text(o.label, lang) in first.reply for o in first.options), "the question lists the candidates"
     pick = "2" if lang == "es" else "a segunda"
     second = orch.turn(token, pick, first.conversation_id)
     chosen = first.options[1]
@@ -118,14 +119,17 @@ def test_amount_word_then_date_are_merged_across_turns(orch, cases, login):
         assert state.slots.date is not None
 
 
-def test_bad_data_charge_goes_to_review_under_syn_data_001(orch, cases, login):
+def test_bad_data_charge_without_usd_amount_is_valued_with_syn_fx_001(orch, cases, login):
     case = cases["bad_data"]
+    assert case.transaction["amount_usd"] is None and case.transaction["currency"] != "USD"
     token = login(case)
     first = not_recognized(orch, token, orch.turn(token, case.opener("es"), language="es"))
     done = orch.confirm(token, first.conversation_id, first.confirmation["confirmation_id"])
-    assert done.handoff["transfer_reason"]["code"] == "policy_requires_review"
-    assert "SYN-DATA-001" in done.handoff["transfer_reason"]["rule_ids"]
-    assert any(f["fact"] == "USD amount unknown" for f in done.handoff["verified_facts"])
+    state = orch.store.get(first.conversation_id, case.customer_id)
+    assert "SYN-FX-001" in state.rule_ids and "SYN-DATA-001" not in state.rule_ids
+    fact = next(f for f, _ in state.facts if f.startswith("USD amount"))
+    assert "not in the data; converted from" in fact and "SYN-FX-001" in fact
+    assert done.stage in {"resolved", "handed_off"}
 
 
 def test_clarification_is_bounded(orch, cases, login):

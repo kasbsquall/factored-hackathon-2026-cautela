@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from agent.llm.port import LanguageModel
-from agent.orchestrator import handoffs, replies
+from agent.orchestrator import fmt, handoffs, replies
 from agent.orchestrator.disposition import DispositionModel
 from agent.orchestrator.state import ConversationState, ConversationStore, TrailStep
 from agent.policy.engine import PolicyDecision, PolicyInput, evaluate
@@ -98,9 +98,12 @@ class StepsMixin:
     # ---- replies ----------------------------------------------------------------------------------------
     def _say(self, turn: Turn, kind: str, fields: Mapping[str, Any] | None = None,
              must_mention: tuple[str, ...] = ()) -> replies.Reply:
-        started = time.perf_counter()
-        reply = replies.compose(self.llm, kind, turn.state.language, fields or {}, must_mention,
-                                self._names(turn), turn.trace_id)
+        started, lang = time.perf_counter(), turn.state.language
+        # Charge labels reach reply text in the customer's format (fmt.py); the API fields keep the machine form.
+        shown = {k: fmt.label_text(v, lang) if k == "label" and isinstance(v, str) else v
+                 for k, v in (fields or {}).items()}
+        mentions = tuple(fmt.label_text(m, lang) for m in must_mention)
+        reply = replies.compose(self.llm, kind, lang, shown, mentions, self._names(turn), turn.trace_id)
         self._step(turn, "reply", reply.source, {"kind": kind, "note": reply.note}, started=started)
         turn.reply = reply
         return reply

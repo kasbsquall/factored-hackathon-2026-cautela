@@ -22,7 +22,7 @@ from typing import Any
 from jsonschema import SchemaError
 
 from agent.llm.port import LanguageModel, LLMOutputError, LLMUnavailable
-from agent.orchestrator import evidence, replies
+from agent.orchestrator import evidence, fmt, replies
 from agent.orchestrator import intent as nlu
 from agent.orchestrator.actions import ActionsMixin
 from agent.orchestrator.disposition import DispositionModel, load_default, non_disputable_fit
@@ -304,7 +304,7 @@ class Orchestrator(ActionsMixin):
                          for i, tid in enumerate(shown)]
         state.clarify_rounds += 1
         state.stage = "clarifying"
-        listing = "\n".join(f"{o.index}) {o.label}" for o in state.options)
+        listing = "\n".join(f"{o.index}) {fmt.label_text(o.label, state.language)}" for o in state.options)
         self._say(turn, "clarify_options", {"options": listing}, tuple(o.label for o in state.options))
 
     def _match_reasons(self, turn: Turn, pool: list[dict[str, Any]],

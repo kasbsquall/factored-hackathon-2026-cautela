@@ -1,0 +1,36 @@
+{
+  "about": "Amount and date format shared by reply text (agent/orchestrator/fmt.py) and the app's cards (app/src/lib/format/index.ts). Both test suites read this file: tests/agent/test_fmt.py and app/tests/unit/format.test.ts.",
+  "money": [
+    {"amount": 5335.32, "currency": "MXN", "lang": "es", "text": "MXN 5,335.32"},
+    {"amount": 5335.32, "currency": "MXN", "lang": "pt", "text": "MXN 5.335,32"},
+    {"amount": 980.1, "currency": "USD", "lang": "es", "text": "USD 980.10"},
+    {"amount": 980.1, "currency": "USD", "lang": "pt", "text": "USD 980,10"},
+    {"amount": 1234, "currency": "USD", "lang": "es", "text": "USD 1,234.00"},
+    {"amount": 1234, "currency": "USD", "lang": "pt", "text": "USD 1.234,00"},
+    {"amount": 48900, "currency": "COP", "lang": "es", "text": "COP 48.900"},
+    {"amount": 48900.4, "currency": "COP", "lang": "pt", "text": "COP 48.900"},
+    {"amount": 1234567.5, "currency": "ARS", "lang": "es", "text": "ARS 1.234.567,50"},
+    {"amount": 1234567.5, "currency": "ARS", "lang": "pt", "text": "ARS 1.234.567,50"},
+    {"amount": 12.5, "currency": "BRL", "lang": "es", "text": "BRL 12.50"},
+    {"amount": 12.5, "currency": "BRL", "lang": "pt", "text": "BRL 12,50"},
+    {"amount": 450, "currency": "USD", "lang": "es", "text": "USD 450.00"},
+    {"amount": -5335.32, "currency": "MXN", "lang": "es", "text": "-MXN 5,335.32"}
+  ],
+  "date": [
+    {"value": "2026-05-30", "lang": "es", "text": "30 may 2026"},
+    {"value": "2026-05-30", "lang": "pt", "text": "30 de mai. de 2026"},
+    {"value": "2026-06-01", "lang": "es", "text": "1 jun 2026"},
+    {"value": "2026-06-01", "lang": "pt", "text": "1 de jun. de 2026"},
+    {"value": "2026-09-12", "lang": "es", "text": "12 sept 2026"},
+    {"value": "2026-09-12", "lang": "pt", "text": "12 de set. de 2026"},
+    {"value": "2026-01-05", "lang": "es", "text": "5 ene 2026"},
+    {"value": "2026-12-24", "lang": "pt", "text": "24 de dez. de 2026"}
+  ],
+  "label": [
+    {"label": "30/05/2026, Marketplace Uno, 5335.32 MXN", "lang": "es", "text": "30 may 2026, Marketplace Uno, MXN 5,335.32"},
+    {"label": "30/05/2026, Marketplace Uno, 5335.32 MXN", "lang": "pt", "text": "30 de mai. de 2026, Marketplace Uno, MXN 5.335,32"},
+    {"label": "17/06/2026, Café Central, S.A., 48900.00 COP", "lang": "es", "text": "17 jun 2026, Café Central, S.A., COP 48.900"},
+    {"label": "**** 4417", "lang": "es", "text": "**** 4417"},
+    {"label": "30/05/2026, Tienda, ?", "lang": "pt", "text": "30/05/2026, Tienda, ?"}
+  ]
+}

@@ -8,7 +8,7 @@ Scenarios:
   normal      approved purchase under the USD review threshold, no fraud signal, inside the Mexico window
   human       approved purchase at or above the USD 450 review threshold (SYN-AMOUNT-001)
   ambiguous   a vague description ("a purchase last week") that fits several charges
-  bad_data    approved purchase in local currency with no USD amount (SYN-DATA-001)
+  bad_data    approved purchase in local currency with no USD amount; valued with the fixed rates of SYN-FX-001
   declined    a declined transaction: nothing to dispute (SYN-STATUS-002)
 """
 

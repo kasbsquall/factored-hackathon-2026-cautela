@@ -25,6 +25,22 @@ CARD_TYPES = frozenset({"Credit Card", "Debit Card"})
 SOURCE_REASON = {"customer_selection": "customer_selected", "customer_reference": "customer_reference"}
 
 
+def days_since(days: Any) -> str:
+    """'1 day since the charge', '3 days since the charge' (console and handoff text are in English)."""
+    return f"{days} day{'' if days in (1, -1) else 's'} since the charge"
+
+
+def usd_fact(facts: dict[str, Any]) -> str:
+    """The USD amount the threshold was applied to, and where it came from when the data had none."""
+    usd, fx = facts.get("amount_usd"), facts.get("amount_usd_fx")
+    if usd is None:
+        return "USD amount unknown"
+    if not fx:
+        return f"USD amount {usd:.2f}"
+    return (f"USD amount {usd:.2f} (not in the data; converted from {fx['currency']} at the fixed synthetic rate "
+            f"{fx['rate']} per USD of {fx['reference_date']}, {fx['rule_id']})")
+
+
 class ActionsMixin(StepsMixin):
     # ---- decide: policy for one identified charge ----------------------------------------------------
     def _act_on_transaction(self, turn: Turn, transaction_id: str, confidence: float | None,
@@ -79,10 +95,9 @@ class ActionsMixin(StepsMixin):
             state.claim_window = {"rule_id": facts["window_rule"], "deadline": facts["window_deadline"]}
         if facts.get("window_deadline"):
             state.add_fact(f"Claim window {facts.get('window_rule')} ends {facts['window_deadline']} "
-                           f"({facts.get('days_since_transaction')} days since the charge)", source)
+                           f"({days_since(facts.get('days_since_transaction'))})", source)
         if "amount_usd" in facts:
-            usd = facts["amount_usd"]
-            state.add_fact("USD amount unknown" if usd is None else f"USD amount {usd:.2f}", source)
+            state.add_fact(usd_fact(facts), source)
 
     # ---- recognize: merchant evidence before any dispute ------------------------------------------------
     def _cards(self, turn: Turn) -> dict[str, dict[str, str]]:

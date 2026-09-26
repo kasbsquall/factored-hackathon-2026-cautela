@@ -26,7 +26,7 @@ LABELS = {
     "normal": "Normal: a charge under the review threshold; resolves with a verified case",
     "human": "Human review: a charge at or above USD 450 (SYN-AMOUNT-001)",
     "ambiguous": "Ambiguous: a vague description; asks which charge, then continues",
-    "bad_data": "Missing data: a local-currency charge with no USD amount (SYN-DATA-001)",
+    "bad_data": "Missing data: a local-currency charge with no USD amount; valued with fixed rates (SYN-FX-001)",
     "declined": "Unsupported: a declined charge; explains there is nothing to dispute (SYN-STATUS-002)",
 }
 EXTRA = {

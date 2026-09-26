@@ -46,7 +46,7 @@ transaction (2026-05-31T12:00Z) and then runs in real time, so the static charge
 | normal | 1418434291 | Charge under the review threshold: "do you recognize it?", confirmation, case opened, read back, verified |
 | human | 974594683 | Charge at or above USD 450: case registered for review, handoff `amount_above_threshold` (SYN-AMOUNT-001) |
 | ambiguous | 4593579348 | "A purchase last week": numbered options, the customer picks one, the flow continues |
-| bad_data | 7965114245 | No cues first (targeted question), then a charge with no USD amount: review under SYN-DATA-001 |
+| bad_data | 7965114245 | No cues first (targeted question), then a charge with no USD amount: valued with the fixed rates of SYN-FX-001, then the USD 450 threshold applies |
 | declined | 5602708750 | A declined charge: explained, nothing to dispute (SYN-STATUS-002) |
 
 Other cases to type as any customer: "Quiero hablar con una persona" (handoff `customer_requested_human`),

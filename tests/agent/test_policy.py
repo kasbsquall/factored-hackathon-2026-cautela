@@ -97,8 +97,8 @@ def test_threshold_uses_amount_usd_for_local_currency():
     assert "amount_above_threshold" in d.escalation_reasons
 
 
-def test_missing_usd_amount_goes_to_review():
-    d = decide("Argentina", tx(amount=150000, currency="ARS", amount_usd=None))
+def test_missing_usd_amount_in_an_unlisted_currency_goes_to_review():
+    d = decide("Argentina", tx(amount=150000, currency="EUR", amount_usd=None))  # EUR is not in SYN-FX-001
     assert "SYN-DATA-001" in d.rule_ids and "policy_requires_review" in d.escalation_reasons
 
 

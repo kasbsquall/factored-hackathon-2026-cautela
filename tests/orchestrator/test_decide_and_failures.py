@@ -155,7 +155,7 @@ def test_demo_runs_every_scenario_in_both_languages(warehouse, monkeypatch):
     assert out.count("######## scenario:") == 2 * len(demo.SCENARIOS)
     for expected in ("stage=resolved", "stage=clarifying", "stage=handed_off", "stage=auth_required",
                      '"code": "amount_above_threshold"', '"code": "security_event"', '"code": "tool_failure"',
-                     '"code": "out_of_scope"', "stage=abstained", "SYN-DATA-001"):
+                     '"code": "out_of_scope"', "stage=abstained", "SYN-FX-001"):
         assert expected in out, expected
     assert "LLM_PROVIDER not set" in out
 

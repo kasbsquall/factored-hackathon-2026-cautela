@@ -174,6 +174,19 @@ class _Builder:
         )
 
 
+def usd_amount(tx: TransactionFacts, rules: dict) -> tuple[float | None, dict | None]:
+    """(USD amount, the SYN-FX-001 rate entry when the amount was converted). The data's amount_usd wins; a USD
+    charge is its own amount; a listed currency is converted at its fixed rate; anything else is unknown."""
+    if tx.amount_usd is not None:
+        return tx.amount_usd, None
+    if tx.currency == "USD":
+        return tx.amount, None
+    entry = rules.get("fx_rates", {}).get("units_per_usd", {}).get(tx.currency or "")
+    if entry is None or tx.amount is None:
+        return None, None
+    return round(tx.amount / float(entry["rate"]), 2), entry
+
+
 def _evaluate_transaction(b: _Builder, tx: TransactionFacts, country: str | None, as_of: datetime) -> None:
     rules = b.rules
     missing = [f for f in ("transaction_date", "amount", "currency", "transaction_status") if getattr(tx, f) is None]
@@ -202,8 +215,14 @@ def _evaluate_transaction(b: _Builder, tx: TransactionFacts, country: str | None
                    f"{'inside' if inside else 'outside'}", None if inside else "policy_requires_review")
     if inside:
         b.writes.add("open_dispute_case")
-    usd = tx.amount_usd if tx.amount_usd is not None else tx.amount if tx.currency == "USD" else None
+    usd, fx = usd_amount(tx, rules)
     b.facts["amount_usd"] = usd
+    if fx is not None:
+        rule = rules["fx_rates"]
+        b.facts["amount_usd_fx"] = {"rule_id": rule["id"], "currency": tx.currency, "rate": fx["rate"],
+                                    "reference_date": rule["reference_date"]}
+        b.fire(rule, f"no USD amount in the data: USD {usd:.2f} from {tx.amount:.2f} {tx.currency} at the fixed "
+                     f"rate {fx['rate']} {tx.currency} per USD of {rule['reference_date']} ({fx['publisher']})")
     if usd is None:
         b.fire(rules["missing_data"], "USD amount unknown, threshold cannot be applied", "policy_requires_review")
     elif usd >= rules["amount_review"]["threshold_usd"]:

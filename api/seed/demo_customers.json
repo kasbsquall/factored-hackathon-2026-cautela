@@ -50,7 +50,7 @@
     },
     {
       "document_number": "7965114245",
-      "label": "Missing data: a local-currency charge with no USD amount (SYN-DATA-001)",
+      "label": "Missing data: a local-currency charge with no USD amount; valued with fixed rates (SYN-FX-001)",
       "scenario": "bad_data",
       "messages": {
         "es": [

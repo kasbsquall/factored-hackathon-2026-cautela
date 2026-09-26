@@ -13,7 +13,7 @@
 # the charge. The dataset has no statement dates, so every window is anchored at transaction_date, which is the
 # same day or earlier. That makes each window shorter or equal, never longer, so the approximation can only send
 # more cases to a human, never fewer.
-version: "2026-09-25.1"
+version: "2026-09-26.1"
 
 claim_windows:
   - id: MX-WINDOW-001
@@ -105,7 +105,49 @@ amount_review:
 missing_data:
   id: SYN-DATA-001
   source: synthetic_policy
-  citation: "If the USD amount cannot be established (amount_usd null and currency not USD) or a required field is missing, a human reviews the case"
+  citation: "If the USD amount cannot be established (amount_usd null, currency not USD and not in SYN-FX-001) or a required field is missing, a human reviews the case"
+
+# Fixed exchange rates, used only when a local-currency charge has no amount_usd, so that SYN-AMOUNT-001 can be
+# applied. Each rate was read by the team in the official publication below (read_on). Using one day's rate for
+# charges of any date is a team assumption, hence synthetic_policy; a bank would use the rate of the charge's
+# posting date. A currency that is not listed keeps SYN-DATA-001.
+#
+# Dataset note: the organizer data's own amount_usd implies fixed rates of 4000 COP and 350 ARS per USD in every
+# month (team query on silver.transactions, 2026-09-26), far from the official rates below. For ARS that makes a
+# converted amount about 4.4 times smaller than the dataset's convention would give, so a charge the dataset would
+# value at USD 450 or more can fall under the threshold here. This only affects charges whose amount_usd is null.
+fx_rates:
+  id: SYN-FX-001
+  source: synthetic_policy
+  verification: verified_primary
+  reference_date: "2026-09-25"
+  read_on: "2026-09-26"
+  citation: >-
+    Synthetic. USD equivalent = amount / rate, rounded to cents, with fixed official rates of 2026-09-25 (units of
+    the currency per USD). Applied only when amount_usd is missing; an unlisted currency goes to review under
+    SYN-DATA-001.
+  units_per_usd:
+    MXN:
+      rate: 17.7100
+      publisher: "Banco de México"
+      series: "Tipo de cambio FIX, 25/09/2026"
+      url: https://www.banxico.org.mx/tipcamb/tipCamMIAction.do
+    COP:
+      rate: 3329.61
+      publisher: "Superintendencia Financiera de Colombia (TRM), published on datos.gov.co"
+      series: "TRM vigente 2026-09-25, dataset 32sa-8pi3"
+      url: https://www.datos.gov.co/resource/32sa-8pi3.json
+      note: "Banco de la República's TRM page answered with a bot check and was not read; the TRM is certified by the Superintendencia, not the central bank"
+    ARS:
+      rate: 1525.50
+      publisher: "Banco Central de la República Argentina"
+      series: "Estadísticas Cambiarias v1.0, cotización USD 2026-09-25"
+      url: https://api.bcra.gob.ar/estadisticascambiarias/v1.0/Cotizaciones/USD?fechadesde=2026-09-18&fechahasta=2026-09-25
+    BRL:
+      rate: 5.1991
+      publisher: "Banco Central do Brasil"
+      series: "PTAX venda, 25/09/2026"
+      url: https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarPeriodo(dataInicial=@dataInicial,dataFinalCotacao=@dataFinalCotacao)?@dataInicial='09-18-2026'&@dataFinalCotacao='09-25-2026'&$format=json
 
 fraud_escalation:
   id: SYN-FRAUD-001
