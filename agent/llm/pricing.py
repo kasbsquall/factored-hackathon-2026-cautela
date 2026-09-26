@@ -37,6 +37,9 @@ class PriceTable:
 
     def find(self, provider: str, model: str) -> PriceEntry | None:
         exact = [e for e in self.entries if e.provider == provider and e.model == model]
+        # A dated snapshot returned by the API (gpt-4o-mini-2024-07-18) is priced as its alias row.
+        exact = exact or sorted((e for e in self.entries if e.provider == provider and e.model != "*"
+                                 and model.startswith(e.model + "-")), key=lambda e: -len(e.model))
         wildcard = [e for e in self.entries if e.provider == provider and e.model == "*"]
         return (exact or wildcard or [None])[0]
 

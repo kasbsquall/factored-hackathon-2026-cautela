@@ -220,3 +220,31 @@ def test_anthropic_refusal_becomes_unavailable():
     adapter = AnthropicAdapter("m", "unused", client=SimpleNamespace(messages=SimpleNamespace(create=create)))
     with pytest.raises(LLMUnavailable):
         _llm(adapter).reply({"a": 1}, "es")
+
+
+def _capture():
+    sent = {}
+
+    def transport(url, headers, body, timeout_s):
+        sent.update(body)
+        return {"choices": [{"message": {"content": "{}"}}], "usage": {"prompt_tokens": 1, "completion_tokens": 1}}
+    return sent, transport
+
+
+def test_openai_uses_max_completion_tokens_and_optional_reasoning_effort():
+    sent, transport = _capture()
+    MaskedLLM(OpenAICompatibleAdapter("openai", "gpt-6-luna", "https://api.openai.com/v1", "k", 5.0, transport,
+                                      reasoning_effort="none")).reply({"a": 1}, "es")
+    assert sent["max_completion_tokens"] > 0 and "max_tokens" not in sent and sent["reasoning_effort"] == "none"
+
+
+def test_other_compatible_providers_keep_max_tokens_and_no_reasoning_field():
+    sent, transport = _capture()
+    MaskedLLM(OpenAICompatibleAdapter("ollama", "qwen", "http://localhost:11434/v1", None, 5.0, transport)).reply(
+        {"a": 1}, "es")
+    assert sent["max_tokens"] > 0 and "max_completion_tokens" not in sent and "reasoning_effort" not in sent
+
+
+def test_dated_snapshot_is_priced_as_its_alias():
+    cost, status = PriceTable.load().cost("openai", "gpt-4o-mini-2024-07-18", 1_000_000, 0)
+    assert (cost, status) == (0.15, "estimated")

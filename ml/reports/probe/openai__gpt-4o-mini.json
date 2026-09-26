@@ -1,0 +1,598 @@
+{
+  "generated_by": "ml/probe_llm.py",
+  "split": "val",
+  "provider": "openai",
+  "model": "gpt-4o-mini",
+  "prompt_version": "rank_v1",
+  "parallel": 4,
+  "summary": {
+    "cases": 50,
+    "valid_outputs": 50,
+    "errors": [],
+    "top1_match": {
+      "n": 29,
+      "rate": 0.931
+    },
+    "top1_ambiguous_consistent": {
+      "n": 10,
+      "rate": 1.0
+    },
+    "no_match_median_top_score": 0.8,
+    "by_language": {
+      "es": {
+        "cases": 41,
+        "valid": 41,
+        "top1_match": {
+          "n": 25,
+          "rate": 0.92
+        }
+      },
+      "pt": {
+        "cases": 9,
+        "valid": 9,
+        "top1_match": {
+          "n": 4,
+          "rate": 1.0
+        }
+      }
+    },
+    "wall_clock_s": 17.6,
+    "seconds_per_case": 0.35,
+    "usage": {
+      "calls": 50,
+      "failed": 0,
+      "input_tokens": 34641,
+      "output_tokens": 4500,
+      "cost_usd": 0.007896,
+      "latency_ms_p50": 1320.539,
+      "latency_ms_p95": 1821.566
+    },
+    "gpu": {
+      "temperature.gpu": {
+        "max": 51.0,
+        "median": 50.5
+      },
+      "power.draw": {
+        "max": 52.85,
+        "median": 52.480000000000004
+      },
+      "fan.speed": {
+        "max": 33.0,
+        "median": 33.0
+      },
+      "utilization.gpu": {
+        "max": 12.0,
+        "median": 11.5
+      },
+      "memory.used": {
+        "max": 3345.0,
+        "median": 3336.0
+      },
+      "samples": 4
+    }
+  },
+  "baselines_same_cases": {
+    "rules": {
+      "top1_match": {
+        "n": 29,
+        "rate": 1.0
+      },
+      "top1_ambiguous_consistent": {
+        "n": 10,
+        "rate": 1.0
+      }
+    },
+    "learned": {
+      "top1_match": {
+        "n": 29,
+        "rate": 1.0
+      },
+      "top1_ambiguous_consistent": {
+        "n": 10,
+        "rate": 1.0
+      }
+    }
+  },
+  "rows": [
+    {
+      "case_id": "val-00005-es",
+      "language": "es",
+      "ok": true,
+      "label": "no_match",
+      "top1_hit": null,
+      "top1_consistent": null,
+      "no_match_top_score": 0.1,
+      "margin": 0.0
+    },
+    {
+      "case_id": "val-00011-es",
+      "language": "es",
+      "ok": true,
+      "label": "match",
+      "top1_hit": true,
+      "top1_consistent": null,
+      "no_match_top_score": null,
+      "margin": 0.0
+    },
+    {
+      "case_id": "val-00023-es",
+      "language": "es",
+      "ok": true,
+      "label": "match",
+      "top1_hit": true,
+      "top1_consistent": null,
+      "no_match_top_score": null,
+      "margin": 0.8
+    },
+    {
+      "case_id": "val-00028-es",
+      "language": "es",
+      "ok": true,
+      "label": "ambiguous",
+      "top1_hit": null,
+      "top1_consistent": true,
+      "no_match_top_score": null,
+      "margin": 0.7
+    },
+    {
+      "case_id": "val-00039-es",
+      "language": "es",
+      "ok": true,
+      "label": "match",
+      "top1_hit": true,
+      "top1_consistent": null,
+      "no_match_top_score": null,
+      "margin": 1.0
+    },
+    {
+      "case_id": "val-00075-es",
+      "language": "es",
+      "ok": true,
+      "label": "match",
+      "top1_hit": true,
+      "top1_consistent": null,
+      "no_match_top_score": null,
+      "margin": 1.0
+    },
+    {
+      "case_id": "val-00083-es",
+      "language": "es",
+      "ok": true,
+      "label": "match",
+      "top1_hit": true,
+      "top1_consistent": null,
+      "no_match_top_score": null,
+      "margin": 0.8
+    },
+    {
+      "case_id": "val-00083-pt",
+      "language": "pt",
+      "ok": true,
+      "label": "match",
+      "top1_hit": true,
+      "top1_consistent": null,
+      "no_match_top_score": null,
+      "margin": 0.8
+    },
+    {
+      "case_id": "val-00102-es",
+      "language": "es",
+      "ok": true,
+      "label": "ambiguous",
+      "top1_hit": null,
+      "top1_consistent": true,
+      "no_match_top_score": null,
+      "margin": 0.1
+    },
+    {
+      "case_id": "val-00116-es",
+      "language": "es",
+      "ok": true,
+      "label": "match",
+      "top1_hit": true,
+      "top1_consistent": null,
+      "no_match_top_score": null,
+      "margin": 0.6
+    },
+    {
+      "case_id": "val-00134-es",
+      "language": "es",
+      "ok": true,
+      "label": "match",
+      "top1_hit": true,
+      "top1_consistent": null,
+      "no_match_top_score": null,
+      "margin": 0.4
+    },
+    {
+      "case_id": "val-00138-es",
+      "language": "es",
+      "ok": true,
+      "label": "no_match",
+      "top1_hit": null,
+      "top1_consistent": null,
+      "no_match_top_score": 0.8,
+      "margin": 0.5
+    },
+    {
+      "case_id": "val-00140-es",
+      "language": "es",
+      "ok": true,
+      "label": "no_match",
+      "top1_hit": null,
+      "top1_consistent": null,
+      "no_match_top_score": 0.0,
+      "margin": 0.0
+    },
+    {
+      "case_id": "val-00140-pt",
+      "language": "pt",
+      "ok": true,
+      "label": "no_match",
+      "top1_hit": null,
+      "top1_consistent": null,
+      "no_match_top_score": 0.0,
+      "margin": 0.0
+    },
+    {
+      "case_id": "val-00167-es",
+      "language": "es",
+      "ok": true,
+      "label": "match",
+      "top1_hit": true,
+      "top1_consistent": null,
+      "no_match_top_score": null,
+      "margin": 1.0
+    },
+    {
+      "case_id": "val-00175-es",
+      "language": "es",
+      "ok": true,
+      "label": "no_match",
+      "top1_hit": null,
+      "top1_consistent": null,
+      "no_match_top_score": 0.8,
+      "margin": 0.5
+    },
+    {
+      "case_id": "val-00196-es",
+      "language": "es",
+      "ok": true,
+      "label": "match",
+      "top1_hit": true,
+      "top1_consistent": null,
+      "no_match_top_score": null,
+      "margin": 1.0
+    },
+    {
+      "case_id": "val-00197-es",
+      "language": "es",
+      "ok": true,
+      "label": "match",
+      "top1_hit": true,
+      "top1_consistent": null,
+      "no_match_top_score": null,
+      "margin": 0.8
+    },
+    {
+      "case_id": "val-00200-es",
+      "language": "es",
+      "ok": true,
+      "label": "match",
+      "top1_hit": true,
+      "top1_consistent": null,
+      "no_match_top_score": null,
+      "margin": 1.0
+    },
+    {
+      "case_id": "val-00220-es",
+      "language": "es",
+      "ok": true,
+      "label": "match",
+      "top1_hit": true,
+      "top1_consistent": null,
+      "no_match_top_score": null,
+      "margin": 0.8
+    },
+    {
+      "case_id": "val-00276-es",
+      "language": "es",
+      "ok": true,
+      "label": "ambiguous",
+      "top1_hit": null,
+      "top1_consistent": true,
+      "no_match_top_score": null,
+      "margin": 0.9
+    },
+    {
+      "case_id": "val-00276-pt",
+      "language": "pt",
+      "ok": true,
+      "label": "ambiguous",
+      "top1_hit": null,
+      "top1_consistent": true,
+      "no_match_top_score": null,
+      "margin": 1.0
+    },
+    {
+      "case_id": "val-00290-es",
+      "language": "es",
+      "ok": true,
+      "label": "no_match",
+      "top1_hit": null,
+      "top1_consistent": null,
+      "no_match_top_score": 1.0,
+      "margin": 1.0
+    },
+    {
+      "case_id": "val-00290-pt",
+      "language": "pt",
+      "ok": true,
+      "label": "no_match",
+      "top1_hit": null,
+      "top1_consistent": null,
+      "no_match_top_score": 1.0,
+      "margin": 1.0
+    },
+    {
+      "case_id": "val-00294-es",
+      "language": "es",
+      "ok": true,
+      "label": "match",
+      "top1_hit": true,
+      "top1_consistent": null,
+      "no_match_top_score": null,
+      "margin": 0.0
+    },
+    {
+      "case_id": "val-00303-es",
+      "language": "es",
+      "ok": true,
+      "label": "match",
+      "top1_hit": false,
+      "top1_consistent": null,
+      "no_match_top_score": null,
+      "margin": 1.0
+    },
+    {
+      "case_id": "val-00308-es",
+      "language": "es",
+      "ok": true,
+      "label": "match",
+      "top1_hit": true,
+      "top1_consistent": null,
+      "no_match_top_score": null,
+      "margin": 0.8
+    },
+    {
+      "case_id": "val-00326-es",
+      "language": "es",
+      "ok": true,
+      "label": "match",
+      "top1_hit": true,
+      "top1_consistent": null,
+      "no_match_top_score": null,
+      "margin": 1.0
+    },
+    {
+      "case_id": "val-00376-es",
+      "language": "es",
+      "ok": true,
+      "label": "match",
+      "top1_hit": true,
+      "top1_consistent": null,
+      "no_match_top_score": null,
+      "margin": 0.8
+    },
+    {
+      "case_id": "val-00376-pt",
+      "language": "pt",
+      "ok": true,
+      "label": "match",
+      "top1_hit": true,
+      "top1_consistent": null,
+      "no_match_top_score": null,
+      "margin": 0.9
+    },
+    {
+      "case_id": "val-00380-es",
+      "language": "es",
+      "ok": true,
+      "label": "match",
+      "top1_hit": true,
+      "top1_consistent": null,
+      "no_match_top_score": null,
+      "margin": 1.0
+    },
+    {
+      "case_id": "val-00404-es",
+      "language": "es",
+      "ok": true,
+      "label": "no_match",
+      "top1_hit": null,
+      "top1_consistent": null,
+      "no_match_top_score": 1.0,
+      "margin": 1.0
+    },
+    {
+      "case_id": "val-00435-es",
+      "language": "es",
+      "ok": true,
+      "label": "match",
+      "top1_hit": true,
+      "top1_consistent": null,
+      "no_match_top_score": null,
+      "margin": 1.0
+    },
+    {
+      "case_id": "val-00435-pt",
+      "language": "pt",
+      "ok": true,
+      "label": "match",
+      "top1_hit": true,
+      "top1_consistent": null,
+      "no_match_top_score": null,
+      "margin": 1.0
+    },
+    {
+      "case_id": "val-00450-es",
+      "language": "es",
+      "ok": true,
+      "label": "match",
+      "top1_hit": true,
+      "top1_consistent": null,
+      "no_match_top_score": null,
+      "margin": 0.8
+    },
+    {
+      "case_id": "val-00476-es",
+      "language": "es",
+      "ok": true,
+      "label": "match",
+      "top1_hit": true,
+      "top1_consistent": null,
+      "no_match_top_score": null,
+      "margin": 0.7
+    },
+    {
+      "case_id": "val-00513-es",
+      "language": "es",
+      "ok": true,
+      "label": "ambiguous",
+      "top1_hit": null,
+      "top1_consistent": true,
+      "no_match_top_score": null,
+      "margin": 0.8
+    },
+    {
+      "case_id": "val-00514-es",
+      "language": "es",
+      "ok": true,
+      "label": "match",
+      "top1_hit": true,
+      "top1_consistent": null,
+      "no_match_top_score": null,
+      "margin": 1.0
+    },
+    {
+      "case_id": "val-00519-es",
+      "language": "es",
+      "ok": true,
+      "label": "no_match",
+      "top1_hit": null,
+      "top1_consistent": null,
+      "no_match_top_score": 0.8,
+      "margin": 0.8
+    },
+    {
+      "case_id": "val-00519-pt",
+      "language": "pt",
+      "ok": true,
+      "label": "no_match",
+      "top1_hit": null,
+      "top1_consistent": null,
+      "no_match_top_score": 1.0,
+      "margin": 1.0
+    },
+    {
+      "case_id": "val-00522-es",
+      "language": "es",
+      "ok": true,
+      "label": "ambiguous",
+      "top1_hit": null,
+      "top1_consistent": true,
+      "no_match_top_score": null,
+      "margin": 0.2
+    },
+    {
+      "case_id": "val-00522-pt",
+      "language": "pt",
+      "ok": true,
+      "label": "ambiguous",
+      "top1_hit": null,
+      "top1_consistent": true,
+      "no_match_top_score": null,
+      "margin": 1.0
+    },
+    {
+      "case_id": "val-00540-es",
+      "language": "es",
+      "ok": true,
+      "label": "match",
+      "top1_hit": false,
+      "top1_consistent": null,
+      "no_match_top_score": null,
+      "margin": 0.5
+    },
+    {
+      "case_id": "val-00543-es",
+      "language": "es",
+      "ok": true,
+      "label": "match",
+      "top1_hit": true,
+      "top1_consistent": null,
+      "no_match_top_score": null,
+      "margin": 1.0
+    },
+    {
+      "case_id": "val-00544-es",
+      "language": "es",
+      "ok": true,
+      "label": "ambiguous",
+      "top1_hit": null,
+      "top1_consistent": true,
+      "no_match_top_score": null,
+      "margin": 0.0
+    },
+    {
+      "case_id": "val-00566-es",
+      "language": "es",
+      "ok": true,
+      "label": "no_match",
+      "top1_hit": null,
+      "top1_consistent": null,
+      "no_match_top_score": 0.0,
+      "margin": 0.0
+    },
+    {
+      "case_id": "val-00574-es",
+      "language": "es",
+      "ok": true,
+      "label": "ambiguous",
+      "top1_hit": null,
+      "top1_consistent": true,
+      "no_match_top_score": null,
+      "margin": 0.1
+    },
+    {
+      "case_id": "val-00583-es",
+      "language": "es",
+      "ok": true,
+      "label": "match",
+      "top1_hit": true,
+      "top1_consistent": null,
+      "no_match_top_score": null,
+      "margin": 1.0
+    },
+    {
+      "case_id": "val-00583-pt",
+      "language": "pt",
+      "ok": true,
+      "label": "match",
+      "top1_hit": true,
+      "top1_consistent": null,
+      "no_match_top_score": null,
+      "margin": 1.0
+    },
+    {
+      "case_id": "val-00592-es",
+      "language": "es",
+      "ok": true,
+      "label": "ambiguous",
+      "top1_hit": null,
+      "top1_consistent": true,
+      "no_match_top_score": null,
+      "margin": 0.9
+    }
+  ]
+}

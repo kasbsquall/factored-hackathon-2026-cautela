@@ -6,6 +6,7 @@ Variables:
   LLM_BASE_URL     overrides the provider's default base URL (required for openai_compatible)
   LLM_API_KEY_ENV  name of the variable that holds the key, when it differs from the provider default
   LLM_TIMEOUT_S    request timeout in seconds (default 30)
+  LLM_REASONING_EFFORT  optional reasoning_effort for OpenAI-compatible models that support it (e.g. none)
 Provider key variables: ANTHROPIC_API_KEY, OPENAI_API_KEY, GROQ_API_KEY, GEMINI_API_KEY, LLM_API_KEY
 (openai_compatible). Ollama needs no key.
 
@@ -47,6 +48,7 @@ class LLMSettings:
     api_key_env: str | None
     timeout_s: float
     api_key: str | None = field(default=None, repr=False)
+    reasoning_effort: str | None = None
 
 
 def load_settings(environ: Mapping[str, str] | None = None, env_file: str | Path = ".env") -> LLMSettings:
@@ -73,7 +75,8 @@ def load_settings(environ: Mapping[str, str] | None = None, env_file: str | Path
         timeout = float(environ.get("LLM_TIMEOUT_S", "") or 30)
     except ValueError as exc:
         raise LLMConfigError("LLM_TIMEOUT_S must be a number") from exc
-    return LLMSettings(provider, model, base_url, key_env, timeout, api_key or None)
+    effort = environ.get("LLM_REASONING_EFFORT", "").strip().lower() or None
+    return LLMSettings(provider, model, base_url, key_env, timeout, api_key or None, effort)
 
 
 def build_adapter(settings: LLMSettings) -> LLMAdapter:
@@ -82,4 +85,4 @@ def build_adapter(settings: LLMSettings) -> LLMAdapter:
     if settings.provider == "anthropic":
         return AnthropicAdapter(settings.model, settings.api_key or "", settings.timeout_s)
     return OpenAICompatibleAdapter(settings.provider, settings.model, settings.base_url or "", settings.api_key,
-                                   settings.timeout_s)
+                                   settings.timeout_s, reasoning_effort=settings.reasoning_effort)

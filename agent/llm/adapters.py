@@ -61,8 +61,10 @@ class AnthropicAdapter:
 
 class OpenAICompatibleAdapter:
     def __init__(self, provider: str, model: str, base_url: str, api_key: str | None = None,
-                 timeout_s: float = 30.0, transport: Transport = urllib_post) -> None:
+                 timeout_s: float = 30.0, transport: Transport = urllib_post,
+                 reasoning_effort: str | None = None) -> None:
         self.provider = provider
+        self.reasoning_effort = reasoning_effort
         self.model = model
         self._url = base_url.rstrip("/") + "/chat/completions"
         self._api_key = api_key
@@ -75,11 +77,15 @@ class OpenAICompatibleAdapter:
     def complete(self, prompt: MaskedPrompt, max_tokens: int) -> Completion:
         prompt = require_masked(prompt)
         body: dict[str, Any] = {
-            "model": self.model, "max_tokens": max_tokens,
+            "model": self.model,
+            # OpenAI's current models reject max_tokens; the other OpenAI-compatible endpoints expect it.
+            ("max_completion_tokens" if self.provider == "openai" else "max_tokens"): max_tokens,
             "messages": [{"role": "system", "content": prompt.system}, {"role": "user", "content": prompt.user}],
         }
         if prompt.json_schema is not None:
             body["response_format"] = {"type": "json_object"}
+        if self.reasoning_effort:  # reasoning tokens bill as output, so the default is kept low where supported
+            body["reasoning_effort"] = self.reasoning_effort
         headers = {"Authorization": f"Bearer {self._api_key}"} if self._api_key else {}
         data = self._transport(self._url, headers, body, self._timeout_s)
         text = data["choices"][0]["message"].get("content") or ""

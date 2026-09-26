@@ -201,6 +201,7 @@ comes only from environment variables loaded from `.env`:
 | `LLM_BASE_URL` | Overrides the provider default; required for `openai_compatible` |
 | `LLM_API_KEY_ENV` | Name of the variable holding the key, if not the provider default |
 | `LLM_TIMEOUT_S` | Request timeout in seconds, default 30 |
+| `LLM_REASONING_EFFORT` | Optional `reasoning_effort` sent to OpenAI-compatible models that support it. Reasoning tokens bill as output, so the team sets `none` for extraction with gpt-6-luna |
 | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GROQ_API_KEY`, `GEMINI_API_KEY`, `LLM_API_KEY` | Provider keys; Ollama needs none |
 
 Each call records trace id, provider, model, prompt version (`PROMPT_VERSION`), input and output tokens, latency
