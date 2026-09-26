@@ -11,6 +11,7 @@ import { LoginPanel } from "./login-panel";
 import { Conversation } from "./conversation";
 import { ExpiredState } from "./expired-state";
 import { NarrationPanel } from "./narration-panel";
+import { clearTranslationCache } from "./message-translation";
 import { Walkthrough } from "./walkthrough";
 import type { TurnRecord } from "./flow-types";
 import styles from "./customer.module.css";
@@ -67,17 +68,17 @@ export function CustomerApp() {
   }, [ui]);
 
   const toggleReview = useCallback(() => {
-    setReviewEn((on) => {
-      try {
-        window.localStorage.setItem(REVIEW_KEY, on ? "off" : "on");
-      } catch {
-        // Only a convenience: without storage the choice lasts for this page.
-      }
-      return !on;
-    });
-  }, []);
+    const next = !reviewEn;
+    setReviewEn(next);
+    try {
+      window.localStorage.setItem(REVIEW_KEY, next ? "on" : "off");
+    } catch {
+      // Only a convenience: without storage the choice lasts for this page.
+    }
+  }, [reviewEn]);
 
   const endSession = useCallback(() => {
+    clearTranslationCache();
     setAuth(null);
     setExpired(true);
     setStage(0);
@@ -99,6 +100,7 @@ export function CustomerApp() {
 
   const logout = useCallback(() => {
     if (auth) void getApi().logout(auth.token);
+    clearTranslationCache();
     setAuth(null);
     setStage(0);
     setTrail(NO_TRAIL);

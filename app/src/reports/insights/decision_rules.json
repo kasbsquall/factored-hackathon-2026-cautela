@@ -1,0 +1,176 @@
+{
+ "sources": {
+  "policy": "agent/policy/rules.yaml",
+  "ranking": "agent/tools/ranking.py",
+  "fitted": "ml/reports/fitted.json"
+ },
+ "policy_version": "2026-09-26.2",
+ "claim_windows": [
+  {
+   "id": "MX-WINDOW-001",
+   "source": "legal",
+   "verification": "team_research",
+   "country": "Mexico",
+   "products": "any",
+   "channels": "any",
+   "days": 90,
+   "calendar": "natural",
+   "bank_response": {
+    "days": 45,
+    "calendar": "natural"
+   }
+  },
+  {
+   "id": "CO-WINDOW-001",
+   "source": "legal",
+   "verification": "team_research",
+   "country": "Colombia",
+   "products": "any",
+   "channels": [
+    "Web",
+    "App"
+   ],
+   "days": 5,
+   "calendar": "business",
+   "bank_response": {
+    "days": 15,
+    "calendar": "business"
+   }
+  },
+  {
+   "id": "CO-WINDOW-002",
+   "source": "synthetic_policy",
+   "verification": "pending_verification",
+   "country": "Colombia",
+   "products": "any",
+   "channels": "any",
+   "days": 90,
+   "calendar": "natural",
+   "bank_response": null
+  },
+  {
+   "id": "AR-WINDOW-001",
+   "source": "legal",
+   "verification": "verified_primary",
+   "country": "Argentina",
+   "products": [
+    "Credit Card"
+   ],
+   "channels": "any",
+   "days": 30,
+   "calendar": "natural",
+   "bank_response": {
+    "days": 15,
+    "calendar": "natural",
+    "foreign_days": 60,
+    "acknowledge_days": 7
+   }
+  },
+  {
+   "id": "AR-WINDOW-002",
+   "source": "synthetic_policy",
+   "verification": "pending_verification",
+   "country": "Argentina",
+   "products": "any",
+   "channels": "any",
+   "days": 30,
+   "calendar": "natural",
+   "bank_response": {
+    "days": 10,
+    "calendar": "business"
+   }
+  }
+ ],
+ "statuses": [
+  {
+   "id": "SYN-STATUS-001",
+   "source": "synthetic_policy",
+   "verification": null,
+   "statuses": [
+    "Approved",
+    "Pending"
+   ]
+  },
+  {
+   "id": "SYN-STATUS-002",
+   "source": "synthetic_policy",
+   "verification": null,
+   "statuses": [
+    "Declined"
+   ]
+  },
+  {
+   "id": "SYN-STATUS-003",
+   "source": "synthetic_policy",
+   "verification": null,
+   "statuses": [
+    "Reversed"
+   ]
+  }
+ ],
+ "amount_review": {
+  "id": "SYN-AMOUNT-001",
+  "source": "synthetic_policy",
+  "verification": null,
+  "threshold_usd": 450
+ },
+ "missing_data": {
+  "id": "SYN-DATA-001",
+  "source": "synthetic_policy",
+  "verification": null
+ },
+ "fx_rates": {
+  "id": "SYN-FX-001",
+  "source": "synthetic_policy",
+  "verification": "measured_in_data",
+  "units_per_usd": {
+   "COP": 4000,
+   "ARS": 350,
+   "MXN": 17
+  }
+ },
+ "fraud": {
+  "id": "SYN-FRAUD-001",
+  "source": "synthetic_policy",
+  "verification": null,
+  "score_at_least": 50,
+  "or_is_fraud": true
+ },
+ "confirmations": {
+  "id": "SYN-CONFIRM-001",
+  "source": "synthetic_policy",
+  "verification": null,
+  "actions": [
+   "open_dispute_case",
+   "block_card"
+  ]
+ },
+ "scope": {
+  "id": "SYN-SCOPE-001",
+  "source": "synthetic_policy",
+  "verification": null
+ },
+ "human": {
+  "id": "SYN-HUMAN-001",
+  "source": "synthetic_policy",
+  "verification": null
+ },
+ "security": {
+  "id": "SYN-SEC-001",
+  "source": "synthetic_policy",
+  "verification": null
+ },
+ "ambiguity": {
+  "min_top": 0.6,
+  "min_margin": 0.15
+ },
+ "disposition": {
+  "system": "learned_ranker_disposition",
+  "t_act": 0.79,
+  "t_abstain": 0.0464,
+  "act_floor": 0.6,
+  "k": 3,
+  "max_unsafe_rate": 0.01,
+  "fitted_on": "val"
+ }
+}

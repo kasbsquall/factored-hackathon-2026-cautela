@@ -340,3 +340,13 @@
     scrollbar-color: var(--line) transparent;
   }
 }
+
+@media (pointer: coarse) {
+  .trace {
+    min-height: 44px;
+  }
+}
+
+.nowrap {
+  white-space: nowrap;
+}

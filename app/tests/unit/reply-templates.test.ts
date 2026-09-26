@@ -35,7 +35,7 @@ describe("translateTemplateReply", () => {
     const text = renderTemplate("handed_off", "es", FIELDS.handed_off!.es);
     expect(translateTemplateReply(text, "handed_off", "es")).toBe(
       "I am passing you to a person at the bank: because of the amount, a person at the bank does the review. " +
-        "Your case was filed with number CASE-1. Whoever helps you receives the details of your case I already checked.",
+        "Your case was filed with number CASE-1. The person who helps you gets the details of your case that I already checked.",
     );
     expect(translateTemplateReply(renderTemplate("ask_details", "pt", FIELDS.ask_details!.pt), "ask_details", "pt")).toBe(
       "To find the charge I need one more detail: can you tell me the amount, the date or the merchant?",

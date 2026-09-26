@@ -12,3 +12,10 @@ export function RuleRef({ id, copy }: { id: string; copy: CustomerCopy }) {
     </span>
   );
 }
+
+/** A sentence that names a rule id, with the id kept on one line (ids like "MX-WINDOW-001" would wrap at a hyphen). */
+export function WithRuleId({ text, id }: { text: string; id: string }) {
+  const at = text.indexOf(id);
+  if (at < 0) return <>{text}</>;
+  return <>{text.slice(0, at)}<span style={{ whiteSpace: "nowrap" }}>{id}</span>{text.slice(at + id.length)}</>;
+}

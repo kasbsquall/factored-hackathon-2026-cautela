@@ -7,7 +7,7 @@ import type { MatchCode, MatchReason } from "@/lib/api/types";
 const EN: Record<MatchCode, (n: number | null) => string> = {
   amount_exact: () => "Same amount you gave",
   amount_close: (n) => `Amount within ${n}% of the one you gave`,
-  date_same_day: () => "Same day you gave",
+  date_same_day: () => "Same day as the date you gave",
   date_within_days: (n) => `${n} ${n === 1 ? "day" : "days"} from the date you gave`,
   date_in_range: () => "Inside the period you mentioned",
   date_near: (n) => `${n} ${n === 1 ? "day" : "days"} from the period you mentioned`,

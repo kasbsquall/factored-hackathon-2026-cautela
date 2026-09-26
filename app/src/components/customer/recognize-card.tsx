@@ -7,6 +7,7 @@ import { dateOnly } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import type { Entry } from "./flow-types";
 import { ReasonChips, cardText, channelIcon, chargeAmount, chargeDay } from "./charge-facts";
+import { WithRuleId } from "./rule-ref";
 import styles from "./recognize-card.module.css";
 
 interface Props {
@@ -83,7 +84,7 @@ export function RecognizeCard({ entry, copy, lang, onAnswer }: Props) {
         </Button>
       </div>
       {r.claim_window ? (
-        <p className={`${styles.claim} num`}>{copy.claimNote(dateOnly(r.claim_window.deadline, lang), r.claim_window.rule_id)}</p>
+        <p className={`${styles.claim} num`}><WithRuleId text={copy.claimNote(dateOnly(r.claim_window.deadline, lang), r.claim_window.rule_id)} id={r.claim_window.rule_id} /></p>
       ) : null}
     </section>
   );

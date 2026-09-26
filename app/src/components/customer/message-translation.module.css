@@ -118,3 +118,15 @@
 .retry:active {
   transform: scale(0.97);
 }
+
+/* Touch screens: at least 44px to hit, without changing the compact look on a mouse. */
+@media (pointer: coarse) {
+  .toggle,
+  .retry {
+    min-height: 44px;
+  }
+}
+
+.nowrap {
+  white-space: nowrap;
+}

@@ -56,7 +56,7 @@ export function useTurnFlow({ token, language, copy, onSessionEnd }: TurnFlowOpt
       ? turn.reply.split("\n").filter((line) => !/^\d+\)\s/.test(line)).join("\n")
       : turn.reply;
     const items: Entry[] = [{ id: entryId(), kind: "system", say: () => reply,
-      reply: { source: turn.reply_source, template: typeof template === "string" ? template : null, language: turn.language } }];
+      reply: { source: turn.reply_source, template: typeof template === "string" ? template : null, language: turn.language, raw: turn.reply } }];
     if (turn.options.length) items.push({ id: entryId(), kind: "options", options: turn.options });
     // A reminder repeats the question as a new card after the customer's message (older cards are frozen).
     if (turn.recognition) {
@@ -112,7 +112,7 @@ export function useTurnFlow({ token, language, copy, onSessionEnd }: TurnFlowOpt
   const say = useCallback((shownText: string, message: string = shownText, cause: TurnCause = { kind: "message" }) => {
     if (inFlight.current) return;
     const option = cause.kind === "option" ? cause.index : undefined;
-    setEntries((prev) => [...prev, { id: entryId(), kind: "user", text: shownText, ...(option !== undefined ? { option } : {}) }]);
+    setEntries((prev) => [...prev, { id: entryId(), kind: "user", text: shownText, language, ...(option !== undefined ? { option } : {}) }]);
     const attempt = () => run(async () => render(await api.turn(token, message, conversation.current, language), cause), attempt, cause);
     void attempt();
   }, [api, token, language, run, render]);
@@ -137,11 +137,13 @@ export function useTurnFlow({ token, language, copy, onSessionEnd }: TurnFlowOpt
         if (err instanceof ApiError && err.code === "not_found") {
           // Already answered, or the conversation moved on: this card cannot be answered again.
           patch(entry.id, { state: "cancelled" } as Partial<Entry>);
+          setFailed(true);
           push({ id: entryId(), kind: "error", title: (c) => c.recognizeGoneTitle, body: (c) => c.recognizeGoneBody, retryLabel: (c) => c.understood, retry: dismissError });
           return;
         }
         // Nothing is written by this answer, so the customer can simply answer again.
         patch(entry.id, { state: "pending" } as Partial<Entry>);
+        setFailed(true);
         push({ id: entryId(), kind: "error", retry: dismissError, retryLabel: (c) => c.understood });
         return;
       }
@@ -162,11 +164,13 @@ export function useTurnFlow({ token, language, copy, onSessionEnd }: TurnFlowOpt
         if (err instanceof ApiError && err.code === "not_found") {
           // The service no longer holds this confirmation (expired or already answered): it cannot be pressed again.
           patch(entry.id, { state: "cancelled" } as Partial<Entry>);
+          setFailed(true);
           push({ id: entryId(), kind: "error", title: (c) => c.confirmGoneTitle, body: (c) => c.confirmGoneBody, retryLabel: (c) => c.understood, retry: dismissError });
           return;
         }
         // The write may have happened; the service keeps it idempotent, so pressing again cannot duplicate it.
         patch(entry.id, { state: "pending" } as Partial<Entry>);
+        setFailed(true);
         push({ id: entryId(), kind: "error", title: (c) => c.writeFailTitle, body: (c) => c.writeFailBody, retryLabel: (c) => c.understood, retry: dismissError });
         return;
       }
@@ -178,8 +182,11 @@ export function useTurnFlow({ token, language, copy, onSessionEnd }: TurnFlowOpt
   const translate = useCallback((role: "customer" | "assistant", text: string) => {
     const id = conversation.current;
     if (!id) return Promise.reject(new ApiError("not_found", "There is no conversation to translate yet"));
-    return api.translate(token, id, role, text);
-  }, [api, token]);
+    return api.translate(token, id, role, text).catch((err: unknown) => {
+      if (err instanceof ApiError && err.isSessionEnd) onSessionEnd();
+      throw err;
+    });
+  }, [api, token, onSessionEnd]);
 
   const restart = useCallback(() => {
     conversation.current = null;

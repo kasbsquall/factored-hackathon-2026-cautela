@@ -6,6 +6,7 @@ import { dateOnly, timeOnly } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import type { Entry } from "./flow-types";
 import { ChargeBlock, ChargeLabel } from "./charge-label";
+import { WithRuleId } from "./rule-ref";
 import styles from "./confirm-card.module.css";
 
 interface Props {
@@ -36,7 +37,7 @@ export function ConfirmCard({ entry, copy, lang, onConfirm, onCancel }: Props) {
       ) : null}
       <p className={`${styles.valid} num`}>
         {copy.confirmValid(timeOnly(c.expires_at, lang))}
-        {c.claim_window ? <> {copy.claimNote(dateOnly(c.claim_window.deadline, lang), c.claim_window.rule_id)}</> : null}
+        {c.claim_window ? <> <WithRuleId text={copy.claimNote(dateOnly(c.claim_window.deadline, lang), c.claim_window.rule_id)} id={c.claim_window.rule_id} /></> : null}
       </p>
       <div className={styles.actions}>
         <Button loading={state === "working"} loadingLabel={copy.opening} aria-disabled={locked || undefined}

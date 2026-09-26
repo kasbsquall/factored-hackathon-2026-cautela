@@ -15,11 +15,16 @@ export interface ReplyMeta {
   /** Template named by the turn trail (step "reply", detail.kind); null when the trail names none. */
   template: string | null;
   language: Language;
+  /** The reply exactly as the service sent it: machine translation sends this text, which the service checks against the conversation. */
+  raw: string;
 }
 
 export type Entry =
-  /** option: the number of the service option this message picked (the text shown is its label). */
-  | { id: string; kind: "user"; text: string; option?: number }
+  /**
+   * option: the number of the service option this message picked (the text shown is its label). language: the
+   * conversation language when it was sent, since the customer can switch languages mid-conversation.
+   */
+  | { id: string; kind: "user"; text: string; language: Language; option?: number }
   /** reply: set for service replies; without it the text is UI copy (the greeting) and `say` renders it in any language. */
   | { id: string; kind: "system"; say: Say; reply?: ReplyMeta }
   | { id: string; kind: "thinking" }

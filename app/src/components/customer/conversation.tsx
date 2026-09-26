@@ -35,11 +35,12 @@ function freeze(entry: Entry): Entry {
   return entry;
 }
 
-function announcement(entries: Entry[], copy: CustomerCopy, talk: CustomerCopy): string {
+/** What the live region reads, and its language: "thinking" is a label (UI language), a reply is conversation text. */
+function announcement(entries: Entry[], copy: CustomerCopy, talk: CustomerCopy, ui: UiLang, lang: Language): { text: string; lang: string } {
   const last = entries[entries.length - 1];
-  if (last?.kind === "thinking") return copy.thinking;
+  if (last?.kind === "thinking") return { text: copy.thinking, lang: ui };
   const said = [...entries].reverse().find((e) => e.kind === "system");
-  return said?.kind === "system" ? said.say(talk) : "";
+  return { text: said?.kind === "system" ? said.say(talk) : "", lang };
 }
 
 function scrollBehavior(): ScrollBehavior {
@@ -59,6 +60,7 @@ export function Conversation({ auth, copy, talk, lang, ui, onSessionEnd, onStage
   const handedOff = entries.some((e) => e.kind === "receipt" && Boolean(e.turn.handoff_id));
   const suggestion = auth.identity?.messages?.[lang]?.[0] ?? talk.suggestion;
   const finished = last?.kind === "receipt";
+  const spoken = announcement(entries, copy, talk, ui, lang);
 
   const { turns, pending, failed } = flow;
   useEffect(() => onTrail({ turns, pending, failed }), [turns, pending, failed, onTrail]);
@@ -87,7 +89,7 @@ export function Conversation({ auth, copy, talk, lang, ui, onSessionEnd, onStage
 
   return (
     <div className={styles.wrap}>
-      <p className="sr-only" role="status" aria-live="polite">{announcement(entries, copy, talk)}</p>
+      <p className="sr-only" role="status" aria-live="polite" lang={spoken.lang}>{spoken.text}</p>
       <ol className={styles.log} ref={logRef}>
         {entries.map((entry, i) => {
           const stale = i < lastUser && INTERACTIVE.has(entry.kind);
@@ -121,6 +123,7 @@ export function Conversation({ auth, copy, talk, lang, ui, onSessionEnd, onStage
           <label htmlFor="composer" className="sr-only">{copy.composerLabel}</label>
           <input
             id="composer"
+            lang={lang}
             className={styles.input}
             placeholder={copy.composerPlaceholder}
             value={draft}

@@ -66,7 +66,7 @@ const INTENT: Record<string, string> = {
 const STAGE: Record<string, string> = {
   collecting: "collecting details",
   clarifying: "asking the customer to choose or add detail",
-  awaiting_recognition: "waiting for 'do you recognize it?'",
+  awaiting_recognition: "waiting for the customer to say whether they recognize the charge",
   awaiting_confirmation: "waiting for the customer's confirmation",
   resolved: "resolved, case open",
   recognized: "closed, charge recognized",
@@ -82,6 +82,29 @@ const REJECTION: Record<string, string> = {
   wrong_language: "it was in the wrong language",
 };
 const SOURCE: Record<string, string> = { legal: "law", synthetic_policy: "synthetic policy" };
+/** The disposition step's pool: list_transactions with window_days=90 (agent/orchestrator/core.py POOL_ARGS). */
+const POOL = "from the last 90 days";
+/** The mock's scripted pools are not a 90-day query, so the window is named only for the live service ("turn" is mock-only). */
+const poolText = (turn: TurnResponse) => (turn.trail.some((s) => s.step === "turn") ? "" : ` ${POOL}`);
+
+/** Why the parser read the message instead of the model (agent/orchestrator/intent.py validation_reason). */
+function fallbackText(reason: string): string {
+  if (reason === "no_llm_configured") return "no language model configured";
+  if (reason === "mock_mode") return "mock mode";
+  if (reason === "LLMUnavailable") return "the language model was unavailable";
+  if (reason === "LLMOutputError" || reason === "SchemaError" || reason === "ValueError") return "the model's output could not be used";
+  if (reason.startsWith("llm_invalid_output:")) return `the model's output failed validation on ${reason.slice(19)}`;
+  return `fallback: ${reason}`;
+}
+
+/** Model proposals the policy engine refused (agent/policy/engine.py narrow). */
+function rejectionText(item: string): string {
+  const [kind, what = ""] = item.split(/:(.*)/s);
+  if (kind === "add_action") return `the policy removed ${what}`;
+  if (kind === "skip_confirmation") return `the policy kept the confirmation for ${what}`;
+  if (kind === "unknown_reason") return `the policy ignored the unknown reason ${code(what)}`;
+  return item;
+}
 
 const str = (v: unknown): string | null => (typeof v === "string" && v ? v : null);
 const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
@@ -96,6 +119,8 @@ function joinAnd(items: string[]): string {
 }
 
 function percent(p: number): string {
+  // Rounding 0.9997 to "100.0%" would claim certainty the model did not give.
+  if (p >= 0.9995 && p < 1) return "above 99.9%";
   return `${(p * 100).toFixed(1)}%`;
 }
 
@@ -148,15 +173,19 @@ function understand(step: Step): NarrationStep {
   if (merchant) cues.push(`merchant ${code(merchant)}`);
   const ref = str(d.record_ref);
   if (ref) cues.push(`reference ${ref}`);
+  // parser_escalation_over_llm: the model read the message, then the parser's escalation signal replaced its intent
+  // (agent/orchestrator/core.py understand).
+  const overridden = reason?.startsWith("parser_escalation_over_llm:") ? reason.slice(27) : null;
   const who = step.outcome === "llm"
     ? "Read the message with the language model (its output is schema-validated)"
-    : `Read the message with the deterministic parser${reason === "no_llm_configured" ? " (no language model configured)" : reason === "mock_mode" ? " (mock mode)" : reason ? ` (fallback: ${reason})` : ""}`;
+    : overridden !== null
+      ? `The language model read the message, and the parser's escalation signal overrode its intent (${INTENT[overridden] ?? overridden})`
+      : `Read the message with the deterministic parser${reason ? ` (${fallbackText(reason)})` : ""}`;
   const parts = [
     `${who}.`,
     intent ? `Intent: ${INTENT[intent] ?? intent}${topic ? ` (${topic})` : ""}.` : "",
-    cues.length ? `Cues: ${cues.join(", ")}.` : intent === "dispute_charge" ? "No amount, date or merchant stated." : "",
+    cues.length ? `Cues: ${cues.join(", ")}.` : intent === "dispute_charge" ? "No amount, exact date or merchant extracted." : "",
     step.outcome === "llm" && reason?.startsWith("dropped_unstated:") ? `Dropped fields the message did not state: ${reason.slice(17)}.` : "",
-    reason?.startsWith("parser_escalation_over_llm:") ? `The parser's escalation signal overrode the model's intent (${reason.slice(27)}).` : "",
   ];
   return { icon: "read", tone: "info", text: parts.filter(Boolean).join(" "), rules: [] };
 }
@@ -164,20 +193,27 @@ function understand(step: Step): NarrationStep {
 function disposition(step: Step, turn: TurnResponse): NarrationStep {
   const d = step.detail;
   const pool = num(d.pool_size);
-  const among = pool !== null ? ` among ${plural(pool, "recent charge")}` : "";
+  const among = pool !== null ? ` among ${plural(pool, "charge")}${poolText(turn)}` : "";
   const cues = list(d.cues);
   const using = cues.length ? ` Cues used: ${joinAnd(cues)}.` : "";
+  // Without trained artifacts the service runs the fixed rules (RuleDisposition, name "rules_fixed_baseline"): no
+  // probabilities, and its confidence is a rule score.
+  const who = (str(d.model) ?? "").startsWith("rules_") ? "The rule baseline (no trained model loaded)" : "The disposition model";
   if (step.outcome === "resolve") {
     const probs = d.probabilities as Record<string, unknown> | undefined;
-    const p = num(probs?.match) ?? num(d.confidence);
-    return { icon: "decide", tone: "ok", text: `The disposition model found one charge that fits${among}${p !== null ? ` (match probability ${percent(p)})` : ""}.${using}`, rules: [] };
+    const p = num(probs?.match);
+    const score = num(d.confidence);
+    const how = p !== null ? ` (match probability ${percent(p)})` : score !== null ? ` (top rule score ${score.toFixed(2)})` : "";
+    return { icon: "decide", tone: "ok", text: `${who} found one charge that fits${among}${how}.${using}`, rules: [] };
   }
   if (step.outcome === "clarify") {
     const n = turn.options.length;
-    const found = n ? `Found ${n} candidate charges that fit the description${among}.` : `More than one charge fits the description${among}.`;
-    return { icon: "choose", tone: "info", text: `${found} None was preselected; the customer must choose.${using}`, rules: [] };
+    const found = n
+      ? `Found ${n} candidate charges that fit the description${among}. None was preselected; the customer must choose.`
+      : `More than one charge fits the description${among}.`;
+    return { icon: "choose", tone: "info", text: `${found}${using}`, rules: [] };
   }
-  return { icon: "decide", tone: "stop", text: `The disposition model found no single charge that fits${among}.${using}`, rules: [] };
+  return { icon: "decide", tone: "stop", text: `${who} found no single charge that fits${among}.${using}`, rules: [] };
 }
 
 function reasons(step: Step, turn: TurnResponse): NarrationStep {
@@ -191,9 +227,9 @@ function reasons(step: Step, turn: TurnResponse): NarrationStep {
     const phrases = shown?.length
       ? shown.map((r) => reasonPhrase(r.code, r.value))
       : list(byTx[ids[0] ?? ""]).map((c) => reasonPhrase(c));
-    return { icon: "decide", tone: "info", text: phrases.length ? `Why it matched, from the ranker features that fired: ${joinAnd(phrases)}.` : "No ranker feature fired for this charge.", rules: [] };
+    return { icon: "decide", tone: "info", text: phrases.length ? `Why it matched, from the matching features that fired: ${joinAnd(phrases)}.` : "No matching feature fired for this charge.", rules: [] };
   }
-  return { icon: "decide", tone: "info", text: `Match reasons computed for each of the ${ids.length} candidates from the ranker features that fired; each option shows its own.`, rules: [] };
+  return { icon: "decide", tone: "info", text: `Match reasons computed for each of the ${ids.length} candidates from the matching features that fired; each option shows its own.`, rules: [] };
 }
 
 function policy(step: Step, turn: TurnResponse): NarrationStep {
@@ -208,7 +244,10 @@ function policy(step: Step, turn: TurnResponse): NarrationStep {
   else if (writes.includes("open_dispute_case")) text = `${head} a dispute may be filed.`;
   else if (step.outcome === "escalate") text = `${head} this goes to a person${why.length ? `: ${joinAnd(why)}` : ""}.`;
   else text = `${head} no write is allowed for this charge.`;
-  if (rejected.length) text += ` Rejected: ${rejected.join(", ")}.`;
+  if (rejected.length) {
+    const refused = joinAnd(rejected.map(rejectionText));
+    text += ` ${refused.charAt(0).toUpperCase()}${refused.slice(1)}.`;
+  }
   return { icon: "policy", tone: step.outcome === "escalate" ? "stop" : writes.length ? "ok" : "stop", text, rules: ruleNotes(step.rule_ids, turn) };
 }
 
@@ -281,7 +320,7 @@ function one(step: Step, turn: TurnResponse, run: Step[]): NarrationStep | null 
       return { icon: "choose", tone: "info", text: `The customer picked option ${n ?? "?"}${str(d.kind) === "card" ? " (a card)" : ""}.`, rules: [] };
     }
     case "decide.status_check":
-      return { icon: "decide", tone: "stop", text: `The charge that fits every cue has status ${code(str(d.status) ?? "?")}${num(d.pool_size) !== null ? `, checked among ${plural(num(d.pool_size) as number, "recent charge")}` : ""}.`, rules: [] };
+      return { icon: "decide", tone: "stop", text: `The charge that fits every cue has status ${code(str(d.status) ?? "?")}${num(d.pool_size) !== null ? `, checked among ${plural(num(d.pool_size) as number, "charge")}${poolText(turn)}` : ""}.`, rules: [] };
     case "decide.policy":
       return policy(step, turn);
     case "recognize.request": {
@@ -290,7 +329,7 @@ function one(step: Step, turn: TurnResponse, run: Step[]): NarrationStep | null 
     }
     case "recognize.answer":
       return step.outcome === "recognized"
-        ? { icon: "ask", tone: "ok", text: `The customer recognizes the charge.${wroteNothing(turn.trail) ? " No write tool ran in this turn." : ""}`, rules: [] }
+        ? { icon: "ask", tone: "ok", text: `The customer recognizes the charge.${wroteNothing(turn.trail) ? " No write ran in this turn." : ""}`, rules: [] }
         : { icon: "ask", tone: "info", text: "The customer does not recognize the charge.", rules: [] };
     case "confirm.request": {
       const toolName = str(d.tool) ?? "the action";
@@ -302,7 +341,7 @@ function one(step: Step, turn: TurnResponse, run: Step[]): NarrationStep | null 
     case "confirm.answer":
       return step.outcome === "accepted"
         ? { icon: "confirm", tone: "ok", text: "The customer confirmed.", rules: [] }
-        : { icon: "confirm", tone: "info", text: `The customer cancelled.${wroteNothing(turn.trail) ? " Nothing was written." : ""}`, rules: [] };
+        : { icon: "confirm", tone: "info", text: `The customer cancelled.${wroteNothing(turn.trail) ? " No write ran in this turn." : ""}`, rules: [] };
     case "verify":
       return verify(step);
     case "escalate": {
@@ -367,7 +406,7 @@ export function narrateTurn(turn: TurnResponse, cause: TurnCause): TurnNarration
   return {
     traceId: turn.trace_id,
     cause: causeText(cause),
-    stage: STAGE[turn.stage] ?? turn.stage,
+    stage: turn.stage === "resolved" ? (turn.case ? "resolved, case open" : "resolved, card blocked") : STAGE[turn.stage] ?? turn.stage,
     steps,
     serviceTime: `${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(turn.latency_ms)} ms`,
     llm: llmText(turn),

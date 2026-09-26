@@ -10,6 +10,7 @@ import {
   fcrByReason, int, pct,
 } from "@/lib/insights";
 import { BarList, ColumnChart, DotRange } from "./charts";
+import { Decides } from "./decides";
 import styles from "./insights.module.css";
 
 /** English for the complaint types' Spanish subcategories, as the organizer data names them. */
@@ -72,7 +73,7 @@ export function InsightsView() {
   return (
     <div className={styles.page}>
       <header className={`${styles.hero} rise`}>
-        <p className={styles.kicker}><ChartBar aria-hidden />Data analytics · why this workflow</p>
+        <p className={styles.kicker}><ChartBar aria-hidden />Data analytics · workflow choice</p>
         <h1 className={styles.h1}>Why Cautela starts with unrecognized-charge disputes</h1>
         <div className={styles.headline}>
           <p className={styles.big}>
@@ -80,7 +81,7 @@ export function InsightsView() {
             <span className={styles.bigOf}>of {int(d.all)} complaints</span>
           </p>
           <p className={styles.bigText}>
-            are &ldquo;cargo no reconocido&rdquo;, a charge the customer does not recognize: {pct(d.share)} of all complaints, the
+            are &ldquo;cargo no reconocido&rdquo;, a charge the customer does not recognize (called disputes on this page): {pct(d.share)} of all complaints, the
             largest of {complaintTypes.length} complaint types
             {lead !== null && RUNNER_UP ? `, ahead of the next one by only ${int(lead)} complaints${overlap ? " (their 95% intervals overlap)" : ""}` : ""}.
           </p>
@@ -95,15 +96,15 @@ export function InsightsView() {
       </header>
 
       <dl className={`${styles.stats} rise`} style={{ "--i": 1 } as React.CSSProperties}>
-        <Stat icon={ClockCountdown} label="SLA breached" value={pct(d.slaRate)} unit="of disputes" note={`${int(d.slaBreached)} of ${int(d.complaints)} complaints`} />
-        <Stat icon={Timer} label="Resolution time" value={`${d.p50}`} unit={`days median, ${d.p90} at p90`} note={`measured on the ${int(d.resolvedN)} complaints with a resolution time`} />
-        <Stat icon={CalendarBlank} label="Daily demand" value={`${DAILY.mean_per_day}`} unit="disputes per day" note={`p95 ${DAILY.p95_per_day}, max ${DAILY.max_per_day}, over ${int(DAILY.days)} days`} />
-        <Stat icon={Headset} label="Largest intake channel" value={pct(topChannel.share)} unit={topChannel.label} note={`${int(topChannel.count)} of ${int(disputeChannelDenominator)} complaints`} />
+        <Stat icon={ClockCountdown} label="SLA breached" value={pct(d.slaRate)} unit="of disputes" note={`${int(d.slaBreached)} of ${int(d.complaints)} disputes`} />
+        <Stat icon={Timer} label="Resolution time" value={`${d.p50}`} unit={`days median, ${d.p90} at p90`} note={`measured on the ${int(d.resolvedN)} disputes with a resolution time`} />
+        <Stat icon={CalendarBlank} label="Daily demand" value={`${DAILY.mean_per_day}`} unit="disputes per day" note={`p95 ${DAILY.p95_per_day} per day, max ${DAILY.max_per_day} per day, over ${int(DAILY.days)} days`} />
+        <Stat icon={Headset} label="Largest intake channel" value={pct(topChannel.share)} unit={topChannel.label} note={`${int(topChannel.count)} of ${int(disputeChannelDenominator)} disputes`} />
       </dl>
 
       <Section n={1} icon={ListNumbers} layout="stack" title="The largest complaint type, by a thin margin"
         lede="Five complaint types sit within a few hundred complaints of each other. The volume lead alone would not justify the choice; the checks below and the fact that a disputed charge can be verified against the customer's own transactions do.">
-        <BarList index={0} title="Complaints by type" sub={`Count of complaints per type, out of ${int(d.all)}. Brass: unrecognized charge.`}
+        <BarList index={0} title="Complaints by type" sub={`Count of complaints per type, out of ${int(d.all)}. Highlighted bar: unrecognized charge.`}
           source={`${SRC}/workflow_comparison.json`} hint="Hover, tap or focus a bar to read its share and interval. Every value is also in the table."
           rows={complaintTypes.map((t) => ({
             key: t.type, label: typeLabel(t.type), value: t.complaints, valueText: int(t.complaints), highlight: t.isDispute,
@@ -154,7 +155,7 @@ export function InsightsView() {
       </Section>
 
       <Section n={3} icon={CalendarBlank} title="When disputes arrive"
-        lede="Weekdays carry the load and weekends drop. Across the hours of the day the profile is nearly flat.">
+        lede="Tuesday to Friday carry the load, Monday is lower and weekends drop. Across the hours of the day the profile is nearly flat.">
         <ColumnChart index={0} title="Disputes by weekday" sub={`Unrecognized-charge complaints per ISO weekday, out of ${int(d.complaints)}.`}
           source={`${SRC}/demand_by_weekday.json`} hint="Hover, tap or focus a column for its count and share."
           rows={disputesByWeekday.map((b) => ({
@@ -176,7 +177,7 @@ export function InsightsView() {
       </Section>
 
       <Section n={4} icon={MapTrifold} title="By country and segment"
-        lede="Every country and segment files about 81 to 83 disputes per 1,000 customers. The need is the same everywhere, so one workflow can serve all three countries, each with its own claim-window law.">
+        lede="Every country and segment files about 81 to 83 disputes per 1,000 customers. The need is the same everywhere, so one workflow can serve all three countries, each with its own claim-window rules: law where the team verified one, synthetic policy elsewhere.">
         <BarList index={0} title="Disputes per 1,000 customers, by country" sub="Unrecognized-charge complaints divided by the country's customers, times 1,000."
           source={`${SRC}/dispute_breakdowns.json`} hint="Hover, tap or focus a bar for its counts."
           rows={byCountry.map((g) => ({
@@ -195,8 +196,8 @@ export function InsightsView() {
           table={{ head: ["Segment", "Complaints", "Customers", "Per 1,000", "SLA breached", "Resolution p50 / p90 (days)"], rows: bySegment.map((g) => [g.label, int(g.complaints), int(g.customers), `${g.per1000}`, pct(g.slaRate), `${g.p50} / ${g.p90}`]) }} />
       </Section>
 
-      <Section n={5} icon={Scales} layout="stack" title="Does the decision component act safely?"
-        lede={`Offline evaluation on the fresh test split (${EVAL.split}), evaluated once: ${int(EVAL.n_cases)} generated cases (${int(EVAL.n_by_label.match)} with one matching charge, ${int(EVAL.n_by_label.ambiguous)} ambiguous, ${int(EVAL.n_by_label.no_match)} with none). A decision is correct when the system acts on the right charge, asks with the right charge among its options when the case is ambiguous, or stops when nothing matches; unsafe means it acted on a charge that was not the one the customer meant (ml/metrics.py).`}>
+      <Section n={5} icon={Scales} layout="stack" title="Does the disposition model act safely?"
+        lede={`Offline evaluation on the fresh test split (${EVAL.split}), evaluated once: ${int(EVAL.n_cases)} generated cases (${int(EVAL.n_by_label.match)} with one matching charge, ${int(EVAL.n_by_label.ambiguous)} ambiguous, ${int(EVAL.n_by_label.no_match)} with none). A decision is correct when the system acts on the right charge, asks with the right charge among its options when the case is ambiguous, or stops when nothing matches; unsafe means it acted when it should not have: on the wrong charge when one matched, or on any charge when the case was ambiguous or nothing matched (ml/metrics.py).`}>
         <dl className={`${styles.evalHead} rise`}>
           <div>
             <dt>Correct decisions</dt>
@@ -216,7 +217,7 @@ export function InsightsView() {
           }))}
           domain={[0.6, 1]} ticks={[0.6, 0.7, 0.8, 0.9, 1]} tickText={(v) => pct(v, 0)}
           table={{ head: ["System", "Correct", "95% CI", "Acted", "Asked", "Stopped"], rows: systems.map((s) => [SYSTEM_LABEL[s.id] ?? s.id, pct(s.correct_decision_rate.value), `${pct(s.correct_decision_rate.ci95[0] ?? 0)} to ${pct(s.correct_decision_rate.ci95[1] ?? 0)}`, int(s.decisions.act ?? 0), int(s.decisions.clarify ?? 0), int(s.decisions.abstain ?? 0)]) }} />
-        <BarList index={1} title="Unsafe actions, by system" sub={`Cases where the system acted on a charge that was not the one the customer meant, out of ${int(EVAL.n_cases)}.`}
+        <BarList index={1} title="Unsafe actions, by system" sub={`Cases where the system acted on the wrong charge, or acted at all on an ambiguous or no-match case, out of ${int(EVAL.n_cases)}.`}
           source={EVAL.source} hint="Hover, tap or focus a bar for how many cases each system acted on."
           rows={systems.map((s) => ({
             key: s.id, label: SYSTEM_LABEL[s.id] ?? s.id, value: s.unsafe.count, valueText: `${s.unsafe.count} of ${int(s.unsafe.denominator)}`,
@@ -227,6 +228,8 @@ export function InsightsView() {
           table={{ head: ["System", "Unsafe", "Cases", "Acted on"], rows: systems.map((s) => [SYSTEM_LABEL[s.id] ?? s.id, `${s.unsafe.count}`, int(s.unsafe.denominator), int(s.unsafe.acted_denominator)]) }} />
       </Section>
 
+      <Decides />
+
       <section className={`${styles.caveats} rise`} aria-labelledby="caveats">
         <h2 id="caveats" className={styles.h2}><ShieldWarning aria-hidden />What these numbers cannot tell you</h2>
         <ul className={styles.caveatList}>
@@ -234,7 +237,7 @@ export function InsightsView() {
             <UsersThree aria-hidden />
             <span><strong>The dataset is synthetic and templated.</strong> The five main complaint types differ by at most
               {" "}{((LIMITS.typeVolume.max_over_min - 1) * 100).toFixed(1)}% in volume; all {int(LIMITS.descriptions.complaints)} dispute
-              descriptions share {LIMITS.descriptions.distinct_descriptions} text, and {int(LIMITS.transcripts.transcripts)} call transcripts
+              descriptions share {LIMITS.descriptions.distinct_descriptions === 1 ? "one identical text" : `${int(LIMITS.descriptions.distinct_descriptions)} distinct texts`}, and {int(LIMITS.transcripts.transcripts)} call transcripts
               hold {LIMITS.transcripts.distinct_customer_text} distinct customer turns. Outcome metrics barely vary, so they describe the
               data generator more than any bank.</span>
           </li>

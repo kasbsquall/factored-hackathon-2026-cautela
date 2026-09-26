@@ -11,17 +11,17 @@ describe("narrateTurn on turns captured from the live service", () => {
     const [first] = runs.normal!;
     const n = narrateTurn(first!, { kind: "message" });
     expect(n.cause).toBe("Customer sent a message");
-    expect(n.stage).toBe("waiting for 'do you recognize it?'");
+    expect(n.stage).toBe("waiting for the customer to say whether they recognize the charge");
     const lines = n.steps.map((s) => s.text);
     expect(lines).toContain("Session checked: valid.");
     expect(lines.some((l) => l.startsWith("Read the message with the deterministic parser (no language model configured). Intent: dispute a charge. Cues: amount MXN"))).toBe(true);
-    expect(lines).toContain("The disposition model found one charge that fits among 50 recent charges (match probability 99.8%). Cues used: amount, date and merchant.");
-    expect(lines).toContain("Why it matched, from the ranker features that fired: same amount, same day, merchant named and the only charge of the last 90 days that fits every cue.");
+    expect(lines).toContain("The disposition model found one charge that fits among 50 charges from the last 90 days (match probability 99.8%). Cues used: amount, date and merchant.");
+    expect(lines).toContain("Why it matched, from the matching features that fired: same amount, same day, merchant named and the only charge of the last 90 days that fits every cue.");
     const policy = n.steps.find((s) => s.icon === "policy")!;
     expect(policy.text).toBe("Policy engine (rules version 2026-09-26.2): a dispute may be filed.");
     expect(policy.rules.map((r) => r.id)).toEqual(["MX-WINDOW-001", "SYN-CONFIRM-001"]);
     expect(policy.rules[0]).toMatchObject({ source: "law", deadline: "Aug 28, 2026" });
-    expect(policy.rules[0]!.summary).toContain("90 natural days");
+    expect(policy.rules[0]!.summary).toContain("90 calendar days");
     expect(lines.some((l) => l.startsWith("Showed the charge as the tools read it (") && l.endsWith("fields) and asked whether the customer recognizes it."))).toBe(true);
     expect(lines).toContain('Reply from the fixed template "recognize_check" (no language model configured).');
     expect(n.llm).toBe("No language model call");
@@ -60,8 +60,8 @@ describe("narrateTurn on turns captured from the live service", () => {
 
   it("explains several candidates without preselecting one", () => {
     const lines = texts(runs.ambiguous![0]!);
-    expect(lines).toContain("Found 3 candidate charges that fit the description among 28 recent charges. None was preselected; the customer must choose. Cues used: date and type.");
-    expect(lines).toContain("Match reasons computed for each of the 3 candidates from the ranker features that fired; each option shows its own.");
+    expect(lines).toContain("Found 3 candidate charges that fit the description among 28 charges from the last 90 days. None was preselected; the customer must choose. Cues used: date and type.");
+    expect(lines).toContain("Match reasons computed for each of the 3 candidates from the matching features that fired; each option shows its own.");
     const pick = texts(runs.ambiguous![1]!, { kind: "option", index: 1 });
     expect(pick).toContain("Read the reply as a pick of option 1.");
     expect(pick).toContain("The customer picked option 1.");
@@ -69,8 +69,8 @@ describe("narrateTurn on turns captured from the live service", () => {
 
   it("explains a declined charge, a request for a person, an out-of-scope request and an injection", () => {
     const declined = texts(runs.declined![0]!);
-    expect(declined).toContain('The charge that fits every cue has status "Declined", checked among 40 recent charges.');
-    expect(declined).toContain("Policy engine (rules version 2026-09-26.2): no write is allowed for this charge. Rejected: add_action:open_dispute_case.");
+    expect(declined).toContain('The charge that fits every cue has status "Declined", checked among 40 charges from the last 90 days.');
+    expect(declined).toContain("Policy engine (rules version 2026-09-26.2): no write is allowed for this charge. The policy removed open_dispute_case.");
     expect(texts(runs.human_request![0]!)).toContain("Handed off to a person: customer asked for a person (handoff " + runs.human_request![0]!.handoff_id + "). The handoff file carries 0 verified facts and 0 actions.");
     expect(texts(runs.out_of_scope![0]!)).toContain("Read the message with the deterministic parser (no language model configured). Intent: a request outside dispute intake (credit_limit_increase).");
     const injection = narrateTurn(runs.injection![0]!, { kind: "message" }).steps;
@@ -107,5 +107,29 @@ describe("narrateTurn on turns captured from the live service", () => {
     expect(n.steps[1]!.text).toBe('Reply from the fixed template "confirm_open" (the model\'s wording was rejected: it had a number that is not in the facts).');
     expect(n.steps[2]!.text).toMatch(/^Reply worded by the language model from the verified facts; it passed the grounding check/);
     expect(n.llm).toBe("Language model: 2 calls, 1,000 tokens, USD 0.0012 (gpt-x)");
+  });
+
+  it("names the rule baseline, parser fallbacks and overrides, and the resolved outcome for what they are", () => {
+    const base = runs.normal![0]!;
+    const at = base.trail[0]!;
+    const turn: TurnResponse = {
+      ...base,
+      trail: [
+        { ...at, step: "understand", outcome: "deterministic_parser", detail: { intent: "dispute_charge", fallback_reason: "LLMUnavailable" } },
+        { ...at, step: "understand", outcome: "deterministic_parser", detail: { intent: "dispute_charge", fallback_reason: "llm_invalid_output:amount" } },
+        { ...at, step: "understand", outcome: "deterministic_parser", detail: { intent: "request_human", fallback_reason: "parser_escalation_over_llm:dispute_charge" } },
+        { ...at, step: "decide.disposition", outcome: "resolve", detail: { model: "rules_fixed_baseline", confidence: 0.8, cues: ["amount"], pool_size: 12, probabilities: null } },
+        { ...at, step: "decide.disposition", outcome: "clarify", detail: { model: "rules_fixed_baseline", cues: [], pool_size: 12 } },
+      ],
+      options: [],
+    };
+    const lines = texts(turn);
+    expect(lines[0]).toBe("Read the message with the deterministic parser (the language model was unavailable). Intent: dispute a charge. No amount, exact date or merchant extracted.");
+    expect(lines[1]).toContain("(the model's output failed validation on amount)");
+    expect(lines[2]).toBe("The language model read the message, and the parser's escalation signal overrode its intent (dispute a charge). Intent: talk to a person.");
+    expect(lines[3]).toBe("The rule baseline (no trained model loaded) found one charge that fits among 12 charges from the last 90 days (top rule score 0.80). Cues used: amount.");
+    expect(lines[4]).toBe("More than one charge fits the description among 12 charges from the last 90 days.");
+    expect(narrateTurn({ ...base, stage: "resolved", case: null }, { kind: "message" }).stage).toBe("resolved, card blocked");
+    expect(narrateTurn(runs.normal![2]!, { kind: "confirm", accept: true }).stage).toBe("resolved, case open");
   });
 });

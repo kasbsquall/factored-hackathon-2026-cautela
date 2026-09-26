@@ -13,6 +13,7 @@ import daily from "@/reports/insights/demand_daily.json";
 import breakdowns from "@/reports/insights/dispute_breakdowns.json";
 import limits from "@/reports/insights/data_limits.json";
 import evaluation from "@/reports/insights/evaluation.json";
+import decisionRules from "@/reports/insights/decision_rules.json";
 
 export const intFmt = new Intl.NumberFormat("en-US");
 export const int = (n: number) => intFmt.format(n);
@@ -116,3 +117,36 @@ const baseline = evaluation.systems.find((s) => s.id === evaluation.baseline_sys
 if (!proposed || !baseline) throw new Error("evaluation.json lacks the proposed or baseline system");
 export const PROPOSED = proposed;
 export const BASELINE = baseline;
+
+/* ---------- decision rules (agent/policy/rules.yaml, agent/tools/ranking.py, ml/reports/fitted.json) ---------- */
+export type RuleSource = "legal" | "synthetic_policy";
+interface RuleRow {
+  id: string;
+  source: RuleSource;
+  verification: string | null;
+}
+interface ClaimWindowRow extends RuleRow {
+  country: string;
+  products: string | string[];
+  channels: string | string[];
+  days: number;
+  calendar: string;
+  bank_response: { days: number; calendar: string; foreign_days?: number; acknowledge_days?: number } | null;
+}
+export interface DecisionRules {
+  sources: { policy: string; ranking: string; fitted: string };
+  policy_version: string;
+  claim_windows: ClaimWindowRow[];
+  statuses: (RuleRow & { statuses: string[] })[];
+  amount_review: RuleRow & { threshold_usd: number };
+  missing_data: RuleRow;
+  fx_rates: RuleRow & { units_per_usd: Record<string, number> };
+  fraud: RuleRow & { score_at_least: number; or_is_fraud: boolean };
+  confirmations: RuleRow & { actions: string[] };
+  scope: RuleRow;
+  human: RuleRow;
+  security: RuleRow;
+  ambiguity: { min_top: number; min_margin: number };
+  disposition: { system: string; t_act: number; t_abstain: number; act_floor: number; k: number; max_unsafe_rate: number; fitted_on: string };
+}
+export const DECISION = decisionRules as DecisionRules;

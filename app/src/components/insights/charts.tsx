@@ -31,7 +31,8 @@ export function ChartFrame({ title, sub, source, hint, active, table, children, 
         <h3 id={titleId} className={styles.title}>{title}</h3>
         <p className={styles.sub}>{sub}</p>
       </figcaption>
-      <p className={`${styles.readout} num`} aria-live="polite">{active ?? hint}</p>
+      {/* Visual only: each mark already carries the same sentence as its accessible name. */}
+      <p className={`${styles.readout} num`} aria-hidden>{active ?? hint}</p>
       {children}
       <details className={styles.table}>
         <summary>
@@ -51,15 +52,37 @@ export function ChartFrame({ title, sub, source, hint, active, table, children, 
   );
 }
 
-/** Hover and keyboard focus report the same thing, so the readout never depends on a pointer. */
-function useActive() {
+const NEXT: Record<string, number> = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 };
+
+/**
+ * Hover and keyboard focus report the same thing, so the readout never depends on a pointer. The chart is one tab
+ * stop (roving tabindex): arrow keys move between marks, Home and End jump to the ends. A touch keeps its readout
+ * after the finger lifts; only a mouse leaving the mark clears it.
+ */
+function useActive(count: number) {
   const [active, setActive] = useState<number | null>(null);
+  const [current, setCurrent] = useState(0);
+  const move = (event: React.KeyboardEvent<HTMLElement>, i: number) => {
+    const step = NEXT[event.key];
+    const to = step !== undefined ? (i + step + count) % count : event.key === "Home" ? 0 : event.key === "End" ? count - 1 : null;
+    if (to === null) return;
+    event.preventDefault();
+    setCurrent(to);
+    event.currentTarget.parentElement?.querySelectorAll<HTMLElement>("[data-mark]")[to]?.focus();
+  };
   const bind = (i: number) => ({
-    tabIndex: 0,
+    "data-mark": "",
+    tabIndex: i === current ? 0 : -1,
     onPointerEnter: () => setActive(i),
-    onPointerLeave: () => setActive((a) => (a === i ? null : a)),
-    onFocus: () => setActive(i),
+    onPointerLeave: (event: React.PointerEvent) => {
+      if (event.pointerType === "mouse") setActive((a) => (a === i ? null : a));
+    },
+    onFocus: () => {
+      setCurrent(i);
+      setActive(i);
+    },
     onBlur: () => setActive((a) => (a === i ? null : a)),
+    onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => move(event, i),
   });
   return { active, bind };
 }
@@ -86,11 +109,11 @@ interface BarListProps extends Omit<FrameProps, "active" | "children"> {
 
 /** Horizontal bars from a zero baseline. The story's row is brass, every other row one neutral. */
 export function BarList({ rows, max, ticks, tickText, ...frame }: BarListProps) {
-  const { active, bind } = useActive();
+  const { active, bind } = useActive(rows.length);
   const at = (v: number) => `${Math.min(100, (v / max) * 100)}%`;
   return (
     <ChartFrame {...frame} active={active === null ? null : rows[active]?.detail ?? null}>
-      <div className={styles.bars} role="list">
+      <div className={styles.bars} role="list" aria-label={`${frame.title}. Arrow keys move between rows.`}>
         {rows.map((r, i) => (
           <div key={r.key} role="listitem" aria-label={r.detail} className={`${styles.barRow} ${r.highlight ? styles.hi : ""} ${active === i ? styles.on : ""}`} {...bind(i)}>
             <span className={styles.barLabel}>{r.label}</span>
@@ -134,7 +157,7 @@ interface ColumnProps extends Omit<FrameProps, "active" | "children"> {
 
 /** Vertical columns from a zero baseline, for an ordered axis (hour of day, weekday). */
 export function ColumnChart({ rows, max, ticks, tickText, ...frame }: ColumnProps) {
-  const { active, bind } = useActive();
+  const { active, bind } = useActive(rows.length);
   const h = (v: number) => `${Math.min(100, (v / max) * 100)}%`;
   return (
     <ChartFrame {...frame} active={active === null ? null : rows[active]?.detail ?? null}>
@@ -143,7 +166,7 @@ export function ColumnChart({ rows, max, ticks, tickText, ...frame }: ColumnProp
           {ticks.map((t) => <span key={t} style={{ bottom: h(t) }}>{tickText(t)}</span>)}
         </div>
         <div className={styles.plot}>
-          <div className={styles.cols} role="list" style={{ "--n": rows.length } as React.CSSProperties}>
+          <div className={styles.cols} role="list" aria-label={`${frame.title}. Arrow keys move between columns.`} style={{ "--n": rows.length } as React.CSSProperties}>
             {ticks.map((t) => <span key={t} className={styles.hgrid} style={{ bottom: h(t) }} aria-hidden />)}
             {rows.map((r, i) => (
               <div key={r.key} role="listitem" aria-label={r.detail} className={`${styles.col} ${r.highlight ? styles.hi : ""} ${active === i ? styles.on : ""}`} {...bind(i)}>
@@ -182,11 +205,11 @@ interface DotProps extends Omit<FrameProps, "active" | "children"> {
 
 /** Point estimate with its 95% interval, one row per system, on one shared axis. */
 export function DotRange({ rows, domain, ticks, tickText, ...frame }: DotProps) {
-  const { active, bind } = useActive();
+  const { active, bind } = useActive(rows.length);
   const at = (v: number) => `${Math.max(0, Math.min(100, ((v - domain[0]) / (domain[1] - domain[0])) * 100))}%`;
   return (
     <ChartFrame {...frame} active={active === null ? null : rows[active]?.detail ?? null}>
-      <div className={styles.bars} role="list">
+      <div className={styles.bars} role="list" aria-label={`${frame.title}. Arrow keys move between rows.`}>
         {rows.map((r, i) => (
           <div key={r.key} role="listitem" aria-label={r.detail} className={`${styles.barRow} ${styles.dotRow} ${r.highlight ? styles.hi : ""} ${active === i ? styles.on : ""}`} {...bind(i)}>
             <span className={styles.barLabel}>{r.label}</span>

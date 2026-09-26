@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, ArrowUpRight, ChartBar, ChatsCircle, Eyeglasses, Flask, Headset, ListChecks } from "@phosphor-icons/react/dist/ssr";
+import { ArrowRight, ArrowUpRight, ChartBar, ChatsCircle, Eyeglasses, Flask, Headset, ListChecks, Signpost } from "@phosphor-icons/react/dist/ssr";
 import { DialMark } from "@/components/brand/dial-mark";
 import styles from "./home.module.css";
 
@@ -40,7 +40,7 @@ export default function Home() {
             <span>
               The conversation stays in Spanish or Portuguese, as the customer would use it.{" "}
               <Link href="/customer?review=en">Open it with English labels</Link>, a plain-English account of each step, and an
-              English translation under every message.
+              English translation under each message you type or receive.
             </span>
           </p>
         </div>
@@ -69,6 +69,16 @@ export default function Home() {
               <span className={styles.rowText}>
                 <span className={styles.rowName}>Insights</span>
                 <span className={styles.rowDetail}>Why disputes first: complaint volume, SLA breach, resolution time, channels, demand, and the offline evaluation with its caveats</span>
+              </span>
+              <ArrowUpRight weight="light" aria-hidden />
+            </Link>
+          </li>
+          <li>
+            <Link href="/insights#decides" className={styles.row}>
+              <Signpost weight="light" aria-hidden />
+              <span className={styles.rowText}>
+                <span className={styles.rowName}>How Cautela decides</span>
+                <span className={styles.rowDetail}>What it does alone, when it asks, when it needs a yes and when a person takes over, with every threshold and claim window</span>
               </span>
               <ArrowUpRight weight="light" aria-hidden />
             </Link>

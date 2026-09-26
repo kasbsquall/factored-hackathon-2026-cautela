@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { ArrowClockwise, Translate } from "@phosphor-icons/react";
 import { getApi } from "@/lib/api";
 import { ApiError, type Translation } from "@/lib/api/client";
@@ -29,7 +29,7 @@ const SENT_COPY = ["none", "askHumanMessage", "suggestion"] as const;
 export function englishSource(entry: Message, talk: Language): EnglishSource | null {
   if (entry.kind === "user") {
     if (entry.option !== undefined) return null;
-    const key = SENT_COPY.find((k) => CUSTOMER_COPY[talk][k] === entry.text);
+    const key = SENT_COPY.find((k) => CUSTOMER_COPY[entry.language][k] === entry.text);
     return key ? { kind: "copy", text: CUSTOMER_COPY.en[key] } : { kind: "machine" };
   }
   if (!entry.reply) return { kind: "copy", text: entry.say(CUSTOMER_COPY.en) };
@@ -49,6 +49,11 @@ type State =
 /** Session-wide cache, so hiding and showing again (or switching the reviewer view) never asks twice. */
 const cache = new Map<string, Translation>();
 
+/** Forget every translation: called when the customer logs out or the session ends, so no text outlives it. */
+export function clearTranslationCache(): void {
+  cache.clear();
+}
+
 function reasonOf(err: unknown): Extract<State, { status: "error" }>["reason"] {
   if (!(err instanceof ApiError)) return "other";
   if (err.code === "translation_unavailable") return "unavailable";
@@ -64,10 +69,12 @@ const ERROR_TEXT: Record<Extract<State, { status: "error" }>["reason"], string> 
   other: "The translation failed. Nothing was translated.",
 };
 
-function machineNote(t: Translation): string {
+function machineNote(t: Translation): React.ReactNode {
   if (t.method === "authored") return "English written for this test message. Mock mode has no language model.";
-  const by = [t.provider, t.model].filter(Boolean).join(" · ");
-  return ["Machine translation", by, t.masked ? "personal data masked before it reached the model" : ""].filter(Boolean).join(" · ");
+  // Provider and model names never break at a hyphen ("gpt-4o-mini").
+  const parts: React.ReactNode[] = ["Machine translation", ...[t.provider, t.model].filter(Boolean).map((v) => <span key={v} className={styles.nowrap}>{v}</span>)];
+  if (t.masked) parts.push("personal data masked before it reached the model");
+  return parts.flatMap((p, i) => (i ? [" · ", p] : [p]));
 }
 
 interface Props {
@@ -82,10 +89,12 @@ interface Props {
 export function MessageTranslation({ entry, talk, translate, conversationId }: Props) {
   const regionId = useId();
   const source = englishSource(entry, talk);
-  const text = entry.kind === "user" ? entry.text : entry.say(CUSTOMER_COPY[talk]);
+  // A service reply is sent as the service recorded it (options included); the service checks it against the conversation.
+  const text = entry.kind === "user" ? entry.text : entry.reply?.raw ?? entry.say(CUSTOMER_COPY[talk]);
   const role = entry.kind === "user" ? "customer" : "assistant";
   const key = `${conversationId ?? ""}|${role}|${text}`;
   const [open, setOpen] = useState(false);
+  const toggleRef = useRef<HTMLButtonElement>(null);
   const [state, setState] = useState<State>(() => {
     const hit = cache.get(key);
     return hit ? { status: "done", result: hit } : { status: "idle" };
@@ -94,6 +103,10 @@ export function MessageTranslation({ entry, talk, translate, conversationId }: P
   if (!source) return null;
 
   function load() {
+    // The retry button leaves the page while loading: keep keyboard focus on the toggle instead of losing it.
+    if (toggleRef.current && document.activeElement !== toggleRef.current && toggleRef.current.parentElement?.contains(document.activeElement)) {
+      toggleRef.current.focus();
+    }
     setState({ status: "loading" });
     translate(role, text)
       .then((result) => {
@@ -111,12 +124,12 @@ export function MessageTranslation({ entry, talk, translate, conversationId }: P
 
   return (
     <div className={`${styles.wrap} ${entry.kind === "user" ? styles.end : ""}`}>
-      <button type="button" className={styles.toggle} aria-expanded={open} aria-controls={regionId} onClick={toggle} lang="en">
+      <button type="button" ref={toggleRef} className={styles.toggle} aria-expanded={open} aria-controls={regionId} onClick={toggle} lang="en">
         <Translate aria-hidden />
         <span>{open ? "Hide English translation" : "Show English translation"}</span>
       </button>
       {open ? (
-        <div id={regionId} className={styles.panel} role="region" aria-label="English translation" aria-live="polite" lang="en">
+        <div id={regionId} className={styles.panel} aria-live="polite" lang="en">
           {source.kind !== "machine" ? (
             <>
               <p className={styles.text}>{source.text}</p>
@@ -144,7 +157,7 @@ export function MessageTranslation({ entry, talk, translate, conversationId }: P
                   ? "No English version: mock mode has no language model, so only the suggested test messages have one."
                   : ERROR_TEXT[state.reason]}
               </p>
-              {state.reason !== "unavailable" ? (
+              {state.reason === "network" || state.reason === "other" ? (
                 <button type="button" className={styles.retry} onClick={load}>
                   <ArrowClockwise aria-hidden />
                   <span>Try again</span>

@@ -4,6 +4,8 @@
  * Sources (the repo's own committed reports, never fetched at runtime):
  *   ../data_analytics/reports/*.json   written by `make analytics` (data_analytics/run.py)
  *   ../ml/reports/results_fresh.json   written once by `ml.evaluate --split test_fresh`
+ *   ../agent/policy/rules.yaml, ../agent/tools/ranking.py and ../ml/reports/fitted.json, for decision_rules.json:
+ *     the thresholds and claim windows the "How Cautela decides" section shows, read from where the service reads them
  *
  * The analytics files are copied as they are. The evaluation file is large, so only the headline fields are kept
  * (per system: correct decisions, unsafe count, safe automated resolution, with their intervals and denominators).
@@ -12,6 +14,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { load as loadYaml } from "js-yaml";
 
 const APP = join(dirname(fileURLToPath(import.meta.url)), "..");
 const REPO = join(APP, "..");
@@ -62,6 +65,43 @@ function evaluation(source) {
   };
 }
 
+/** A numeric constant from a Python module, e.g. `AMBIGUITY_MIN_TOP = 0.60`. */
+function pyConstant(text, name) {
+  const m = new RegExp(`^${name}[ \\t]*=[ \\t]*([0-9.]+)`, "m").exec(text);
+  if (!m) throw new Error(`${name} not found`);
+  return Number(m[1]);
+}
+
+/** The service's decision thresholds and claim windows, each with the file it comes from. */
+function decisionRules(rulesPath, rankingPath, fittedPath) {
+  const rules = loadYaml(readFileSync(rulesPath, "utf8"));
+  const ranking = readFileSync(rankingPath, "utf8");
+  const fitted = JSON.parse(readFileSync(fittedPath, "utf8"));
+  const system = "learned_ranker_disposition";
+  const policy = fitted.systems[system].policy;
+  const pick = (r) => ({ id: r.id, source: r.source, verification: r.verification ?? null });
+  return {
+    sources: { policy: "agent/policy/rules.yaml", ranking: "agent/tools/ranking.py", fitted: "ml/reports/fitted.json" },
+    policy_version: rules.version,
+    claim_windows: rules.claim_windows.map((w) => ({
+      ...pick(w), country: w.country, products: w.products, channels: w.channels, days: w.days, calendar: w.calendar,
+      bank_response: w.bank_response ?? null,
+    })),
+    statuses: rules.disputable_status.map((r) => ({ ...pick(r), statuses: r.statuses })),
+    amount_review: { ...pick(rules.amount_review), threshold_usd: rules.amount_review.threshold_usd },
+    missing_data: pick(rules.missing_data),
+    fx_rates: { ...pick(rules.fx_rates), units_per_usd: Object.fromEntries(Object.entries(rules.fx_rates.units_per_usd).map(([c, v]) => [c, v.rate])) },
+    fraud: { ...pick(rules.fraud_escalation), score_at_least: rules.fraud_escalation.fraud_score_at_least, or_is_fraud: rules.fraud_escalation.or_is_fraud },
+    confirmations: { ...pick(rules.confirmations), actions: rules.confirmations.actions },
+    scope: pick(rules.out_of_scope),
+    human: pick(rules.human_request),
+    security: pick(rules.security_event),
+    ambiguity: { min_top: pyConstant(ranking, "AMBIGUITY_MIN_TOP"), min_margin: pyConstant(ranking, "AMBIGUITY_MIN_MARGIN") },
+    disposition: { system, t_act: policy.t_act, t_abstain: policy.t_abstain, act_floor: policy.act_floor, k: policy.k,
+      max_unsafe_rate: policy.max_unsafe_rate, fitted_on: policy.fitted_on },
+  };
+}
+
 mkdirSync(OUT, { recursive: true });
 const missing = [];
 for (const name of ANALYTICS) {
@@ -72,9 +112,12 @@ for (const name of ANALYTICS) {
 const results = join(REPO, "ml", "reports", "results_fresh.json");
 if (existsSync(results)) write("evaluation", evaluation(results));
 else missing.push("evaluation");
+const decisionSources = [join(REPO, "agent", "policy", "rules.yaml"), join(REPO, "agent", "tools", "ranking.py"), join(REPO, "ml", "reports", "fitted.json")];
+if (decisionSources.every((f) => existsSync(f))) write("decision_rules", decisionRules(...decisionSources));
+else missing.push("decision_rules");
 
 if (!missing.length) {
-  console.log(`copy-insights: ${ANALYTICS.length + 1} files written to src/reports/insights`);
+  console.log(`copy-insights: ${ANALYTICS.length + 2} files written to src/reports/insights`);
 } else {
   const absent = missing.filter((name) => !existsSync(join(OUT, `${name}.json`)));
   console.warn(`copy-insights: sources not found for ${missing.join(", ")}; keeping the committed copies`);

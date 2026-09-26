@@ -23,7 +23,7 @@ export const ACTION_STATUS: Record<ActionStatus, { label: string; kind: StatusKi
  * summary; the yaml stays the source of truth.
  */
 export const RULES: Record<string, { source: "legal" | "synthetic_policy"; summary: string }> = {
-  "MX-WINDOW-001": { source: "legal", summary: "Mexico, LTOSF art. 23: 90 natural days to object, 45 to respond" },
+  "MX-WINDOW-001": { source: "legal", summary: "Mexico, LTOSF art. 23: 90 calendar days to object, 45 to respond" },
   "CO-WINDOW-001": { source: "legal", summary: "Colombia, Decreto 587/2016: Web and App, 5 business days, reversal in 15" },
   "CO-WINDOW-002": { source: "synthetic_policy", summary: "Colombia, face-to-face charges: synthetic 90-day window" },
   "AR-WINDOW-001": { source: "legal", summary: "Argentina, Ley 25.065 arts. 26-28: credit cards, 30 days" },

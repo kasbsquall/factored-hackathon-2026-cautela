@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   ArrowUpRight, BookOpenText, CaretDown, ChatCircleText, CheckSquareOffset, Database, DotOutline, Funnel, HandTap,
   ListNumbers, LockKey, PencilSimpleLine, SealQuestion, TextAa, UserSwitch, WarningOctagon, type Icon,
@@ -58,8 +58,15 @@ function StepLine({ step, index }: { step: NarrationStep; index: number }) {
   );
 }
 
+/** The model name at the end, "(gpt-4o-mini)", never breaks at its hyphen. */
+function LlmUsage({ text }: { text: string }) {
+  const model = /^(.*) (\([^()]+\))$/.exec(text);
+  if (!model) return <span>{text}</span>;
+  return <span>{model[1]} <span className={styles.nowrap}>{model[2]}</span></span>;
+}
+
 function TurnBlock({ record, number }: { record: TurnRecord; number: number }) {
-  const n = narrateTurn(record.turn, record.cause);
+  const n = useMemo(() => narrateTurn(record.turn, record.cause), [record]);
   const headingId = useId();
   return (
     <li className={`${styles.turn} rise`} aria-labelledby={headingId}>
@@ -74,12 +81,17 @@ function TurnBlock({ record, number }: { record: TurnRecord; number: number }) {
       <p className={`${styles.foot} num`}>
         <span>Service time {n.serviceTime}</span>
         <span aria-hidden>·</span>
-        <span>{n.llm}</span>
-        <Link href={`/audit/${n.traceId}`} className={styles.trace}>Audit trace<ArrowUpRight aria-hidden /></Link>
+        <LlmUsage text={n.llm} />
+        <Link href={`/audit/${n.traceId}`} className={styles.trace} target="_blank" rel="noopener">
+          Audit trace<span className="sr-only"> (opens in a new tab)</span><ArrowUpRight aria-hidden />
+        </Link>
       </p>
     </li>
   );
 }
+
+/** How close to the end of the panel still counts as reading the latest turn. */
+const NEAR_BOTTOM_PX = 120;
 
 interface Props {
   turns: TurnRecord[];
@@ -98,18 +110,25 @@ export function NarrationPanel({ turns, pending, failed, active, className }: Pr
   const [open, setOpen] = useState(false);
   const bodyId = useId();
   const listRef = useRef<HTMLDivElement>(null);
+  /** False once the reviewer scrolls up to read an older turn: a new turn then does not pull the panel down. */
+  const following = useRef(true);
   const count = turns.length;
 
   // Keep the newest turn in view inside the panel's own scroll area (wide screens); the page itself does not move.
   useEffect(() => {
     const box = listRef.current;
-    if (box && box.scrollHeight > box.clientHeight) box.scrollTo({ top: box.scrollHeight, behavior: "auto" });
+    if (box && following.current && box.scrollHeight > box.clientHeight) box.scrollTo({ top: box.scrollHeight, behavior: "auto" });
   }, [count, pending]);
+
+  function onScroll(event: React.UIEvent<HTMLDivElement>) {
+    const box = event.currentTarget;
+    following.current = box.scrollHeight - box.scrollTop - box.clientHeight < NEAR_BOTTOM_PX;
+  }
 
   return (
     <section className={`${styles.panel} ${className ?? ""}`} aria-labelledby="narration-title" lang="en">
       <div className={styles.header}>
-        <p className="eyebrow">For reviewers · English</p>
+        <p className="eyebrow">Decision trail · English</p>
         <h2 id="narration-title" className={styles.title}>What the system did <span className={styles.sub}>(for reviewers)</span></h2>
         <p className={styles.lede}>
           Built from the decision trail each turn returns: steps, outcomes, rule ids and model usage. No language model writes
@@ -121,7 +140,7 @@ export function NarrationPanel({ turns, pending, failed, active, className }: Pr
           <CaretDown aria-hidden className={styles.caret} />
         </button>
       </div>
-      <div id={bodyId} className={styles.body} data-open={open} ref={listRef}>
+      <div id={bodyId} className={styles.body} data-open={open} ref={listRef} onScroll={onScroll}>
         {count === 0 && !pending ? (
           <p className={styles.empty}>
             {active

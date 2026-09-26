@@ -26,7 +26,7 @@ describe("NarrationPanel", () => {
     expect(first.getByRole("heading", { name: /^Turn 1\s*Customer sent a message$/ })).toBeInTheDocument();
     expect(first.getByText("MX-WINDOW-001")).toBeInTheDocument();
     expect(first.getByText("law")).toBeInTheDocument();
-    expect(first.getByRole("link", { name: "Audit trace" })).toHaveAttribute("href", `/audit/${normal[0]!.trace_id}`);
+    expect(first.getByRole("link", { name: /^Audit trace\s*\(opens in a new tab\)$/ })).toHaveAttribute("href", `/audit/${normal[0]!.trace_id}`);
     expect(within(turns[2]!).getByText(/read back from the case store: status "open" matches/)).toBeInTheDocument();
     expect(screen.getByText("3 turns")).toBeInTheDocument();
   });

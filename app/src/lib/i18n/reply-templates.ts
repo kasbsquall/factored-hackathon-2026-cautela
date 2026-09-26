@@ -48,12 +48,12 @@ export const TEMPLATES: Record<string, Tri> = {
   handed_off: {
     es: "Te paso con una persona del banco: {reason}. {case}Quien te atienda recibe los datos que ya comprobé de tu caso.",
     pt: "Vou te passar para uma pessoa do banco: {reason}. {case}Quem for te atender recebe os dados que já conferi do seu caso.",
-    en: "I am passing you to a person at the bank: {reason}. {case}Whoever helps you receives the details of your case I already checked.",
+    en: "I am passing you to a person at the bank: {reason}. {case}The person who helps you gets the details of your case that I already checked.",
   },
   not_disputable: {
     es: "El cargo {label} {status}. Por eso no hay una disputa que abrir.",
     pt: "A cobrança {label} {status}. Por isso não há contestação para abrir.",
-    en: "The charge {label} {status}. So there is no dispute to open.",
+    en: "The charge {label} {status}. That is why there is no dispute to open.",
   },
   declined: { es: "Entendido, no registré nada.", pt: "Entendido, não registrei nada.", en: "Understood, I did not file anything." },
   recognize_check: {
