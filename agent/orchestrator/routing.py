@@ -17,7 +17,9 @@ Order on every turn, whatever the conversation is waiting for:
 
 A conversation that already ended (resolved, handed off, closed) still runs the security screen and the reference
 check: a later attempt to reach another customer's records is recorded and re-escalated as security_event, so a
-first-turn low_confidence handoff cannot hide it. Nothing else runs on a closed conversation.
+first-turn low_confidence handoff cannot hide it. After a handoff, a new request (a person, an out-of-scope topic,
+a card block, another charge) is appended to that handoff as an open question and the transfer reason is kept
+(followup.py). Nothing else runs on a closed conversation.
 """
 
 from __future__ import annotations
@@ -29,7 +31,7 @@ from jsonschema import SchemaError
 from agent.llm.port import LLMOutputError, LLMUnavailable
 from agent.orchestrator import intent as nlu
 from agent.orchestrator import lexicon
-from agent.orchestrator.actions import ActionsMixin
+from agent.orchestrator.followup import FollowUpMixin
 from agent.orchestrator.state import Option
 from agent.orchestrator.steps import Turn
 
@@ -46,7 +48,7 @@ def names_a_charge(cues: set[str], text: str) -> bool:
 READ_FOR_KIND = {"transaction": ("get_transaction", "transaction_id"), "case": ("get_case_status", "case_id")}
 
 
-class RoutingMixin(ActionsMixin):
+class RoutingMixin(FollowUpMixin):
     # ---- understand ----------------------------------------------------------------------------------------
     def _understand(self, turn: Turn, message: str) -> nlu.DisputeIntent:
         started, today, n = time.perf_counter(), self.service.clock().date(), len(turn.state.options)
@@ -117,6 +119,9 @@ class RoutingMixin(ActionsMixin):
     def _closed_turn(self, turn: Turn, message: str) -> None:
         refs = [r for r in nlu.find_refs(message) if nlu.ref_kind(r) != "customer"]
         if self._screen(turn, message) or self._foreign_reference(turn, refs):
+            return
+        if turn.state.stage == "handed_off" and turn.state.handoff is not None and message:
+            self._follow_up(turn, message)
             return
         self._say(turn, "closed")
 

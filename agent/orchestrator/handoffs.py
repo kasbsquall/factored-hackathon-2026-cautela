@@ -14,8 +14,12 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from agent.handoff import ActionTaken, Fact, build_handoff
+from agent.handoff import ActionTaken, Fact, build_handoff, validate_handoff
 from agent.orchestrator.state import ConversationState
+from agent.security.pii import mask_text
+
+MAX_FOLLOW_UPS = 5  # open questions a customer can add after the transfer; repeats are not added
+FOLLOW_UP_PREFIX = "After the transfer the customer "
 
 OPEN_QUESTIONS = {
     "amount_above_threshold": "Review the disputed charge; its USD amount is at or above the review threshold.",
@@ -77,3 +81,20 @@ def assemble(state: ConversationState, *, trace_id: str, reason_code: str, rule_
         disputed_transaction_ids=[state.transaction_id] if state.transaction_id else [],
         confidence=None if confidence is None else max(0.0, min(1.0, confidence)), known_names=known_names,
     )
+
+
+def append_question(document: dict[str, Any], question: str, known_names: tuple[str, ...] = ()) -> bool:
+    """Add an open question to a handoff already sent, keeping its transfer reason and everything else.
+
+    The new document is validated against the schema before it replaces the question list. The dict itself is kept
+    (not copied) because the console queue holds this same object. False when the question is already there or the
+    customer already added MAX_FOLLOW_UPS of them."""
+    masked = mask_text(question, list(known_names))
+    questions = list(document["open_questions"])
+    added_before = sum(q.startswith(FOLLOW_UP_PREFIX) for q in questions)
+    if masked in questions or added_before >= MAX_FOLLOW_UPS:
+        return False
+    updated = [*questions, masked]
+    validate_handoff({**document, "open_questions": updated})
+    document["open_questions"] = updated
+    return True

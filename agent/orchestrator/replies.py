@@ -104,11 +104,24 @@ TEMPLATES: dict[str, dict[str, str]] = {
     "pending_confirmation": {
         "es": "Tienes una confirmación pendiente para {label}. Usa los botones para confirmar o cancelar.",
         "pt": "Há uma confirmação pendente para {label}. Use os botões para confirmar ou cancelar."},
+    "handoff_follow_up": {
+        "es": "Lo agregué al caso que ya pasé a una persona del banco: {request}. Quien te atienda verá esto junto "
+              "con lo anterior.",
+        "pt": "Adicionei isso ao caso que já passei para uma pessoa do banco: {request}. Quem for te atender verá "
+              "isso junto com o resto."},
     "closed": {"es": "Esta conversación ya terminó. Si necesitas algo más, abre una nueva.",
                "pt": "Esta conversa já terminou. Se precisar de mais alguma coisa, abra uma nova."},
     "no_active_card": {"es": "No encontré una tarjeta activa para bloquear.",
                        "pt": "Não encontrei um cartão ativo para bloquear."},
     "card_options": {"es": "¿Qué tarjeta quieres bloquear?\n{options}", "pt": "Qual cartão você quer bloquear?\n{options}"},
+}
+FOLLOW_UP = {
+    "es": {"customer_requested_human": "que quieres hablar con una persona",
+           "out_of_scope": "tu nueva solicitud, que no puedo atender por este canal",
+           "block_card": "que quieres bloquear una tarjeta", "new_charge": "el otro cargo que me describiste"},
+    "pt": {"customer_requested_human": "que você quer falar com uma pessoa",
+           "out_of_scope": "seu novo pedido, que não consigo atender por este canal",
+           "block_card": "que você quer bloquear um cartão", "new_charge": "a outra cobrança que você descreveu"},
 }
 WHY = {"es": {"session_expired": "venció", "default": "no es válida"},
        "pt": {"session_expired": "expirou", "default": "não é válida"}}
