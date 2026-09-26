@@ -26,13 +26,13 @@ from agent.orchestrator.disposition import DispositionModel, load_default, non_d
 from agent.orchestrator.routing import RoutingMixin, names_a_charge
 from agent.orchestrator.state import FINAL_STAGES, ConversationStore, Option, TrailStep
 from agent.orchestrator.steps import HandoffSink, Turn, tx_label
+from agent.orchestrator.unmatched import MAX_CLARIFY_ROUNDS
 from agent.security.audit import new_trace_id
 from agent.security.session import AuthError
 from agent.service import ToolService
 from ml.features.pairwise import merchant_similarity
 
 MAX_MESSAGE_CHARS = 2000
-MAX_CLARIFY_ROUNDS = 2
 POOL_ARGS = {"window_days": 90, "limit": 50}
 MERCHANT_MENTION_MIN = 0.88  # 0.8 let 'conta' match 'Conecta' (0.83) in a pt run
 
@@ -177,6 +177,7 @@ class Orchestrator(RoutingMixin):
         pool = pool_result.data["transactions"]
         cues = self._cues(state, pool)
         state.cued = names_a_charge(cues, state.text)
+        state.searched = len(pool)
         if not state.cued:  # nothing names a charge: never act on one (see actions._act_on_transaction)
             self._clarify_details(turn, cues)
             return
@@ -200,10 +201,7 @@ class Orchestrator(RoutingMixin):
             self._act_on_transaction(turn, disposition.top_k[0], disposition.confidence, disposition.model)
             return
         if disposition.decision == "escalate" or state.clarify_rounds >= MAX_CLARIFY_ROUNDS:
-            state.add_fact(f"Searched {len(pool)} own transactions of the last 90 days; the disposition model "
-                           f"({disposition.model}) found no single charge that fits",
-                           f"list_recent_transactions:{turn.trace_id}")
-            self._escalate(turn, "low_confidence", [], confidence=disposition.confidence)
+            self._transfer_unmatched(turn, disposition.confidence)
             return
         by_id = {tx["transaction_id"]: tx for tx in pool}
         shown = [tid for tid in disposition.top_k[:3] if tid in by_id]
@@ -246,7 +244,7 @@ class Orchestrator(RoutingMixin):
     def _clarify_details(self, turn: Turn, cues: set[str]) -> None:
         state = turn.state
         if state.clarify_rounds >= MAX_CLARIFY_ROUNDS:
-            self._escalate(turn, "low_confidence", [])
+            self._transfer_unmatched(turn)
             return
         state.clarify_rounds += 1
         state.stage = "clarifying"

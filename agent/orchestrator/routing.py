@@ -162,6 +162,8 @@ class RoutingMixin(FollowUpMixin):
                 self._select(turn, state.options[found.selected_option - 1])
                 return
         if state.options and found.intent == "reject_options":
+            state.rejected += [(o.record_id, o.label) for o in state.options
+                               if o.kind == "transaction" and (o.record_id, o.label) not in state.rejected]
             state.options = []
         state.statements.append(message)
         state.slots.merge(found)

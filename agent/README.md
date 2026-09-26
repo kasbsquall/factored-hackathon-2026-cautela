@@ -249,8 +249,11 @@ still need to be added to the repository's `.env.example`.
 A defect anywhere in a turn or after a confirmed write ends in a `tool_failure` handoff that tells the agent to check the trace, never in a stalled conversation.
 
 Clarify turns keep the conversation state (statements, slots, numbered options), so a reply of "2" or "a segunda"
-resolves against the options already shown and nothing is asked twice; clarification stops after two rounds with a
-`low_confidence` handoff. Replies in Spanish or Portuguese come from `MaskedLLM.reply` only when the text passes
+resolves against the options already shown and nothing is asked twice. A turn that ends without a usable candidate
+(a request for details, an option list, a quoted reference that matches none of the customer's records) is one
+clarifying round; after two (`MAX_CLARIFY_ROUNDS` in `unmatched.py`) the service hands off instead of asking a third
+time, with the facts gathered so far: how many charges were searched, the charges shown and rejected, and the
+references not found. Replies in Spanish or Portuguese come from `MaskedLLM.reply` only when the text passes
 `replies.check_grounded` (numbers present in the facts, required mentions such as the case id, the requested
 language); otherwise a template is used and the trail records why. Every step writes an audit record under the
 turn's trace id (`orchestrator.<step>`), and `orchestrator.turn` closes it with latency, LLM calls, tokens and cost.

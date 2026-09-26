@@ -17,7 +17,8 @@ from typing import Any
 
 from agent.orchestrator import evidence, replies
 from agent.orchestrator.state import Option, PendingConfirmation, RecognitionCheck
-from agent.orchestrator.steps import StepsMixin, Turn, card_label, request_id, tx_label
+from agent.orchestrator.steps import Turn, card_label, request_id, tx_label
+from agent.orchestrator.unmatched import MAX_CLARIFY_ROUNDS, UnmatchedMixin
 from agent.policy.engine import READ_ACTIONS, ModelProposal, PolicyDecision, narrow
 from agent.security.permissions import ConfirmationChallenge
 
@@ -41,7 +42,7 @@ def usd_fact(facts: dict[str, Any]) -> str:
             f"{fx['rate']} per USD, {fx['rule_id']})")
 
 
-class ActionsMixin(StepsMixin):
+class ActionsMixin(UnmatchedMixin):
     # ---- decide: policy for one identified charge ----------------------------------------------------
     def _act_on_transaction(self, turn: Turn, transaction_id: str, confidence: float | None,
                             source: str) -> replies.Reply:
@@ -250,9 +251,15 @@ class ActionsMixin(StepsMixin):
         code = result.error.code if result.error else "error"
         if result.handoff_reason == "security_event":
             return self._security(turn, "cross_customer_access", f"{result.tool}:{code}")
-        if code == "not_found":
-            turn.state.transaction_id = None
-            turn.state.stage = "collecting"
+        if code == "not_found":  # counts as a clarifying round (agent/orchestrator/unmatched.py)
+            state = turn.state
+            if state.transaction_id and state.transaction_id not in state.missing_refs:
+                state.missing_refs.append(state.transaction_id)
+            state.transaction_id = None
+            if state.clarify_rounds >= MAX_CLARIFY_ROUNDS:
+                return self._transfer_unmatched(turn)
+            state.clarify_rounds += 1
+            state.stage = "collecting"
             return self._say(turn, "ref_not_found")
         if code == "policy_denied":
             return self._escalate(turn, "policy_requires_review", result.rule_ids)
