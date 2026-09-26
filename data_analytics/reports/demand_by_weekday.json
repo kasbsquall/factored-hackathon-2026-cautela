@@ -1,0 +1,90 @@
+{
+  "title": "Contacts by ISO weekday (1 = Monday)",
+  "unit": "contacts",
+  "denominator": "all contacts of the series",
+  "provenance": {
+    "warehouse": "warehouse_real.duckdb",
+    "source_is_fixture": false,
+    "silver_runs": [
+      "20260925T222037Z-1028ed",
+      "20260925T224334Z-40a446"
+    ],
+    "latest_gold_run": "20260926T032254Z-9e0aff"
+  },
+  "data": {
+    "disputes": [
+      {
+        "bucket": 1,
+        "contacts": 1657,
+        "share": 0.134748
+      },
+      {
+        "bucket": 2,
+        "contacts": 1995,
+        "share": 0.162235
+      },
+      {
+        "bucket": 3,
+        "contacts": 2067,
+        "share": 0.16809
+      },
+      {
+        "bucket": 4,
+        "contacts": 2065,
+        "share": 0.167927
+      },
+      {
+        "bucket": 5,
+        "contacts": 2066,
+        "share": 0.168008
+      },
+      {
+        "bucket": 6,
+        "contacts": 1416,
+        "share": 0.11515
+      },
+      {
+        "bucket": 7,
+        "contacts": 1031,
+        "share": 0.083842
+      }
+    ],
+    "interactions": [
+      {
+        "bucket": 1,
+        "contacts": 96388,
+        "share": 0.140447
+      },
+      {
+        "bucket": 2,
+        "contacts": 114794,
+        "share": 0.167266
+      },
+      {
+        "bucket": 3,
+        "contacts": 114736,
+        "share": 0.167182
+      },
+      {
+        "bucket": 4,
+        "contacts": 113216,
+        "share": 0.164967
+      },
+      {
+        "bucket": 5,
+        "contacts": 113314,
+        "share": 0.16511
+      },
+      {
+        "bucket": 6,
+        "contacts": 76177,
+        "share": 0.110997
+      },
+      {
+        "bucket": 7,
+        "contacts": 57671,
+        "share": 0.084032
+      }
+    ]
+  }
+}

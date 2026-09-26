@@ -1,0 +1,46 @@
+{
+  "title": "Unrecognized-charge complaints by reception channel",
+  "unit": "complaints",
+  "denominator": "12297 unrecognized-charge complaints",
+  "provenance": {
+    "warehouse": "warehouse_real.duckdb",
+    "source_is_fixture": false,
+    "silver_runs": [
+      "20260925T222037Z-1028ed",
+      "20260925T224334Z-40a446"
+    ],
+    "latest_gold_run": "20260926T032254Z-9e0aff"
+  },
+  "data": [
+    {
+      "channel": "Call Center",
+      "complaints": 6192,
+      "share": 0.503537
+    },
+    {
+      "channel": "Email",
+      "complaints": 2388,
+      "share": 0.194194
+    },
+    {
+      "channel": "Web",
+      "complaints": 1807,
+      "share": 0.146946
+    },
+    {
+      "channel": "App",
+      "complaints": 1299,
+      "share": 0.105636
+    },
+    {
+      "channel": "Branch",
+      "complaints": 473,
+      "share": 0.038465
+    },
+    {
+      "channel": "Regulator",
+      "complaints": 138,
+      "share": 0.011222
+    }
+  ]
+}

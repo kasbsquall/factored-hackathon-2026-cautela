@@ -1,0 +1,139 @@
+{
+  "title": "Unrecognized-charge complaints by country and segment",
+  "unit": "complaints",
+  "denominator": "complaints in the group; customers in the group for the per-1,000 rate",
+  "provenance": {
+    "warehouse": "warehouse_real.duckdb",
+    "source_is_fixture": false,
+    "silver_runs": [
+      "20260925T222037Z-1028ed",
+      "20260925T224334Z-40a446"
+    ],
+    "latest_gold_run": "20260926T032254Z-9e0aff"
+  },
+  "data": {
+    "country": [
+      {
+        "value": "Mexico",
+        "complaints": 6149,
+        "sla_breached": 1256,
+        "escalated": 311,
+        "with_resolution_days": 1438,
+        "resolution_days_p50": 15.0,
+        "resolution_days_p90": 27.0,
+        "next_complaint_30d": 76,
+        "customers": 74907,
+        "complaint_fcr_resolved": 25492,
+        "complaint_fcr_denominator": 58372,
+        "disputes_per_1000_customers": 82.09,
+        "sla_breach_rate": 0.204261,
+        "escalation_rate": 0.050577,
+        "complaint_contact_fcr": 0.436716
+      },
+      {
+        "value": "Colombia",
+        "complaints": 3727,
+        "sla_breached": 754,
+        "escalated": 174,
+        "with_resolution_days": 842,
+        "resolution_days_p50": 15.0,
+        "resolution_days_p90": 28.0,
+        "next_complaint_30d": 62,
+        "customers": 45251,
+        "complaint_fcr_resolved": 15368,
+        "complaint_fcr_denominator": 35257,
+        "disputes_per_1000_customers": 82.36,
+        "sla_breach_rate": 0.202307,
+        "escalation_rate": 0.046686,
+        "complaint_contact_fcr": 0.435885
+      },
+      {
+        "value": "Argentina",
+        "complaints": 2421,
+        "sla_breached": 497,
+        "escalated": 133,
+        "with_resolution_days": 582,
+        "resolution_days_p50": 16.0,
+        "resolution_days_p90": 27.0,
+        "next_complaint_30d": 20,
+        "customers": 29842,
+        "complaint_fcr_resolved": 10161,
+        "complaint_fcr_denominator": 23392,
+        "disputes_per_1000_customers": 81.13,
+        "sla_breach_rate": 0.205287,
+        "escalation_rate": 0.054936,
+        "complaint_contact_fcr": 0.434379
+      }
+    ],
+    "segment": [
+      {
+        "value": "Basic",
+        "complaints": 7414,
+        "sla_breached": 1489,
+        "escalated": 376,
+        "with_resolution_days": 1708,
+        "resolution_days_p50": 16.0,
+        "resolution_days_p90": 27.0,
+        "next_complaint_30d": 103,
+        "customers": 89756,
+        "complaint_fcr_resolved": 30586,
+        "complaint_fcr_denominator": 70178,
+        "disputes_per_1000_customers": 82.6,
+        "sla_breach_rate": 0.200836,
+        "escalation_rate": 0.050715,
+        "complaint_contact_fcr": 0.435835
+      },
+      {
+        "value": "Plus",
+        "complaints": 3029,
+        "sla_breached": 655,
+        "escalated": 165,
+        "with_resolution_days": 713,
+        "resolution_days_p50": 15.0,
+        "resolution_days_p90": 28.0,
+        "next_complaint_30d": 35,
+        "customers": 37547,
+        "complaint_fcr_resolved": 12808,
+        "complaint_fcr_denominator": 29423,
+        "disputes_per_1000_customers": 80.67,
+        "sla_breach_rate": 0.216243,
+        "escalation_rate": 0.054473,
+        "complaint_contact_fcr": 0.435306
+      },
+      {
+        "value": "Premium",
+        "complaints": 1229,
+        "sla_breached": 257,
+        "escalated": 55,
+        "with_resolution_days": 289,
+        "resolution_days_p50": 15.0,
+        "resolution_days_p90": 26.19999999999999,
+        "next_complaint_30d": 16,
+        "customers": 15207,
+        "complaint_fcr_resolved": 5120,
+        "complaint_fcr_denominator": 11692,
+        "disputes_per_1000_customers": 80.82,
+        "sla_breach_rate": 0.209113,
+        "escalation_rate": 0.044752,
+        "complaint_contact_fcr": 0.437906
+      },
+      {
+        "value": "Student",
+        "complaints": 625,
+        "sla_breached": 106,
+        "escalated": 22,
+        "with_resolution_days": 152,
+        "resolution_days_p50": 14.0,
+        "resolution_days_p90": 27.0,
+        "next_complaint_30d": 4,
+        "customers": 7490,
+        "complaint_fcr_resolved": 2507,
+        "complaint_fcr_denominator": 5728,
+        "disputes_per_1000_customers": 83.44,
+        "sla_breach_rate": 0.1696,
+        "escalation_rate": 0.0352,
+        "complaint_contact_fcr": 0.437675
+      }
+    ]
+  }
+}

@@ -1,0 +1,221 @@
+{
+  "title": "Cost per resolution and automation savings (projection)",
+  "unit": "hours and USD",
+  "denominator": "see inputs",
+  "provenance": {
+    "warehouse": "warehouse_real.duckdb",
+    "source_is_fixture": false,
+    "silver_runs": [
+      "20260925T222037Z-1028ed",
+      "20260925T224334Z-40a446"
+    ],
+    "latest_gold_run": "20260926T032254Z-9e0aff"
+  },
+  "data": {
+    "scope": "human intake handling of unrecognized-charge complaints; projection from offline results",
+    "formula": {
+      "human_minutes_per_dispute": "handling_seconds * contacts_per_dispute / 60",
+      "hours_saved_per_year": "disputes_per_year * human_minutes_per_dispute / 60 * safe_automated_resolution_rate",
+      "break_even_automation_cost_per_attempted_case": "human cost per dispute * safe_automated_resolution_rate / automation_attempted_share"
+    },
+    "inputs": {
+      "disputes_in_window": {
+        "value": 12297,
+        "unit": "complaints",
+        "kind": "measured",
+        "source": "gold.complaint_facts",
+        "note": "2023-06-17 to 2026-06-18"
+      },
+      "window_days": {
+        "value": 1098,
+        "unit": "days",
+        "kind": "measured",
+        "source": "gold.complaint_facts",
+        "note": ""
+      },
+      "disputes_per_year": {
+        "value": 4087.8,
+        "unit": "complaints/year",
+        "kind": "measured",
+        "source": "disputes_in_window / window_days * 365",
+        "note": ""
+      },
+      "handling_seconds_complaint_contact": {
+        "value": 434.6,
+        "unit": "seconds",
+        "kind": "measured",
+        "source": "gold.interaction_outcomes, reason Complaint, mean duration_seconds",
+        "note": "proxy: complaints cannot be linked to interactions; n = 100727"
+      },
+      "handling_seconds_transactional_contact": {
+        "value": 220.8,
+        "unit": "seconds",
+        "kind": "measured",
+        "source": "gold.interaction_outcomes, reason Transactional, mean duration_seconds",
+        "note": "lower proxy; n = 206465"
+      },
+      "complaint_contact_fcr": {
+        "value": 0.436,
+        "unit": "share",
+        "kind": "measured",
+        "source": "gold.interaction_outcomes, reason Complaint",
+        "note": "51021 / 117021"
+      },
+      "contacts_per_dispute_floor": {
+        "value": 1,
+        "unit": "contacts",
+        "kind": "assumption",
+        "source": "modeling choice",
+        "note": "one intake contact per complaint"
+      },
+      "contacts_per_dispute_upper": {
+        "value": 2.294,
+        "unit": "contacts",
+        "kind": "assumption",
+        "source": "1 / complaint_contact_fcr",
+        "note": "every unresolved contact retries with the same FCR (geometric)"
+      },
+      "safe_automated_resolution_rate": {
+        "value": 0.5691,
+        "unit": "share",
+        "kind": "cited",
+        "source": "ml/reports/results.json",
+        "note": "offline, 1107 held-out generated cases"
+      },
+      "automation_attempted_share": {
+        "value": 0.5718,
+        "unit": "share",
+        "kind": "cited",
+        "source": "ml/reports/results.json",
+        "note": ""
+      },
+      "handed_off_case_savings": {
+        "value": 0,
+        "unit": "minutes",
+        "kind": "assumption",
+        "source": "conservative choice",
+        "note": "a structured handoff may shorten the human contact; not measured"
+      },
+      "back_office_minutes_per_dispute": {
+        "value": null,
+        "unit": "minutes",
+        "kind": "not_defined",
+        "source": "not in the data",
+        "note": "investigation and chargeback effort are excluded"
+      },
+      "automation_cost_per_attempted_case": {
+        "value": null,
+        "unit": "USD",
+        "kind": "not_defined",
+        "source": "eval not run with an LLM",
+        "note": "reported below as a break-even value instead"
+      },
+      "hourly_cost_usd": {
+        "value": [
+          5.0,
+          10.0,
+          20.0
+        ],
+        "unit": "USD/hour",
+        "kind": "assumption",
+        "source": "illustrative placeholder",
+        "note": "not sourced; replace with the bank's loaded cost"
+      }
+    },
+    "scenarios": [
+      {
+        "scenario": "low: transactional contact time, one contact",
+        "handling_seconds": 220.8,
+        "contacts_per_dispute": 1,
+        "human_minutes_per_dispute": 3.68,
+        "human_hours_per_year": 250.7,
+        "hours_saved_per_year": 142.7,
+        "money": [
+          {
+            "hourly_cost_usd": 5.0,
+            "human_cost_per_dispute_usd": 0.31,
+            "human_cost_per_year_usd": 1254,
+            "savings_per_year_usd": 713,
+            "break_even_automation_cost_per_attempted_case_usd": 0.31
+          },
+          {
+            "hourly_cost_usd": 10.0,
+            "human_cost_per_dispute_usd": 0.61,
+            "human_cost_per_year_usd": 2507,
+            "savings_per_year_usd": 1427,
+            "break_even_automation_cost_per_attempted_case_usd": 0.61
+          },
+          {
+            "hourly_cost_usd": 20.0,
+            "human_cost_per_dispute_usd": 1.23,
+            "human_cost_per_year_usd": 5014,
+            "savings_per_year_usd": 2854,
+            "break_even_automation_cost_per_attempted_case_usd": 1.22
+          }
+        ]
+      },
+      {
+        "scenario": "central: complaint contact time, one contact",
+        "handling_seconds": 434.6,
+        "contacts_per_dispute": 1,
+        "human_minutes_per_dispute": 7.24,
+        "human_hours_per_year": 493.5,
+        "hours_saved_per_year": 280.8,
+        "money": [
+          {
+            "hourly_cost_usd": 5.0,
+            "human_cost_per_dispute_usd": 0.6,
+            "human_cost_per_year_usd": 2467,
+            "savings_per_year_usd": 1404,
+            "break_even_automation_cost_per_attempted_case_usd": 0.6
+          },
+          {
+            "hourly_cost_usd": 10.0,
+            "human_cost_per_dispute_usd": 1.21,
+            "human_cost_per_year_usd": 4935,
+            "savings_per_year_usd": 2808,
+            "break_even_automation_cost_per_attempted_case_usd": 1.2
+          },
+          {
+            "hourly_cost_usd": 20.0,
+            "human_cost_per_dispute_usd": 2.41,
+            "human_cost_per_year_usd": 9870,
+            "savings_per_year_usd": 5617,
+            "break_even_automation_cost_per_attempted_case_usd": 2.4
+          }
+        ]
+      },
+      {
+        "scenario": "high: complaint contact time, repeat contacts at complaint FCR",
+        "handling_seconds": 434.6,
+        "contacts_per_dispute": 2.294,
+        "human_minutes_per_dispute": 16.62,
+        "human_hours_per_year": 1132.1,
+        "hours_saved_per_year": 644.3,
+        "money": [
+          {
+            "hourly_cost_usd": 5.0,
+            "human_cost_per_dispute_usd": 1.38,
+            "human_cost_per_year_usd": 5660,
+            "savings_per_year_usd": 3221,
+            "break_even_automation_cost_per_attempted_case_usd": 1.38
+          },
+          {
+            "hourly_cost_usd": 10.0,
+            "human_cost_per_dispute_usd": 2.77,
+            "human_cost_per_year_usd": 11321,
+            "savings_per_year_usd": 6443,
+            "break_even_automation_cost_per_attempted_case_usd": 2.76
+          },
+          {
+            "hourly_cost_usd": 20.0,
+            "human_cost_per_dispute_usd": 5.54,
+            "human_cost_per_year_usd": 22641,
+            "savings_per_year_usd": 12885,
+            "break_even_automation_cost_per_attempted_case_usd": 5.51
+          }
+        ]
+      }
+    ]
+  }
+}

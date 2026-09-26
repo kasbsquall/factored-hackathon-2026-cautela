@@ -1,0 +1,173 @@
+{
+  "title": "Where the supplied data is uniform, templated or unlinkable",
+  "unit": "various",
+  "denominator": "see each entry",
+  "provenance": {
+    "warehouse": "warehouse_real.duckdb",
+    "source_is_fixture": false,
+    "silver_runs": [
+      "20260925T222037Z-1028ed",
+      "20260925T224334Z-40a446"
+    ],
+    "latest_gold_run": "20260926T032254Z-9e0aff"
+  },
+  "data": {
+    "complaint_type_volume": {
+      "n_buckets": 5,
+      "min": 11886,
+      "max": 12297,
+      "max_over_min": 1.035,
+      "coefficient_of_variation": 0.0136
+    },
+    "sla_breach_rate_range": [
+      0.1808,
+      0.2063
+    ],
+    "sla_vs_resolution_days": [
+      {
+        "sla_breached": false,
+        "with_resolution_days": 12305,
+        "resolution_days_p50": 16.0,
+        "resolution_days_mean": 15.66
+      },
+      {
+        "sla_breached": true,
+        "with_resolution_days": 3058,
+        "resolution_days_p50": 15.0,
+        "resolution_days_mean": 15.38
+      }
+    ],
+    "resolution_days_by_status": [
+      {
+        "status": "In Process",
+        "complaints": 26823,
+        "with_resolution_days": 0
+      },
+      {
+        "status": "Open",
+        "complaints": 20125,
+        "with_resolution_days": 0
+      },
+      {
+        "status": "Resolved",
+        "complaints": 13512,
+        "with_resolution_days": 12871
+      },
+      {
+        "status": "Escalated",
+        "complaints": 3321,
+        "with_resolution_days": 0
+      },
+      {
+        "status": "Closed",
+        "complaints": 2609,
+        "with_resolution_days": 2492
+      },
+      {
+        "status": "Rejected",
+        "complaints": 705,
+        "with_resolution_days": 0
+      }
+    ],
+    "interaction_hour_of_day": {
+      "n_buckets": 24,
+      "min": 28270,
+      "max": 29081,
+      "max_over_min": 1.029,
+      "coefficient_of_variation": 0.0062
+    },
+    "repeat_flag": {
+      "complaints": 67095,
+      "flagged": 10086,
+      "with_prior_complaint_90d": 2315,
+      "flagged_and_confirmed": 333
+    },
+    "dispute_descriptions": {
+      "complaints": 12297,
+      "distinct_descriptions": 1
+    },
+    "transcripts": {
+      "transcripts": 171321,
+      "distinct_full_text": 546,
+      "distinct_customer_text": 42,
+      "distinct_intents": 1
+    },
+    "complaint_links": {
+      "complaints": 67095,
+      "with_origin_interaction": 0
+    },
+    "dispute_currency_vs_country": [
+      {
+        "customer_country": "Argentina",
+        "currency": "ARS",
+        "complaints": 210
+      },
+      {
+        "customer_country": "Argentina",
+        "currency": "COP",
+        "complaints": 182
+      },
+      {
+        "customer_country": "Argentina",
+        "currency": "MXN",
+        "complaints": 212
+      },
+      {
+        "customer_country": "Argentina",
+        "currency": "USD",
+        "complaints": 219
+      },
+      {
+        "customer_country": "Colombia",
+        "currency": "ARS",
+        "complaints": 306
+      },
+      {
+        "customer_country": "Colombia",
+        "currency": "COP",
+        "complaints": 303
+      },
+      {
+        "customer_country": "Colombia",
+        "currency": "MXN",
+        "complaints": 297
+      },
+      {
+        "customer_country": "Colombia",
+        "currency": "USD",
+        "complaints": 316
+      },
+      {
+        "customer_country": "Mexico",
+        "currency": "ARS",
+        "complaints": 490
+      },
+      {
+        "customer_country": "Mexico",
+        "currency": "COP",
+        "complaints": 527
+      },
+      {
+        "customer_country": "Mexico",
+        "currency": "MXN",
+        "complaints": 525
+      },
+      {
+        "customer_country": "Mexico",
+        "currency": "USD",
+        "complaints": 489
+      }
+    ],
+    "transactions": {
+      "transactions": 4425008,
+      "fraud_labeled": 4316,
+      "mexico_transactions": 2216431,
+      "mexico_usd": 2216431,
+      "fraud_rate": 0.000975
+    },
+    "registration_branch": {
+      "customers": 150000,
+      "orphan_branch": 149995
+    }
+  }
+}

@@ -1,0 +1,266 @@
+{
+  "title": "Complaint types: volume, SLA breach, escalation, resolution time, repeat contact",
+  "unit": "complaints",
+  "denominator": "all complaints (share); complaints of the type (rates)",
+  "provenance": {
+    "warehouse": "warehouse_real.duckdb",
+    "source_is_fixture": false,
+    "silver_runs": [
+      "20260925T222037Z-1028ed",
+      "20260925T224334Z-40a446"
+    ],
+    "latest_gold_run": "20260926T032254Z-9e0aff"
+  },
+  "data": [
+    {
+      "complaint_type": "Transactions / Cargo no reconocido",
+      "is_unrecognized_charge": true,
+      "volume_rank": 1,
+      "complaints": 12297,
+      "all_complaints": 67095,
+      "share_of_complaints": 0.183277442432372,
+      "sla_breached": 2507,
+      "sla_breach_rate": 0.20387086281206798,
+      "escalated": 618,
+      "escalation_rate": 0.05025616003903391,
+      "with_resolution_days": 2862,
+      "resolution_days_p50": 15.0,
+      "resolution_days_p90": 27.0,
+      "next_complaint_30d": 158,
+      "repeat_30d_rate": 0.012848662275351712,
+      "share_ci95": [
+        0.1804,
+        0.1862
+      ],
+      "sla_breach_ci95": [
+        0.1968,
+        0.2111
+      ]
+    },
+    {
+      "complaint_type": "Fees / Cobro indebido",
+      "is_unrecognized_charge": false,
+      "volume_rank": 2,
+      "complaints": 12194,
+      "all_complaints": 67095,
+      "share_of_complaints": 0.18174230568596766,
+      "sla_breached": 2431,
+      "sla_breach_rate": 0.19936034115138593,
+      "escalated": 635,
+      "escalation_rate": 0.05207479088076103,
+      "with_resolution_days": 2761,
+      "resolution_days_p50": 16.0,
+      "resolution_days_p90": 27.0,
+      "next_complaint_30d": 136,
+      "repeat_30d_rate": 0.011153026078399212,
+      "share_ci95": [
+        0.1788,
+        0.1847
+      ],
+      "sla_breach_ci95": [
+        0.1924,
+        0.2065
+      ]
+    },
+    {
+      "complaint_type": "Technical / Problema con app",
+      "is_unrecognized_charge": false,
+      "volume_rank": 3,
+      "complaints": 12128,
+      "all_complaints": 67095,
+      "share_of_complaints": 0.18075862582904836,
+      "sla_breached": 2429,
+      "sla_breach_rate": 0.20028034300791556,
+      "escalated": 599,
+      "escalation_rate": 0.04938984168865435,
+      "with_resolution_days": 2756,
+      "resolution_days_p50": 16.0,
+      "resolution_days_p90": 28.0,
+      "next_complaint_30d": 147,
+      "repeat_30d_rate": 0.012120712401055408,
+      "share_ci95": [
+        0.1779,
+        0.1837
+      ],
+      "sla_breach_ci95": [
+        0.1933,
+        0.2075
+      ]
+    },
+    {
+      "complaint_type": "Branch / Atención en sucursal",
+      "is_unrecognized_charge": false,
+      "volume_rank": 4,
+      "complaints": 11892,
+      "all_complaints": 67095,
+      "share_of_complaints": 0.17724122512854906,
+      "sla_breached": 2421,
+      "sla_breach_rate": 0.20358224016145307,
+      "escalated": 532,
+      "escalation_rate": 0.044735956945845944,
+      "with_resolution_days": 2726,
+      "resolution_days_p50": 16.0,
+      "resolution_days_p90": 28.0,
+      "next_complaint_30d": 149,
+      "repeat_30d_rate": 0.012529431550622267,
+      "share_ci95": [
+        0.1744,
+        0.1801
+      ],
+      "sla_breach_ci95": [
+        0.1964,
+        0.2109
+      ]
+    },
+    {
+      "complaint_type": "Service / Calidad de servicio",
+      "is_unrecognized_charge": false,
+      "volume_rank": 5,
+      "complaints": 11886,
+      "all_complaints": 67095,
+      "share_of_complaints": 0.17715179968701095,
+      "sla_breached": 2412,
+      "sla_breach_rate": 0.20292781423523473,
+      "escalated": 633,
+      "escalation_rate": 0.05325593134780414,
+      "with_resolution_days": 2696,
+      "resolution_days_p50": 16.0,
+      "resolution_days_p90": 28.0,
+      "next_complaint_30d": 126,
+      "repeat_30d_rate": 0.01060070671378092,
+      "share_ci95": [
+        0.1743,
+        0.1801
+      ],
+      "sla_breach_ci95": [
+        0.1958,
+        0.2103
+      ]
+    },
+    {
+      "complaint_type": "Branch / (no subcategory)",
+      "is_unrecognized_charge": false,
+      "volume_rank": 6,
+      "complaints": 1469,
+      "all_complaints": 67095,
+      "share_of_complaints": 0.02189432893658246,
+      "sla_breached": 303,
+      "sla_breach_rate": 0.20626276378488767,
+      "escalated": 67,
+      "escalation_rate": 0.045609257998638526,
+      "with_resolution_days": 347,
+      "resolution_days_p50": 16.0,
+      "resolution_days_p90": 28.0,
+      "next_complaint_30d": 21,
+      "repeat_30d_rate": 0.014295439074200136,
+      "share_ci95": [
+        0.0208,
+        0.023
+      ],
+      "sla_breach_ci95": [
+        0.1864,
+        0.2277
+      ]
+    },
+    {
+      "complaint_type": "Fees / (no subcategory)",
+      "is_unrecognized_charge": false,
+      "volume_rank": 7,
+      "complaints": 1359,
+      "all_complaints": 67095,
+      "share_of_complaints": 0.020254862508383636,
+      "sla_breached": 249,
+      "sla_breach_rate": 0.18322295805739514,
+      "escalated": 65,
+      "escalation_rate": 0.047829286239882265,
+      "with_resolution_days": 316,
+      "resolution_days_p50": 14.0,
+      "resolution_days_p90": 28.0,
+      "next_complaint_30d": 15,
+      "repeat_30d_rate": 0.011037527593818985,
+      "share_ci95": [
+        0.0192,
+        0.0213
+      ],
+      "sla_breach_ci95": [
+        0.1636,
+        0.2047
+      ]
+    },
+    {
+      "complaint_type": "Service / (no subcategory)",
+      "is_unrecognized_charge": false,
+      "volume_rank": 8,
+      "complaints": 1308,
+      "all_complaints": 67095,
+      "share_of_complaints": 0.019494746255309635,
+      "sla_breached": 259,
+      "sla_breach_rate": 0.19801223241590213,
+      "escalated": 59,
+      "escalation_rate": 0.04510703363914373,
+      "with_resolution_days": 305,
+      "resolution_days_p50": 16.0,
+      "resolution_days_p90": 28.0,
+      "next_complaint_30d": 18,
+      "repeat_30d_rate": 0.013761467889908258,
+      "share_ci95": [
+        0.0185,
+        0.0206
+      ],
+      "sla_breach_ci95": [
+        0.1773,
+        0.2205
+      ]
+    },
+    {
+      "complaint_type": "Transactions / (no subcategory)",
+      "is_unrecognized_charge": false,
+      "volume_rank": 9,
+      "complaints": 1283,
+      "all_complaints": 67095,
+      "share_of_complaints": 0.019122140248900812,
+      "sla_breached": 232,
+      "sla_breach_rate": 0.18082618862042088,
+      "escalated": 59,
+      "escalation_rate": 0.04598597038191738,
+      "with_resolution_days": 303,
+      "resolution_days_p50": 16.0,
+      "resolution_days_p90": 28.0,
+      "next_complaint_30d": 15,
+      "repeat_30d_rate": 0.011691348402182385,
+      "share_ci95": [
+        0.0181,
+        0.0202
+      ],
+      "sla_breach_ci95": [
+        0.1607,
+        0.2028
+      ]
+    },
+    {
+      "complaint_type": "Technical / (no subcategory)",
+      "is_unrecognized_charge": false,
+      "volume_rank": 10,
+      "complaints": 1279,
+      "all_complaints": 67095,
+      "share_of_complaints": 0.019062523287875402,
+      "sla_breached": 252,
+      "sla_breach_rate": 0.1970289288506646,
+      "escalated": 54,
+      "escalation_rate": 0.04222048475371384,
+      "with_resolution_days": 291,
+      "resolution_days_p50": 16.0,
+      "resolution_days_p90": 27.0,
+      "next_complaint_30d": 15,
+      "repeat_30d_rate": 0.011727912431587178,
+      "share_ci95": [
+        0.0181,
+        0.0201
+      ],
+      "sla_breach_ci95": [
+        0.1762,
+        0.2197
+      ]
+    }
+  ]
+}
