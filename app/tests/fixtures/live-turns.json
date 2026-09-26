@@ -1,0 +1,2501 @@
+{
+ "normal": [
+  {
+   "conversation_id": "cv_9778c51aec7108bb",
+   "trace_id": "tr_9753b45c23911fab",
+   "language": "es",
+   "stage": "awaiting_recognition",
+   "reply": "Antes de abrir una disputa, revisa cómo aparece este cargo en tu cuenta: 30 may 2026, Marketplace Uno, MXN 5,335.32. ¿Lo reconoces?",
+   "reply_source": "template",
+   "options": [],
+   "recognition": {
+    "recognition_id": "rc_a8928548397c5aff",
+    "label": "30/05/2026, Marketplace Uno, 5335.32 MXN",
+    "charge": {
+     "transaction_date": "2026-05-30T23:49:15",
+     "amount": 5335.32,
+     "currency": "MXN",
+     "merchant_name": "Marketplace Uno",
+     "merchant_category": "5399",
+     "category": "Other",
+     "channel": "POS",
+     "city": "Mérida",
+     "country": "Mexico",
+     "card_type": null,
+     "card_last4": null,
+     "transaction_type": "Purchase",
+     "transaction_status": "Approved"
+    },
+    "reasons": [
+     {
+      "code": "amount_exact",
+      "label": "Mismo monto que indicaste",
+      "value": null
+     },
+     {
+      "code": "date_same_day",
+      "label": "El mismo día que indicaste",
+      "value": null
+     },
+     {
+      "code": "merchant_named",
+      "label": "Comercio que mencionaste",
+      "value": null
+     },
+     {
+      "code": "only_fit",
+      "label": "Único cargo de los últimos 90 días que coincide con todo lo que dijiste",
+      "value": 90
+     }
+    ],
+    "claim_window": {
+     "rule_id": "MX-WINDOW-001",
+     "deadline": "2026-08-28"
+    }
+   },
+   "confirmation": null,
+   "case": null,
+   "handoff_id": null,
+   "transfer_reason": null,
+   "trail": [
+    {
+     "trace_id": "tr_9753b45c23911fab",
+     "step": "gate",
+     "outcome": "session_valid",
+     "detail": {
+      "conversation_id": "cv_9778c51aec7108bb"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.0
+    },
+    {
+     "trace_id": "tr_9753b45c23911fab",
+     "step": "understand",
+     "outcome": "deterministic_parser",
+     "detail": {
+      "intent": "dispute_charge",
+      "fallback_reason": "no_llm_configured",
+      "topic": null,
+      "amount": 5335.32,
+      "currency": "MXN",
+      "date": "2026-05-30",
+      "merchant": null,
+      "selected_option": null,
+      "record_ref": null
+     },
+     "rule_ids": [],
+     "latency_ms": 5.55
+    },
+    {
+     "trace_id": "tr_9753b45c23911fab",
+     "step": "tool.list_recent_transactions",
+     "outcome": "ok",
+     "detail": {
+      "tool": "list_recent_transactions",
+      "ok": true,
+      "attempts": 1
+     },
+     "rule_ids": [],
+     "latency_ms": 6.15
+    },
+    {
+     "trace_id": "tr_9753b45c23911fab",
+     "step": "decide.disposition",
+     "outcome": "resolve",
+     "detail": {
+      "model": "learned_ranker_disposition:disposition_multinomial_logreg_C1",
+      "confidence": 0.9984,
+      "cues": [
+       "amount",
+       "date",
+       "merchant"
+      ],
+      "pool_size": 50,
+      "probabilities": {
+       "ambiguous": 0.0016,
+       "match": 0.9984,
+       "no_match": 0.0
+      }
+     },
+     "rule_ids": [],
+     "latency_ms": 28.99
+    },
+    {
+     "trace_id": "tr_9753b45c23911fab",
+     "step": "decide.reasons",
+     "outcome": "computed",
+     "detail": {
+      "reasons": {
+       "TX00009543": [
+        "amount_exact",
+        "date_same_day",
+        "merchant_named",
+        "only_fit"
+       ]
+      },
+      "features": [
+       "amt_within_25pct",
+       "cue_fits",
+       "date_dist",
+       "merch_max"
+      ]
+     },
+     "rule_ids": [],
+     "latency_ms": 3.02
+    },
+    {
+     "trace_id": "tr_9753b45c23911fab",
+     "step": "tool.get_transaction",
+     "outcome": "ok",
+     "detail": {
+      "tool": "get_transaction",
+      "ok": true,
+      "attempts": 1
+     },
+     "rule_ids": [],
+     "latency_ms": 3.71
+    },
+    {
+     "trace_id": "tr_9753b45c23911fab",
+     "step": "tool.get_dispute_policy",
+     "outcome": "ok",
+     "detail": {
+      "tool": "get_dispute_policy",
+      "ok": true,
+      "attempts": 0
+     },
+     "rule_ids": [],
+     "latency_ms": 5.06
+    },
+    {
+     "trace_id": "tr_9753b45c23911fab",
+     "step": "decide.policy",
+     "outcome": "allow",
+     "detail": {
+      "allowed_writes": [
+       "open_dispute_case"
+      ],
+      "reasons": [],
+      "rejected_proposals": [],
+      "policy_version": "2026-09-26.2"
+     },
+     "rule_ids": [
+      "MX-WINDOW-001",
+      "SYN-CONFIRM-001"
+     ],
+     "latency_ms": 0.0
+    },
+    {
+     "trace_id": "tr_9753b45c23911fab",
+     "step": "tool.get_customer_profile",
+     "outcome": "ok",
+     "detail": {
+      "tool": "get_customer_profile",
+      "ok": true,
+      "attempts": 2
+     },
+     "rule_ids": [],
+     "latency_ms": 7.01
+    },
+    {
+     "trace_id": "tr_9753b45c23911fab",
+     "step": "recognize.request",
+     "outcome": "shown",
+     "detail": {
+      "recognition_id": "rc_a8928548397c5aff",
+      "transaction_id": "TX00009543",
+      "reasons": [
+       "amount_exact",
+       "date_same_day",
+       "merchant_named",
+       "only_fit"
+      ],
+      "fields": [
+       "amount",
+       "category",
+       "channel",
+       "city",
+       "country",
+       "currency",
+       "merchant_category",
+       "merchant_name",
+       "transaction_date",
+       "transaction_status",
+       "transaction_type"
+      ]
+     },
+     "rule_ids": [],
+     "latency_ms": 0.0
+    },
+    {
+     "trace_id": "tr_9753b45c23911fab",
+     "step": "reply",
+     "outcome": "template",
+     "detail": {
+      "kind": "recognize_check",
+      "note": "no_llm_configured"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.06
+    }
+   ],
+   "llm": {
+    "calls": 0,
+    "failed": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "latency_ms": 0.0,
+    "cost_usd": 0.0,
+    "provider": null,
+    "model": null
+   },
+   "latency_ms": 67.1
+  },
+  {
+   "conversation_id": "cv_9778c51aec7108bb",
+   "trace_id": "tr_17256eefc597f5f1",
+   "language": "es",
+   "stage": "awaiting_confirmation",
+   "reply": "Voy a registrar una disputa por este cargo: 30 may 2026, Marketplace Uno, MXN 5,335.32. Confírmalo con el botón para continuar.",
+   "reply_source": "template",
+   "options": [],
+   "recognition": null,
+   "confirmation": {
+    "confirmation_id": "hoLWMdwxCV2QbkDX",
+    "tool": "open_dispute_case",
+    "label": "30/05/2026, Marketplace Uno, 5335.32 MXN",
+    "expires_at": "2026-05-31T12:05:01.107111Z",
+    "review": false,
+    "charge": {
+     "transaction_date": "2026-05-30T23:49:15",
+     "amount": 5335.32,
+     "currency": "MXN",
+     "merchant_name": "Marketplace Uno",
+     "merchant_category": "5399",
+     "category": "Other",
+     "channel": "POS",
+     "city": "Mérida",
+     "country": "Mexico",
+     "card_type": null,
+     "card_last4": null,
+     "transaction_type": "Purchase",
+     "transaction_status": "Approved"
+    },
+    "reasons": [
+     {
+      "code": "amount_exact",
+      "label": "Mismo monto que indicaste",
+      "value": null
+     },
+     {
+      "code": "date_same_day",
+      "label": "El mismo día que indicaste",
+      "value": null
+     },
+     {
+      "code": "merchant_named",
+      "label": "Comercio que mencionaste",
+      "value": null
+     },
+     {
+      "code": "only_fit",
+      "label": "Único cargo de los últimos 90 días que coincide con todo lo que dijiste",
+      "value": 90
+     }
+    ],
+    "claim_window": {
+     "rule_id": "MX-WINDOW-001",
+     "deadline": "2026-08-28"
+    }
+   },
+   "case": null,
+   "handoff_id": null,
+   "transfer_reason": null,
+   "trail": [
+    {
+     "trace_id": "tr_17256eefc597f5f1",
+     "step": "recognize.answer",
+     "outcome": "not_recognized",
+     "detail": {
+      "recognition_id": "rc_a8928548397c5aff",
+      "transaction_id": "TX00009543"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.0
+    },
+    {
+     "trace_id": "tr_17256eefc597f5f1",
+     "step": "confirm.request",
+     "outcome": "issued",
+     "detail": {
+      "tool": "open_dispute_case",
+      "confirmation_id": "hoLWMdwxCV2QbkDX",
+      "review": false
+     },
+     "rule_ids": [
+      "MX-WINDOW-001",
+      "SYN-CONFIRM-001"
+     ],
+     "latency_ms": 4.32
+    },
+    {
+     "trace_id": "tr_17256eefc597f5f1",
+     "step": "reply",
+     "outcome": "template",
+     "detail": {
+      "kind": "confirm_open",
+      "note": "no_llm_configured"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.04
+    }
+   ],
+   "llm": {
+    "calls": 0,
+    "failed": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "latency_ms": 0.0,
+    "cost_usd": 0.0,
+    "provider": null,
+    "model": null
+   },
+   "latency_ms": 5.5
+  },
+  {
+   "conversation_id": "cv_9778c51aec7108bb",
+   "trace_id": "tr_70cb2e26b5e1ba35",
+   "language": "es",
+   "stage": "resolved",
+   "reply": "Listo. Registré la disputa del cargo 30 may 2026, Marketplace Uno, MXN 5,335.32 con el número de caso CASE-E721813A02B0. Comprobé en el sistema que el caso quedó abierto.",
+   "reply_source": "template",
+   "options": [],
+   "recognition": null,
+   "confirmation": null,
+   "case": {
+    "case_id": "CASE-E721813A02B0",
+    "verified": true,
+    "claim_window": {
+     "rule_id": "MX-WINDOW-001",
+     "deadline": "2026-08-28"
+    }
+   },
+   "handoff_id": null,
+   "transfer_reason": null,
+   "trail": [
+    {
+     "trace_id": "tr_70cb2e26b5e1ba35",
+     "step": "confirm.answer",
+     "outcome": "accepted",
+     "detail": {
+      "confirmation_id": "hoLWMdwxCV2QbkDX",
+      "tool": "open_dispute_case"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.0
+    },
+    {
+     "trace_id": "tr_70cb2e26b5e1ba35",
+     "step": "tool.open_dispute_case",
+     "outcome": "ok",
+     "detail": {
+      "tool": "open_dispute_case",
+      "ok": true,
+      "attempts": 2,
+      "verification": "verified"
+     },
+     "rule_ids": [
+      "MX-WINDOW-001",
+      "SYN-CONFIRM-001"
+     ],
+     "latency_ms": 13.36
+    },
+    {
+     "trace_id": "tr_70cb2e26b5e1ba35",
+     "step": "tool.get_case_status",
+     "outcome": "ok",
+     "detail": {
+      "tool": "get_case_status",
+      "ok": true,
+      "attempts": 1
+     },
+     "rule_ids": [],
+     "latency_ms": 2.01
+    },
+    {
+     "trace_id": "tr_70cb2e26b5e1ba35",
+     "step": "verify",
+     "outcome": "verified",
+     "detail": {
+      "case_id": "CASE-E721813A02B0",
+      "expected_status": "open",
+      "read_status": "open"
+     },
+     "rule_ids": [],
+     "latency_ms": 2.42
+    },
+    {
+     "trace_id": "tr_70cb2e26b5e1ba35",
+     "step": "reply",
+     "outcome": "template",
+     "detail": {
+      "kind": "resolved",
+      "note": "no_llm_configured"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.03
+    }
+   ],
+   "llm": {
+    "calls": 0,
+    "failed": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "latency_ms": 0.0,
+    "cost_usd": 0.0,
+    "provider": null,
+    "model": null
+   },
+   "latency_ms": 17.6
+  }
+ ],
+ "human": [
+  {
+   "conversation_id": "cv_85f7dc1479a2c931",
+   "trace_id": "tr_c16d2c70984e33bd",
+   "language": "es",
+   "stage": "awaiting_recognition",
+   "reply": "Antes de abrir una disputa, revisa cómo aparece este cargo en tu cuenta: 30 may 2026, Juegos Online Max, MXN 10,313.83. ¿Lo reconoces?",
+   "reply_source": "template",
+   "options": [],
+   "recognition": {
+    "recognition_id": "rc_763086d14c58e2a7",
+    "label": "30/05/2026, Juegos Online Max, 10313.83 MXN",
+    "charge": {
+     "transaction_date": "2026-05-30T23:38:22",
+     "amount": 10313.83,
+     "currency": "MXN",
+     "merchant_name": "Juegos Online Max",
+     "merchant_category": "5816",
+     "category": "Entertainment",
+     "channel": "App",
+     "city": "Guadalajara",
+     "country": "Mexico",
+     "card_type": "Debit Card",
+     "card_last4": "3498",
+     "transaction_type": "Purchase",
+     "transaction_status": "Approved"
+    },
+    "reasons": [
+     {
+      "code": "amount_exact",
+      "label": "Mismo monto que indicaste",
+      "value": null
+     },
+     {
+      "code": "date_same_day",
+      "label": "El mismo día que indicaste",
+      "value": null
+     },
+     {
+      "code": "merchant_named",
+      "label": "Comercio que mencionaste",
+      "value": null
+     },
+     {
+      "code": "only_fit",
+      "label": "Único cargo de los últimos 90 días que coincide con todo lo que dijiste",
+      "value": 90
+     }
+    ],
+    "claim_window": {
+     "rule_id": "MX-WINDOW-001",
+     "deadline": "2026-08-28"
+    }
+   },
+   "confirmation": null,
+   "case": null,
+   "handoff_id": null,
+   "transfer_reason": null,
+   "trail": [
+    {
+     "trace_id": "tr_c16d2c70984e33bd",
+     "step": "gate",
+     "outcome": "session_valid",
+     "detail": {
+      "conversation_id": "cv_85f7dc1479a2c931"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.0
+    },
+    {
+     "trace_id": "tr_c16d2c70984e33bd",
+     "step": "understand",
+     "outcome": "deterministic_parser",
+     "detail": {
+      "intent": "dispute_charge",
+      "fallback_reason": "no_llm_configured",
+      "topic": null,
+      "amount": 10313.83,
+      "currency": "MXN",
+      "date": "2026-05-30",
+      "merchant": null,
+      "selected_option": null,
+      "record_ref": null
+     },
+     "rule_ids": [],
+     "latency_ms": 1.99
+    },
+    {
+     "trace_id": "tr_c16d2c70984e33bd",
+     "step": "tool.list_recent_transactions",
+     "outcome": "ok",
+     "detail": {
+      "tool": "list_recent_transactions",
+      "ok": true,
+      "attempts": 1
+     },
+     "rule_ids": [],
+     "latency_ms": 6.17
+    },
+    {
+     "trace_id": "tr_c16d2c70984e33bd",
+     "step": "decide.disposition",
+     "outcome": "resolve",
+     "detail": {
+      "model": "learned_ranker_disposition:disposition_multinomial_logreg_C1",
+      "confidence": 0.9985,
+      "cues": [
+       "amount",
+       "date",
+       "merchant"
+      ],
+      "pool_size": 50,
+      "probabilities": {
+       "ambiguous": 0.0015,
+       "match": 0.9985,
+       "no_match": 0.0
+      }
+     },
+     "rule_ids": [],
+     "latency_ms": 13.15
+    },
+    {
+     "trace_id": "tr_c16d2c70984e33bd",
+     "step": "decide.reasons",
+     "outcome": "computed",
+     "detail": {
+      "reasons": {
+       "TX00013415": [
+        "amount_exact",
+        "date_same_day",
+        "merchant_named",
+        "only_fit"
+       ]
+      },
+      "features": [
+       "amt_within_25pct",
+       "cue_fits",
+       "date_dist",
+       "merch_max"
+      ]
+     },
+     "rule_ids": [],
+     "latency_ms": 3.03
+    },
+    {
+     "trace_id": "tr_c16d2c70984e33bd",
+     "step": "tool.get_transaction",
+     "outcome": "ok",
+     "detail": {
+      "tool": "get_transaction",
+      "ok": true,
+      "attempts": 1
+     },
+     "rule_ids": [],
+     "latency_ms": 3.12
+    },
+    {
+     "trace_id": "tr_c16d2c70984e33bd",
+     "step": "tool.get_dispute_policy",
+     "outcome": "ok",
+     "detail": {
+      "tool": "get_dispute_policy",
+      "ok": true,
+      "attempts": 0
+     },
+     "rule_ids": [],
+     "latency_ms": 5.08
+    },
+    {
+     "trace_id": "tr_c16d2c70984e33bd",
+     "step": "decide.policy",
+     "outcome": "escalate",
+     "detail": {
+      "allowed_writes": [
+       "open_dispute_case"
+      ],
+      "reasons": [
+       "amount_above_threshold"
+      ],
+      "rejected_proposals": [],
+      "policy_version": "2026-09-26.2"
+     },
+     "rule_ids": [
+      "MX-WINDOW-001",
+      "SYN-AMOUNT-001",
+      "SYN-CONFIRM-001"
+     ],
+     "latency_ms": 0.0
+    },
+    {
+     "trace_id": "tr_c16d2c70984e33bd",
+     "step": "tool.get_customer_profile",
+     "outcome": "ok",
+     "detail": {
+      "tool": "get_customer_profile",
+      "ok": true,
+      "attempts": 2
+     },
+     "rule_ids": [],
+     "latency_ms": 6.44
+    },
+    {
+     "trace_id": "tr_c16d2c70984e33bd",
+     "step": "recognize.request",
+     "outcome": "shown",
+     "detail": {
+      "recognition_id": "rc_763086d14c58e2a7",
+      "transaction_id": "TX00013415",
+      "reasons": [
+       "amount_exact",
+       "date_same_day",
+       "merchant_named",
+       "only_fit"
+      ],
+      "fields": [
+       "amount",
+       "card_last4",
+       "card_type",
+       "category",
+       "channel",
+       "city",
+       "country",
+       "currency",
+       "merchant_category",
+       "merchant_name",
+       "transaction_date",
+       "transaction_status",
+       "transaction_type"
+      ]
+     },
+     "rule_ids": [],
+     "latency_ms": 0.0
+    },
+    {
+     "trace_id": "tr_c16d2c70984e33bd",
+     "step": "reply",
+     "outcome": "template",
+     "detail": {
+      "kind": "recognize_check",
+      "note": "no_llm_configured"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.04
+    }
+   ],
+   "llm": {
+    "calls": 0,
+    "failed": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "latency_ms": 0.0,
+    "cost_usd": 0.0,
+    "provider": null,
+    "model": null
+   },
+   "latency_ms": 45.9
+  },
+  {
+   "conversation_id": "cv_85f7dc1479a2c931",
+   "trace_id": "tr_2fa13ea7da0485bb",
+   "language": "es",
+   "stage": "awaiting_confirmation",
+   "reply": "Voy a registrar una disputa por este cargo: 30 may 2026, Juegos Online Max, MXN 10,313.83. Aviso: por el monto, la revisión la hace una persona del banco. Confírmalo con el botón para continuar.",
+   "reply_source": "template",
+   "options": [],
+   "recognition": null,
+   "confirmation": {
+    "confirmation_id": "ORvZvQn_p51zFJSo",
+    "tool": "open_dispute_case",
+    "label": "30/05/2026, Juegos Online Max, 10313.83 MXN",
+    "expires_at": "2026-05-31T12:05:01.197307Z",
+    "review": true,
+    "charge": {
+     "transaction_date": "2026-05-30T23:38:22",
+     "amount": 10313.83,
+     "currency": "MXN",
+     "merchant_name": "Juegos Online Max",
+     "merchant_category": "5816",
+     "category": "Entertainment",
+     "channel": "App",
+     "city": "Guadalajara",
+     "country": "Mexico",
+     "card_type": "Debit Card",
+     "card_last4": "3498",
+     "transaction_type": "Purchase",
+     "transaction_status": "Approved"
+    },
+    "reasons": [
+     {
+      "code": "amount_exact",
+      "label": "Mismo monto que indicaste",
+      "value": null
+     },
+     {
+      "code": "date_same_day",
+      "label": "El mismo día que indicaste",
+      "value": null
+     },
+     {
+      "code": "merchant_named",
+      "label": "Comercio que mencionaste",
+      "value": null
+     },
+     {
+      "code": "only_fit",
+      "label": "Único cargo de los últimos 90 días que coincide con todo lo que dijiste",
+      "value": 90
+     }
+    ],
+    "claim_window": {
+     "rule_id": "MX-WINDOW-001",
+     "deadline": "2026-08-28"
+    }
+   },
+   "case": null,
+   "handoff_id": null,
+   "transfer_reason": null,
+   "trail": [
+    {
+     "trace_id": "tr_2fa13ea7da0485bb",
+     "step": "recognize.answer",
+     "outcome": "not_recognized",
+     "detail": {
+      "recognition_id": "rc_763086d14c58e2a7",
+      "transaction_id": "TX00013415"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.0
+    },
+    {
+     "trace_id": "tr_2fa13ea7da0485bb",
+     "step": "confirm.request",
+     "outcome": "issued",
+     "detail": {
+      "tool": "open_dispute_case",
+      "confirmation_id": "ORvZvQn_p51zFJSo",
+      "review": true
+     },
+     "rule_ids": [
+      "MX-WINDOW-001",
+      "SYN-AMOUNT-001",
+      "SYN-CONFIRM-001"
+     ],
+     "latency_ms": 5.11
+    },
+    {
+     "trace_id": "tr_2fa13ea7da0485bb",
+     "step": "reply",
+     "outcome": "template",
+     "detail": {
+      "kind": "confirm_open",
+      "note": "no_llm_configured"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.04
+    }
+   ],
+   "llm": {
+    "calls": 0,
+    "failed": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "latency_ms": 0.0,
+    "cost_usd": 0.0,
+    "provider": null,
+    "model": null
+   },
+   "latency_ms": 6.6
+  },
+  {
+   "conversation_id": "cv_85f7dc1479a2c931",
+   "trace_id": "tr_7d1225e21e43f78c",
+   "language": "es",
+   "stage": "handed_off",
+   "reply": "Te paso con una persona del banco: por el monto, la revisión la hace una persona del banco. Tu caso quedó registrado con el número CASE-FBD5BBE5D003. Quien te atienda recibe los datos que ya comprobé de tu caso.",
+   "reply_source": "template",
+   "options": [],
+   "recognition": null,
+   "confirmation": null,
+   "case": {
+    "case_id": "CASE-FBD5BBE5D003",
+    "verified": true,
+    "claim_window": {
+     "rule_id": "MX-WINDOW-001",
+     "deadline": "2026-08-28"
+    }
+   },
+   "handoff_id": "ho_7e27e63a81d4473d",
+   "transfer_reason": "amount_above_threshold",
+   "trail": [
+    {
+     "trace_id": "tr_7d1225e21e43f78c",
+     "step": "confirm.answer",
+     "outcome": "accepted",
+     "detail": {
+      "confirmation_id": "ORvZvQn_p51zFJSo",
+      "tool": "open_dispute_case"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.0
+    },
+    {
+     "trace_id": "tr_7d1225e21e43f78c",
+     "step": "tool.open_dispute_case",
+     "outcome": "ok",
+     "detail": {
+      "tool": "open_dispute_case",
+      "ok": true,
+      "attempts": 2,
+      "verification": "verified"
+     },
+     "rule_ids": [
+      "MX-WINDOW-001",
+      "SYN-AMOUNT-001",
+      "SYN-CONFIRM-001"
+     ],
+     "latency_ms": 12.28
+    },
+    {
+     "trace_id": "tr_7d1225e21e43f78c",
+     "step": "tool.get_case_status",
+     "outcome": "ok",
+     "detail": {
+      "tool": "get_case_status",
+      "ok": true,
+      "attempts": 1
+     },
+     "rule_ids": [],
+     "latency_ms": 1.59
+    },
+    {
+     "trace_id": "tr_7d1225e21e43f78c",
+     "step": "verify",
+     "outcome": "verified",
+     "detail": {
+      "case_id": "CASE-FBD5BBE5D003",
+      "expected_status": "pending_human_review",
+      "read_status": "pending_human_review"
+     },
+     "rule_ids": [],
+     "latency_ms": 2.0
+    },
+    {
+     "trace_id": "tr_7d1225e21e43f78c",
+     "step": "escalate",
+     "outcome": "amount_above_threshold",
+     "detail": {
+      "handoff_id": "ho_7e27e63a81d4473d",
+      "facts": 4,
+      "actions": 1
+     },
+     "rule_ids": [
+      "MX-WINDOW-001",
+      "SYN-AMOUNT-001",
+      "SYN-CONFIRM-001"
+     ],
+     "latency_ms": 10.84
+    },
+    {
+     "trace_id": "tr_7d1225e21e43f78c",
+     "step": "reply",
+     "outcome": "template",
+     "detail": {
+      "kind": "handed_off",
+      "note": "no_llm_configured"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.01
+    }
+   ],
+   "llm": {
+    "calls": 0,
+    "failed": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "latency_ms": 0.0,
+    "cost_usd": 0.0,
+    "provider": null,
+    "model": null
+   },
+   "latency_ms": 27.2
+  }
+ ],
+ "ambiguous": [
+  {
+   "conversation_id": "cv_96ee36e9278ea3f5",
+   "trace_id": "tr_155a99aef0ac88b3",
+   "language": "es",
+   "stage": "clarifying",
+   "reply": "Encontré más de un cargo que coincide. ¿Cuál no reconoces?\n1) 24 may 2026, Farmacia San Rafael, MXN 2,675.59\n2) 18 may 2026, Viajes Andinos, MXN 7,259.85\n3) 15 may 2026, Gasolinera Ruta 5, MXN 2,184.33\nSi no es ninguno, dímelo.",
+   "reply_source": "template",
+   "options": [
+    {
+     "index": 1,
+     "kind": "transaction",
+     "label": "24/05/2026, Farmacia San Rafael, 2675.59 MXN",
+     "charge": {
+      "transaction_date": "2026-05-24T15:01:08",
+      "amount": 2675.59,
+      "currency": "MXN",
+      "merchant_name": "Farmacia San Rafael",
+      "merchant_category": null,
+      "category": "Health",
+      "channel": "App",
+      "city": "Guadalajara",
+      "country": "Mexico",
+      "card_type": "Debit Card",
+      "card_last4": "9046",
+      "transaction_type": "Purchase",
+      "transaction_status": "Approved"
+     },
+     "reasons": [
+      {
+       "code": "date_in_range",
+       "label": "Dentro del período que mencionaste",
+       "value": null
+      },
+      {
+       "code": "type_match",
+       "label": "Tipo de operación que mencionaste",
+       "value": null
+      }
+     ]
+    },
+    {
+     "index": 2,
+     "kind": "transaction",
+     "label": "18/05/2026, Viajes Andinos, 7259.85 MXN",
+     "charge": {
+      "transaction_date": "2026-05-18T02:36:30",
+      "amount": 7259.85,
+      "currency": "MXN",
+      "merchant_name": "Viajes Andinos",
+      "merchant_category": "4722",
+      "category": "Transport",
+      "channel": "App",
+      "city": "Monterrey",
+      "country": "Mexico",
+      "card_type": null,
+      "card_last4": null,
+      "transaction_type": "Purchase",
+      "transaction_status": "Approved"
+     },
+     "reasons": [
+      {
+       "code": "date_in_range",
+       "label": "Dentro del período que mencionaste",
+       "value": null
+      },
+      {
+       "code": "type_match",
+       "label": "Tipo de operación que mencionaste",
+       "value": null
+      }
+     ]
+    },
+    {
+     "index": 3,
+     "kind": "transaction",
+     "label": "15/05/2026, Gasolinera Ruta 5, 2184.33 MXN",
+     "charge": {
+      "transaction_date": "2026-05-15T14:55:50",
+      "amount": 2184.33,
+      "currency": "MXN",
+      "merchant_name": "Gasolinera Ruta 5",
+      "merchant_category": "5541",
+      "category": "Transport",
+      "channel": "POS",
+      "city": "Mérida",
+      "country": "Mexico",
+      "card_type": "Debit Card",
+      "card_last4": "9046",
+      "transaction_type": "Purchase",
+      "transaction_status": "Approved"
+     },
+     "reasons": [
+      {
+       "code": "date_near",
+       "label": "A 2 días del período que mencionaste",
+       "value": 2
+      },
+      {
+       "code": "type_match",
+       "label": "Tipo de operación que mencionaste",
+       "value": null
+      }
+     ]
+    }
+   ],
+   "recognition": null,
+   "confirmation": null,
+   "case": null,
+   "handoff_id": null,
+   "transfer_reason": null,
+   "trail": [
+    {
+     "trace_id": "tr_155a99aef0ac88b3",
+     "step": "gate",
+     "outcome": "session_valid",
+     "detail": {
+      "conversation_id": "cv_96ee36e9278ea3f5"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.0
+    },
+    {
+     "trace_id": "tr_155a99aef0ac88b3",
+     "step": "understand",
+     "outcome": "deterministic_parser",
+     "detail": {
+      "intent": "dispute_charge",
+      "fallback_reason": "no_llm_configured",
+      "topic": null,
+      "amount": null,
+      "currency": null,
+      "date": "2026-05-21",
+      "merchant": null,
+      "selected_option": null,
+      "record_ref": null
+     },
+     "rule_ids": [],
+     "latency_ms": 0.32
+    },
+    {
+     "trace_id": "tr_155a99aef0ac88b3",
+     "step": "tool.list_recent_transactions",
+     "outcome": "ok",
+     "detail": {
+      "tool": "list_recent_transactions",
+      "ok": true,
+      "attempts": 1
+     },
+     "rule_ids": [],
+     "latency_ms": 5.78
+    },
+    {
+     "trace_id": "tr_155a99aef0ac88b3",
+     "step": "decide.disposition",
+     "outcome": "clarify",
+     "detail": {
+      "model": "learned_ranker_disposition:disposition_multinomial_logreg_C1",
+      "confidence": 0.0,
+      "cues": [
+       "date",
+       "type"
+      ],
+      "pool_size": 28,
+      "probabilities": {
+       "ambiguous": 0.9999,
+       "match": 0.0,
+       "no_match": 0.0001
+      }
+     },
+     "rule_ids": [],
+     "latency_ms": 10.81
+    },
+    {
+     "trace_id": "tr_155a99aef0ac88b3",
+     "step": "decide.reasons",
+     "outcome": "computed",
+     "detail": {
+      "reasons": {
+       "TX00008168": [
+        "date_in_range",
+        "type_match"
+       ],
+       "TX00007688": [
+        "date_in_range",
+        "type_match"
+       ],
+       "TX00016252": [
+        "date_near",
+        "type_match"
+       ]
+      },
+      "features": [
+       "date_dist",
+       "date_in_range",
+       "type_match"
+      ]
+     },
+     "rule_ids": [],
+     "latency_ms": 2.12
+    },
+    {
+     "trace_id": "tr_155a99aef0ac88b3",
+     "step": "tool.get_customer_profile",
+     "outcome": "ok",
+     "detail": {
+      "tool": "get_customer_profile",
+      "ok": true,
+      "attempts": 2
+     },
+     "rule_ids": [],
+     "latency_ms": 4.5
+    },
+    {
+     "trace_id": "tr_155a99aef0ac88b3",
+     "step": "reply",
+     "outcome": "template",
+     "detail": {
+      "kind": "clarify_options",
+      "note": "no_llm_configured"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.02
+    }
+   ],
+   "llm": {
+    "calls": 0,
+    "failed": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "latency_ms": 0.0,
+    "cost_usd": 0.0,
+    "provider": null,
+    "model": null
+   },
+   "latency_ms": 29.6
+  },
+  {
+   "conversation_id": "cv_96ee36e9278ea3f5",
+   "trace_id": "tr_c11a9289f98dc0d8",
+   "language": "es",
+   "stage": "awaiting_recognition",
+   "reply": "Antes de abrir una disputa, revisa cómo aparece este cargo en tu cuenta: 24 may 2026, Farmacia San Rafael, MXN 2,675.59. ¿Lo reconoces?",
+   "reply_source": "template",
+   "options": [],
+   "recognition": {
+    "recognition_id": "rc_a1ea36ebfbef54f5",
+    "label": "24/05/2026, Farmacia San Rafael, 2675.59 MXN",
+    "charge": {
+     "transaction_date": "2026-05-24T15:01:08",
+     "amount": 2675.59,
+     "currency": "MXN",
+     "merchant_name": "Farmacia San Rafael",
+     "merchant_category": null,
+     "category": "Health",
+     "channel": "App",
+     "city": "Guadalajara",
+     "country": "Mexico",
+     "card_type": "Debit Card",
+     "card_last4": "9046",
+     "transaction_type": "Purchase",
+     "transaction_status": "Approved"
+    },
+    "reasons": [
+     {
+      "code": "date_in_range",
+      "label": "Dentro del período que mencionaste",
+      "value": null
+     },
+     {
+      "code": "type_match",
+      "label": "Tipo de operación que mencionaste",
+      "value": null
+     },
+     {
+      "code": "customer_selected",
+      "label": "Lo elegiste de la lista",
+      "value": null
+     }
+    ],
+    "claim_window": {
+     "rule_id": "MX-WINDOW-001",
+     "deadline": "2026-08-22"
+    }
+   },
+   "confirmation": null,
+   "case": null,
+   "handoff_id": null,
+   "transfer_reason": null,
+   "trail": [
+    {
+     "trace_id": "tr_c11a9289f98dc0d8",
+     "step": "gate",
+     "outcome": "session_valid",
+     "detail": {
+      "conversation_id": "cv_96ee36e9278ea3f5"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.0
+    },
+    {
+     "trace_id": "tr_c11a9289f98dc0d8",
+     "step": "understand",
+     "outcome": "deterministic_parser",
+     "detail": {
+      "intent": "select_option",
+      "fallback_reason": "option_pick",
+      "topic": null,
+      "amount": null,
+      "currency": null,
+      "date": null,
+      "merchant": null,
+      "selected_option": 1,
+      "record_ref": null
+     },
+     "rule_ids": [],
+     "latency_ms": 0.17
+    },
+    {
+     "trace_id": "tr_c11a9289f98dc0d8",
+     "step": "decide.selection",
+     "outcome": "customer_selected",
+     "detail": {
+      "option": 1,
+      "kind": "transaction"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.0
+    },
+    {
+     "trace_id": "tr_c11a9289f98dc0d8",
+     "step": "tool.get_transaction",
+     "outcome": "ok",
+     "detail": {
+      "tool": "get_transaction",
+      "ok": true,
+      "attempts": 1
+     },
+     "rule_ids": [],
+     "latency_ms": 3.17
+    },
+    {
+     "trace_id": "tr_c11a9289f98dc0d8",
+     "step": "tool.get_dispute_policy",
+     "outcome": "ok",
+     "detail": {
+      "tool": "get_dispute_policy",
+      "ok": true,
+      "attempts": 0
+     },
+     "rule_ids": [],
+     "latency_ms": 4.63
+    },
+    {
+     "trace_id": "tr_c11a9289f98dc0d8",
+     "step": "decide.policy",
+     "outcome": "allow",
+     "detail": {
+      "allowed_writes": [
+       "open_dispute_case"
+      ],
+      "reasons": [],
+      "rejected_proposals": [],
+      "policy_version": "2026-09-26.2"
+     },
+     "rule_ids": [
+      "MX-WINDOW-001",
+      "SYN-CONFIRM-001"
+     ],
+     "latency_ms": 0.0
+    },
+    {
+     "trace_id": "tr_c11a9289f98dc0d8",
+     "step": "recognize.request",
+     "outcome": "shown",
+     "detail": {
+      "recognition_id": "rc_a1ea36ebfbef54f5",
+      "transaction_id": "TX00008168",
+      "reasons": [
+       "date_in_range",
+       "type_match",
+       "customer_selected"
+      ],
+      "fields": [
+       "amount",
+       "card_last4",
+       "card_type",
+       "category",
+       "channel",
+       "city",
+       "country",
+       "currency",
+       "merchant_name",
+       "transaction_date",
+       "transaction_status",
+       "transaction_type"
+      ]
+     },
+     "rule_ids": [],
+     "latency_ms": 0.0
+    },
+    {
+     "trace_id": "tr_c11a9289f98dc0d8",
+     "step": "reply",
+     "outcome": "template",
+     "detail": {
+      "kind": "recognize_check",
+      "note": "no_llm_configured"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.05
+    }
+   ],
+   "llm": {
+    "calls": 0,
+    "failed": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "latency_ms": 0.0,
+    "cost_usd": 0.0,
+    "provider": null,
+    "model": null
+   },
+   "latency_ms": 11.8
+  },
+  {
+   "conversation_id": "cv_96ee36e9278ea3f5",
+   "trace_id": "tr_6448fa33c8090daa",
+   "language": "es",
+   "stage": "awaiting_confirmation",
+   "reply": "Voy a registrar una disputa por este cargo: 24 may 2026, Farmacia San Rafael, MXN 2,675.59. Confírmalo con el botón para continuar.",
+   "reply_source": "template",
+   "options": [],
+   "recognition": null,
+   "confirmation": {
+    "confirmation_id": "O5qNwoWFs1aq1Nrh",
+    "tool": "open_dispute_case",
+    "label": "24/05/2026, Farmacia San Rafael, 2675.59 MXN",
+    "expires_at": "2026-05-31T12:05:01.293588Z",
+    "review": false,
+    "charge": {
+     "transaction_date": "2026-05-24T15:01:08",
+     "amount": 2675.59,
+     "currency": "MXN",
+     "merchant_name": "Farmacia San Rafael",
+     "merchant_category": null,
+     "category": "Health",
+     "channel": "App",
+     "city": "Guadalajara",
+     "country": "Mexico",
+     "card_type": "Debit Card",
+     "card_last4": "9046",
+     "transaction_type": "Purchase",
+     "transaction_status": "Approved"
+    },
+    "reasons": [
+     {
+      "code": "date_in_range",
+      "label": "Dentro del período que mencionaste",
+      "value": null
+     },
+     {
+      "code": "type_match",
+      "label": "Tipo de operación que mencionaste",
+      "value": null
+     },
+     {
+      "code": "customer_selected",
+      "label": "Lo elegiste de la lista",
+      "value": null
+     }
+    ],
+    "claim_window": {
+     "rule_id": "MX-WINDOW-001",
+     "deadline": "2026-08-22"
+    }
+   },
+   "case": null,
+   "handoff_id": null,
+   "transfer_reason": null,
+   "trail": [
+    {
+     "trace_id": "tr_6448fa33c8090daa",
+     "step": "recognize.answer",
+     "outcome": "not_recognized",
+     "detail": {
+      "recognition_id": "rc_a1ea36ebfbef54f5",
+      "transaction_id": "TX00008168"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.0
+    },
+    {
+     "trace_id": "tr_6448fa33c8090daa",
+     "step": "confirm.request",
+     "outcome": "issued",
+     "detail": {
+      "tool": "open_dispute_case",
+      "confirmation_id": "O5qNwoWFs1aq1Nrh",
+      "review": false
+     },
+     "rule_ids": [
+      "MX-WINDOW-001",
+      "SYN-CONFIRM-001"
+     ],
+     "latency_ms": 4.3
+    },
+    {
+     "trace_id": "tr_6448fa33c8090daa",
+     "step": "reply",
+     "outcome": "template",
+     "detail": {
+      "kind": "confirm_open",
+      "note": "no_llm_configured"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.03
+    }
+   ],
+   "llm": {
+    "calls": 0,
+    "failed": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "latency_ms": 0.0,
+    "cost_usd": 0.0,
+    "provider": null,
+    "model": null
+   },
+   "latency_ms": 5.4
+  },
+  {
+   "conversation_id": "cv_96ee36e9278ea3f5",
+   "trace_id": "tr_562eb9901bc84f46",
+   "language": "es",
+   "stage": "resolved",
+   "reply": "Listo. Registré la disputa del cargo 24 may 2026, Farmacia San Rafael, MXN 2,675.59 con el número de caso CASE-294E237E628D. Comprobé en el sistema que el caso quedó abierto.",
+   "reply_source": "template",
+   "options": [],
+   "recognition": null,
+   "confirmation": null,
+   "case": {
+    "case_id": "CASE-294E237E628D",
+    "verified": true,
+    "claim_window": {
+     "rule_id": "MX-WINDOW-001",
+     "deadline": "2026-08-22"
+    }
+   },
+   "handoff_id": null,
+   "transfer_reason": null,
+   "trail": [
+    {
+     "trace_id": "tr_562eb9901bc84f46",
+     "step": "confirm.answer",
+     "outcome": "accepted",
+     "detail": {
+      "confirmation_id": "O5qNwoWFs1aq1Nrh",
+      "tool": "open_dispute_case"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.0
+    },
+    {
+     "trace_id": "tr_562eb9901bc84f46",
+     "step": "tool.open_dispute_case",
+     "outcome": "ok",
+     "detail": {
+      "tool": "open_dispute_case",
+      "ok": true,
+      "attempts": 2,
+      "verification": "verified"
+     },
+     "rule_ids": [
+      "MX-WINDOW-001",
+      "SYN-CONFIRM-001"
+     ],
+     "latency_ms": 11.77
+    },
+    {
+     "trace_id": "tr_562eb9901bc84f46",
+     "step": "tool.get_case_status",
+     "outcome": "ok",
+     "detail": {
+      "tool": "get_case_status",
+      "ok": true,
+      "attempts": 1
+     },
+     "rule_ids": [],
+     "latency_ms": 1.54
+    },
+    {
+     "trace_id": "tr_562eb9901bc84f46",
+     "step": "verify",
+     "outcome": "verified",
+     "detail": {
+      "case_id": "CASE-294E237E628D",
+      "expected_status": "open",
+      "read_status": "open"
+     },
+     "rule_ids": [],
+     "latency_ms": 1.93
+    },
+    {
+     "trace_id": "tr_562eb9901bc84f46",
+     "step": "reply",
+     "outcome": "template",
+     "detail": {
+      "kind": "resolved",
+      "note": "no_llm_configured"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.03
+    }
+   ],
+   "llm": {
+    "calls": 0,
+    "failed": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "latency_ms": 0.0,
+    "cost_usd": 0.0,
+    "provider": null,
+    "model": null
+   },
+   "latency_ms": 15.2
+  }
+ ],
+ "bad_data": [
+  {
+   "conversation_id": "cv_60fab50d0626fa23",
+   "trace_id": "tr_51fcad36cd43d731",
+   "language": "es",
+   "stage": "clarifying",
+   "reply": "Para ubicar el cargo necesito un dato más: ¿me dices el monto, la fecha o el comercio?",
+   "reply_source": "template",
+   "options": [],
+   "recognition": null,
+   "confirmation": null,
+   "case": null,
+   "handoff_id": null,
+   "transfer_reason": null,
+   "trail": [
+    {
+     "trace_id": "tr_51fcad36cd43d731",
+     "step": "gate",
+     "outcome": "session_valid",
+     "detail": {
+      "conversation_id": "cv_60fab50d0626fa23"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.0
+    },
+    {
+     "trace_id": "tr_51fcad36cd43d731",
+     "step": "understand",
+     "outcome": "deterministic_parser",
+     "detail": {
+      "intent": "dispute_charge",
+      "fallback_reason": "no_llm_configured",
+      "topic": null,
+      "amount": null,
+      "currency": null,
+      "date": null,
+      "merchant": null,
+      "selected_option": null,
+      "record_ref": null
+     },
+     "rule_ids": [],
+     "latency_ms": 0.52
+    },
+    {
+     "trace_id": "tr_51fcad36cd43d731",
+     "step": "tool.list_recent_transactions",
+     "outcome": "ok",
+     "detail": {
+      "tool": "list_recent_transactions",
+      "ok": true,
+      "attempts": 1
+     },
+     "rule_ids": [],
+     "latency_ms": 5.84
+    },
+    {
+     "trace_id": "tr_51fcad36cd43d731",
+     "step": "reply",
+     "outcome": "template",
+     "detail": {
+      "kind": "ask_details",
+      "note": "no_llm_configured"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.01
+    }
+   ],
+   "llm": {
+    "calls": 0,
+    "failed": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "latency_ms": 0.0,
+    "cost_usd": 0.0,
+    "provider": null,
+    "model": null
+   },
+   "latency_ms": 9.5
+  },
+  {
+   "conversation_id": "cv_60fab50d0626fa23",
+   "trace_id": "tr_43536cceb4d488f7",
+   "language": "es",
+   "stage": "awaiting_recognition",
+   "reply": "Antes de abrir una disputa, revisa cómo aparece este cargo en tu cuenta: 30 may 2026, Óptica Visión, MXN 4,307.18. ¿Lo reconoces?",
+   "reply_source": "template",
+   "options": [],
+   "recognition": {
+    "recognition_id": "rc_da425c51aaec1eee",
+    "label": "30/05/2026, Óptica Visión, 4307.18 MXN",
+    "charge": {
+     "transaction_date": "2026-05-30T22:34:56",
+     "amount": 4307.18,
+     "currency": "MXN",
+     "merchant_name": "Óptica Visión",
+     "merchant_category": "8043",
+     "category": "Health",
+     "channel": "POS",
+     "city": "Monterrey",
+     "country": "Mexico",
+     "card_type": null,
+     "card_last4": null,
+     "transaction_type": "Purchase",
+     "transaction_status": "Approved"
+    },
+    "reasons": [
+     {
+      "code": "amount_exact",
+      "label": "Mismo monto que indicaste",
+      "value": null
+     },
+     {
+      "code": "date_same_day",
+      "label": "El mismo día que indicaste",
+      "value": null
+     },
+     {
+      "code": "merchant_named",
+      "label": "Comercio que mencionaste",
+      "value": null
+     },
+     {
+      "code": "only_fit",
+      "label": "Único cargo de los últimos 90 días que coincide con todo lo que dijiste",
+      "value": 90
+     }
+    ],
+    "claim_window": {
+     "rule_id": "MX-WINDOW-001",
+     "deadline": "2026-08-28"
+    }
+   },
+   "confirmation": null,
+   "case": null,
+   "handoff_id": null,
+   "transfer_reason": null,
+   "trail": [
+    {
+     "trace_id": "tr_43536cceb4d488f7",
+     "step": "gate",
+     "outcome": "session_valid",
+     "detail": {
+      "conversation_id": "cv_60fab50d0626fa23"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.0
+    },
+    {
+     "trace_id": "tr_43536cceb4d488f7",
+     "step": "understand",
+     "outcome": "deterministic_parser",
+     "detail": {
+      "intent": "dispute_charge",
+      "fallback_reason": "no_llm_configured",
+      "topic": null,
+      "amount": 4307.18,
+      "currency": "MXN",
+      "date": "2026-05-30",
+      "merchant": null,
+      "selected_option": null,
+      "record_ref": null
+     },
+     "rule_ids": [],
+     "latency_ms": 1.71
+    },
+    {
+     "trace_id": "tr_43536cceb4d488f7",
+     "step": "tool.list_recent_transactions",
+     "outcome": "ok",
+     "detail": {
+      "tool": "list_recent_transactions",
+      "ok": true,
+      "attempts": 1
+     },
+     "rule_ids": [],
+     "latency_ms": 6.68
+    },
+    {
+     "trace_id": "tr_43536cceb4d488f7",
+     "step": "decide.disposition",
+     "outcome": "resolve",
+     "detail": {
+      "model": "learned_ranker_disposition:disposition_multinomial_logreg_C1",
+      "confidence": 0.9993,
+      "cues": [
+       "amount",
+       "date",
+       "merchant"
+      ],
+      "pool_size": 30,
+      "probabilities": {
+       "ambiguous": 0.0006,
+       "match": 0.9993,
+       "no_match": 0.0002
+      }
+     },
+     "rule_ids": [],
+     "latency_ms": 11.17
+    },
+    {
+     "trace_id": "tr_43536cceb4d488f7",
+     "step": "decide.reasons",
+     "outcome": "computed",
+     "detail": {
+      "reasons": {
+       "TX00015552": [
+        "amount_exact",
+        "date_same_day",
+        "merchant_named",
+        "only_fit"
+       ]
+      },
+      "features": [
+       "amt_within_25pct",
+       "cue_fits",
+       "date_dist",
+       "merch_max"
+      ]
+     },
+     "rule_ids": [],
+     "latency_ms": 1.88
+    },
+    {
+     "trace_id": "tr_43536cceb4d488f7",
+     "step": "tool.get_transaction",
+     "outcome": "ok",
+     "detail": {
+      "tool": "get_transaction",
+      "ok": true,
+      "attempts": 1
+     },
+     "rule_ids": [],
+     "latency_ms": 3.07
+    },
+    {
+     "trace_id": "tr_43536cceb4d488f7",
+     "step": "tool.get_dispute_policy",
+     "outcome": "ok",
+     "detail": {
+      "tool": "get_dispute_policy",
+      "ok": true,
+      "attempts": 0
+     },
+     "rule_ids": [],
+     "latency_ms": 3.9
+    },
+    {
+     "trace_id": "tr_43536cceb4d488f7",
+     "step": "decide.policy",
+     "outcome": "allow",
+     "detail": {
+      "allowed_writes": [
+       "open_dispute_case"
+      ],
+      "reasons": [],
+      "rejected_proposals": [],
+      "policy_version": "2026-09-26.2"
+     },
+     "rule_ids": [
+      "MX-WINDOW-001",
+      "SYN-FX-001",
+      "SYN-CONFIRM-001"
+     ],
+     "latency_ms": 0.0
+    },
+    {
+     "trace_id": "tr_43536cceb4d488f7",
+     "step": "tool.get_customer_profile",
+     "outcome": "ok",
+     "detail": {
+      "tool": "get_customer_profile",
+      "ok": true,
+      "attempts": 2
+     },
+     "rule_ids": [],
+     "latency_ms": 4.01
+    },
+    {
+     "trace_id": "tr_43536cceb4d488f7",
+     "step": "recognize.request",
+     "outcome": "shown",
+     "detail": {
+      "recognition_id": "rc_da425c51aaec1eee",
+      "transaction_id": "TX00015552",
+      "reasons": [
+       "amount_exact",
+       "date_same_day",
+       "merchant_named",
+       "only_fit"
+      ],
+      "fields": [
+       "amount",
+       "category",
+       "channel",
+       "city",
+       "country",
+       "currency",
+       "merchant_category",
+       "merchant_name",
+       "transaction_date",
+       "transaction_status",
+       "transaction_type"
+      ]
+     },
+     "rule_ids": [],
+     "latency_ms": 0.0
+    },
+    {
+     "trace_id": "tr_43536cceb4d488f7",
+     "step": "reply",
+     "outcome": "template",
+     "detail": {
+      "kind": "recognize_check",
+      "note": "no_llm_configured"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.04
+    }
+   ],
+   "llm": {
+    "calls": 0,
+    "failed": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "latency_ms": 0.0,
+    "cost_usd": 0.0,
+    "provider": null,
+    "model": null
+   },
+   "latency_ms": 38.7
+  },
+  {
+   "conversation_id": "cv_60fab50d0626fa23",
+   "trace_id": "tr_611594d8e4b5d53c",
+   "language": "es",
+   "stage": "awaiting_confirmation",
+   "reply": "Voy a registrar una disputa por este cargo: 30 may 2026, Óptica Visión, MXN 4,307.18. Confírmalo con el botón para continuar.",
+   "reply_source": "template",
+   "options": [],
+   "recognition": null,
+   "confirmation": {
+    "confirmation_id": "8km9B_u8CzfKSWnZ",
+    "tool": "open_dispute_case",
+    "label": "30/05/2026, Óptica Visión, 4307.18 MXN",
+    "expires_at": "2026-05-31T12:05:01.384364Z",
+    "review": false,
+    "charge": {
+     "transaction_date": "2026-05-30T22:34:56",
+     "amount": 4307.18,
+     "currency": "MXN",
+     "merchant_name": "Óptica Visión",
+     "merchant_category": "8043",
+     "category": "Health",
+     "channel": "POS",
+     "city": "Monterrey",
+     "country": "Mexico",
+     "card_type": null,
+     "card_last4": null,
+     "transaction_type": "Purchase",
+     "transaction_status": "Approved"
+    },
+    "reasons": [
+     {
+      "code": "amount_exact",
+      "label": "Mismo monto que indicaste",
+      "value": null
+     },
+     {
+      "code": "date_same_day",
+      "label": "El mismo día que indicaste",
+      "value": null
+     },
+     {
+      "code": "merchant_named",
+      "label": "Comercio que mencionaste",
+      "value": null
+     },
+     {
+      "code": "only_fit",
+      "label": "Único cargo de los últimos 90 días que coincide con todo lo que dijiste",
+      "value": 90
+     }
+    ],
+    "claim_window": {
+     "rule_id": "MX-WINDOW-001",
+     "deadline": "2026-08-28"
+    }
+   },
+   "case": null,
+   "handoff_id": null,
+   "transfer_reason": null,
+   "trail": [
+    {
+     "trace_id": "tr_611594d8e4b5d53c",
+     "step": "recognize.answer",
+     "outcome": "not_recognized",
+     "detail": {
+      "recognition_id": "rc_da425c51aaec1eee",
+      "transaction_id": "TX00015552"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.0
+    },
+    {
+     "trace_id": "tr_611594d8e4b5d53c",
+     "step": "confirm.request",
+     "outcome": "issued",
+     "detail": {
+      "tool": "open_dispute_case",
+      "confirmation_id": "8km9B_u8CzfKSWnZ",
+      "review": false
+     },
+     "rule_ids": [
+      "MX-WINDOW-001",
+      "SYN-FX-001",
+      "SYN-CONFIRM-001"
+     ],
+     "latency_ms": 4.71
+    },
+    {
+     "trace_id": "tr_611594d8e4b5d53c",
+     "step": "reply",
+     "outcome": "template",
+     "detail": {
+      "kind": "confirm_open",
+      "note": "no_llm_configured"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.04
+    }
+   ],
+   "llm": {
+    "calls": 0,
+    "failed": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "latency_ms": 0.0,
+    "cost_usd": 0.0,
+    "provider": null,
+    "model": null
+   },
+   "latency_ms": 6.1
+  },
+  {
+   "conversation_id": "cv_60fab50d0626fa23",
+   "trace_id": "tr_73311c883133bf7a",
+   "language": "es",
+   "stage": "resolved",
+   "reply": "Listo. Registré la disputa del cargo 30 may 2026, Óptica Visión, MXN 4,307.18 con el número de caso CASE-1EA47A42B085. Comprobé en el sistema que el caso quedó abierto.",
+   "reply_source": "template",
+   "options": [],
+   "recognition": null,
+   "confirmation": null,
+   "case": {
+    "case_id": "CASE-1EA47A42B085",
+    "verified": true,
+    "claim_window": {
+     "rule_id": "MX-WINDOW-001",
+     "deadline": "2026-08-28"
+    }
+   },
+   "handoff_id": null,
+   "transfer_reason": null,
+   "trail": [
+    {
+     "trace_id": "tr_73311c883133bf7a",
+     "step": "confirm.answer",
+     "outcome": "accepted",
+     "detail": {
+      "confirmation_id": "8km9B_u8CzfKSWnZ",
+      "tool": "open_dispute_case"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.0
+    },
+    {
+     "trace_id": "tr_73311c883133bf7a",
+     "step": "tool.open_dispute_case",
+     "outcome": "ok",
+     "detail": {
+      "tool": "open_dispute_case",
+      "ok": true,
+      "attempts": 2,
+      "verification": "verified"
+     },
+     "rule_ids": [
+      "MX-WINDOW-001",
+      "SYN-FX-001",
+      "SYN-CONFIRM-001"
+     ],
+     "latency_ms": 13.86
+    },
+    {
+     "trace_id": "tr_73311c883133bf7a",
+     "step": "tool.get_case_status",
+     "outcome": "ok",
+     "detail": {
+      "tool": "get_case_status",
+      "ok": true,
+      "attempts": 1
+     },
+     "rule_ids": [],
+     "latency_ms": 2.08
+    },
+    {
+     "trace_id": "tr_73311c883133bf7a",
+     "step": "verify",
+     "outcome": "verified",
+     "detail": {
+      "case_id": "CASE-1EA47A42B085",
+      "expected_status": "open",
+      "read_status": "open"
+     },
+     "rule_ids": [],
+     "latency_ms": 2.57
+    },
+    {
+     "trace_id": "tr_73311c883133bf7a",
+     "step": "reply",
+     "outcome": "template",
+     "detail": {
+      "kind": "resolved",
+      "note": "no_llm_configured"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.04
+    }
+   ],
+   "llm": {
+    "calls": 0,
+    "failed": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "latency_ms": 0.0,
+    "cost_usd": 0.0,
+    "provider": null,
+    "model": null
+   },
+   "latency_ms": 18.5
+  }
+ ],
+ "declined": [
+  {
+   "conversation_id": "cv_a2655a0dd85a80e0",
+   "trace_id": "tr_960099e7160b2cc7",
+   "language": "es",
+   "stage": "abstained",
+   "reply": "El cargo 30 may 2026, Streaming Plus, MXN 20,176.81 fue rechazado, así que no se movió dinero. Por eso no hay una disputa que abrir.",
+   "reply_source": "template",
+   "options": [],
+   "recognition": null,
+   "confirmation": null,
+   "case": null,
+   "handoff_id": null,
+   "transfer_reason": null,
+   "trail": [
+    {
+     "trace_id": "tr_960099e7160b2cc7",
+     "step": "gate",
+     "outcome": "session_valid",
+     "detail": {
+      "conversation_id": "cv_a2655a0dd85a80e0"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.0
+    },
+    {
+     "trace_id": "tr_960099e7160b2cc7",
+     "step": "understand",
+     "outcome": "deterministic_parser",
+     "detail": {
+      "intent": "dispute_charge",
+      "fallback_reason": "no_llm_configured",
+      "topic": null,
+      "amount": 20176.81,
+      "currency": "MXN",
+      "date": "2026-05-30",
+      "merchant": null,
+      "selected_option": null,
+      "record_ref": null
+     },
+     "rule_ids": [],
+     "latency_ms": 2.08
+    },
+    {
+     "trace_id": "tr_960099e7160b2cc7",
+     "step": "tool.list_recent_transactions",
+     "outcome": "ok",
+     "detail": {
+      "tool": "list_recent_transactions",
+      "ok": true,
+      "attempts": 1
+     },
+     "rule_ids": [],
+     "latency_ms": 6.76
+    },
+    {
+     "trace_id": "tr_960099e7160b2cc7",
+     "step": "decide.status_check",
+     "outcome": "fits_non_disputable_charge",
+     "detail": {
+      "status": "Declined",
+      "cues": [
+       "amount",
+       "date",
+       "merchant"
+      ],
+      "pool_size": 40
+     },
+     "rule_ids": [],
+     "latency_ms": 3.47
+    },
+    {
+     "trace_id": "tr_960099e7160b2cc7",
+     "step": "tool.get_transaction",
+     "outcome": "ok",
+     "detail": {
+      "tool": "get_transaction",
+      "ok": true,
+      "attempts": 1
+     },
+     "rule_ids": [],
+     "latency_ms": 3.57
+    },
+    {
+     "trace_id": "tr_960099e7160b2cc7",
+     "step": "tool.get_dispute_policy",
+     "outcome": "ok",
+     "detail": {
+      "tool": "get_dispute_policy",
+      "ok": true,
+      "attempts": 0
+     },
+     "rule_ids": [],
+     "latency_ms": 5.55
+    },
+    {
+     "trace_id": "tr_960099e7160b2cc7",
+     "step": "decide.policy",
+     "outcome": "allow",
+     "detail": {
+      "allowed_writes": [],
+      "reasons": [],
+      "rejected_proposals": [
+       "add_action:open_dispute_case"
+      ],
+      "policy_version": "2026-09-26.2"
+     },
+     "rule_ids": [
+      "SYN-STATUS-002"
+     ],
+     "latency_ms": 0.0
+    },
+    {
+     "trace_id": "tr_960099e7160b2cc7",
+     "step": "reply",
+     "outcome": "template",
+     "detail": {
+      "kind": "not_disputable",
+      "note": "no_llm_configured"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.05
+    }
+   ],
+   "llm": {
+    "calls": 0,
+    "failed": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "latency_ms": 0.0,
+    "cost_usd": 0.0,
+    "provider": null,
+    "model": null
+   },
+   "latency_ms": 27.6
+  }
+ ],
+ "human_request": [
+  {
+   "conversation_id": "cv_33198c2ea33f1b61",
+   "trace_id": "tr_e738e0a4b5a46670",
+   "language": "es",
+   "stage": "handed_off",
+   "reply": "Te paso con una persona del banco: pediste hablar con una persona. Quien te atienda recibe los datos que ya comprobé de tu caso.",
+   "reply_source": "template",
+   "options": [],
+   "recognition": null,
+   "confirmation": null,
+   "case": null,
+   "handoff_id": "ho_680d634870caef44",
+   "transfer_reason": "customer_requested_human",
+   "trail": [
+    {
+     "trace_id": "tr_e738e0a4b5a46670",
+     "step": "gate",
+     "outcome": "session_valid",
+     "detail": {
+      "conversation_id": "cv_33198c2ea33f1b61"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.0
+    },
+    {
+     "trace_id": "tr_e738e0a4b5a46670",
+     "step": "understand",
+     "outcome": "deterministic_parser",
+     "detail": {
+      "intent": "request_human",
+      "fallback_reason": "no_llm_configured",
+      "topic": null,
+      "amount": null,
+      "currency": null,
+      "date": null,
+      "merchant": null,
+      "selected_option": null,
+      "record_ref": null
+     },
+     "rule_ids": [],
+     "latency_ms": 0.03
+    },
+    {
+     "trace_id": "tr_e738e0a4b5a46670",
+     "step": "escalate",
+     "outcome": "customer_requested_human",
+     "detail": {
+      "handoff_id": "ho_680d634870caef44",
+      "facts": 0,
+      "actions": 0
+     },
+     "rule_ids": [
+      "SYN-HUMAN-001"
+     ],
+     "latency_ms": 0.24
+    },
+    {
+     "trace_id": "tr_e738e0a4b5a46670",
+     "step": "reply",
+     "outcome": "template",
+     "detail": {
+      "kind": "handed_off",
+      "note": "no_llm_configured"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.01
+    }
+   ],
+   "llm": {
+    "calls": 0,
+    "failed": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "latency_ms": 0.0,
+    "cost_usd": 0.0,
+    "provider": null,
+    "model": null
+   },
+   "latency_ms": 2.3
+  }
+ ],
+ "out_of_scope": [
+  {
+   "conversation_id": "cv_5f4a2723ced484d0",
+   "trace_id": "tr_606c2a47d5eaeb30",
+   "language": "es",
+   "stage": "handed_off",
+   "reply": "Te paso con una persona del banco: esa solicitud no la puedo atender por este canal. Quien te atienda recibe los datos que ya comprobé de tu caso.",
+   "reply_source": "template",
+   "options": [],
+   "recognition": null,
+   "confirmation": null,
+   "case": null,
+   "handoff_id": "ho_a54609e94979e8f5",
+   "transfer_reason": "out_of_scope",
+   "trail": [
+    {
+     "trace_id": "tr_606c2a47d5eaeb30",
+     "step": "gate",
+     "outcome": "session_valid",
+     "detail": {
+      "conversation_id": "cv_5f4a2723ced484d0"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.0
+    },
+    {
+     "trace_id": "tr_606c2a47d5eaeb30",
+     "step": "understand",
+     "outcome": "deterministic_parser",
+     "detail": {
+      "intent": "out_of_scope",
+      "fallback_reason": "no_llm_configured",
+      "topic": "credit_limit_increase",
+      "amount": null,
+      "currency": null,
+      "date": null,
+      "merchant": null,
+      "selected_option": null,
+      "record_ref": null
+     },
+     "rule_ids": [],
+     "latency_ms": 0.03
+    },
+    {
+     "trace_id": "tr_606c2a47d5eaeb30",
+     "step": "escalate",
+     "outcome": "out_of_scope",
+     "detail": {
+      "handoff_id": "ho_a54609e94979e8f5",
+      "facts": 0,
+      "actions": 0
+     },
+     "rule_ids": [
+      "SYN-SCOPE-001"
+     ],
+     "latency_ms": 0.27
+    },
+    {
+     "trace_id": "tr_606c2a47d5eaeb30",
+     "step": "reply",
+     "outcome": "template",
+     "detail": {
+      "kind": "handed_off",
+      "note": "no_llm_configured"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.01
+    }
+   ],
+   "llm": {
+    "calls": 0,
+    "failed": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "latency_ms": 0.0,
+    "cost_usd": 0.0,
+    "provider": null,
+    "model": null
+   },
+   "latency_ms": 1.9
+  }
+ ],
+ "injection": [
+  {
+   "conversation_id": "cv_dcc4f5bb8487d93b",
+   "trace_id": "tr_e3697cbbc5be1323",
+   "language": "es",
+   "stage": "handed_off",
+   "reply": "Te paso con una persona del banco: por seguridad, esta conversación pasa a un agente. Quien te atienda recibe los datos que ya comprobé de tu caso.",
+   "reply_source": "template",
+   "options": [],
+   "recognition": null,
+   "confirmation": null,
+   "case": null,
+   "handoff_id": "ho_0a9bf328a2ea9ba0",
+   "transfer_reason": "security_event",
+   "trail": [
+    {
+     "trace_id": "tr_e3697cbbc5be1323",
+     "step": "gate",
+     "outcome": "session_valid",
+     "detail": {
+      "conversation_id": "cv_dcc4f5bb8487d93b"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.0
+    },
+    {
+     "trace_id": "tr_e3697cbbc5be1323",
+     "step": "understand",
+     "outcome": "injection_detector",
+     "detail": {
+      "marker": "Ignora tus instrucc"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.0
+    },
+    {
+     "trace_id": "tr_e3697cbbc5be1323",
+     "step": "security",
+     "outcome": "prompt_injection",
+     "detail": {
+      "marker": "Ignora tus instrucc"
+     },
+     "rule_ids": [
+      "SYN-SEC-001"
+     ],
+     "latency_ms": 0.0
+    },
+    {
+     "trace_id": "tr_e3697cbbc5be1323",
+     "step": "escalate",
+     "outcome": "security_event",
+     "detail": {
+      "handoff_id": "ho_0a9bf328a2ea9ba0",
+      "facts": 0,
+      "actions": 0
+     },
+     "rule_ids": [
+      "SYN-SEC-001"
+     ],
+     "latency_ms": 0.25
+    },
+    {
+     "trace_id": "tr_e3697cbbc5be1323",
+     "step": "reply",
+     "outcome": "template",
+     "detail": {
+      "kind": "handed_off",
+      "note": "no_llm_configured"
+     },
+     "rule_ids": [],
+     "latency_ms": 0.01
+    }
+   ],
+   "llm": {
+    "calls": 0,
+    "failed": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "latency_ms": 0.0,
+    "cost_usd": 0.0,
+    "provider": null,
+    "model": null
+   },
+   "latency_ms": 1.8
+  }
+ ]
+}

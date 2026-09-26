@@ -2,9 +2,10 @@ import {
   ArrowsLeftRight, Bank, Broadcast, CalendarBlank, CalendarCheck, Coins, CreditCard, Crosshair, DeviceMobile, Globe,
   HandPointing, Hash, MapPin, Money, Storefront, Tag, type Icon,
 } from "@phosphor-icons/react";
-import type { ChargeView, Language, MatchCode, MatchReason } from "@/lib/api/types";
-import type { CustomerCopy } from "@/lib/i18n/customer";
+import type { ChargeView, MatchCode, MatchReason } from "@/lib/api/types";
+import type { CustomerCopy, UiLang } from "@/lib/i18n/customer";
 import { dateOnly, money, wallTime } from "@/lib/format";
+import { reasonLabelEn } from "@/lib/i18n/match-reasons";
 import styles from "./charge-facts.module.css";
 
 /** One icon per reason family, so the same kind of match reads the same everywhere. */
@@ -32,8 +33,11 @@ export function channelIcon(channel: string | null): Icon {
   return (channel && CHANNEL_ICON[channel]) || Broadcast;
 }
 
-/** The match reasons the service computed from the ranker features that fired. Never inferred here. */
-export function ReasonChips({ reasons, copy }: { reasons: MatchReason[]; copy: CustomerCopy }) {
+/**
+ * The match reasons the service computed from the ranker features that fired. Never inferred here. The reviewer view
+ * (lang "en") words the same code and number in English; the customer view shows the service's own label.
+ */
+export function ReasonChips({ reasons, copy, lang }: { reasons: MatchReason[]; copy: CustomerCopy; lang: UiLang }) {
   if (!reasons.length) return <span className={styles.noReasons}>{copy.noReasons}</span>;
   return (
     <span className={styles.reasons} role="list" aria-label={copy.whyMatched}>
@@ -42,7 +46,7 @@ export function ReasonChips({ reasons, copy }: { reasons: MatchReason[]; copy: C
         return (
           <span key={r.code} role="listitem" className={`${styles.reason} ${r.code === "only_fit" ? styles.decisive : ""}`}>
             <ReasonIcon aria-hidden />
-            <span className="num">{r.label}</span>
+            <span className="num">{lang === "en" ? reasonLabelEn(r) : r.label}</span>
           </span>
         );
       })}
@@ -50,11 +54,11 @@ export function ReasonChips({ reasons, copy }: { reasons: MatchReason[]; copy: C
   );
 }
 
-export function chargeAmount(charge: ChargeView, lang: Language): string {
+export function chargeAmount(charge: ChargeView, lang: UiLang): string {
   return money(charge.amount, charge.currency, lang) || "?";
 }
 
-export function chargeDay(charge: ChargeView, lang: Language): string {
+export function chargeDay(charge: ChargeView, lang: UiLang): string {
   const time = wallTime(charge.transaction_date);
   return [dateOnly(charge.transaction_date, lang), time].filter(Boolean).join(" · ");
 }
@@ -66,7 +70,7 @@ export function cardText(charge: ChargeView, copy: CustomerCopy): string | null 
 }
 
 /** One compact line under a candidate: when, how, where and with which card. */
-export function ChargeMeta({ charge, copy, lang }: { charge: ChargeView; copy: CustomerCopy; lang: Language }) {
+export function ChargeMeta({ charge, copy, lang }: { charge: ChargeView; copy: CustomerCopy; lang: UiLang }) {
   const ChannelIcon = channelIcon(charge.channel);
   const card = cardText(charge, copy);
   return (

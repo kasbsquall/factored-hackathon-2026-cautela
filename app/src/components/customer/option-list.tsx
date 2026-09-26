@@ -1,8 +1,8 @@
 "use client";
 
 import { CalendarBlank, Info, Question } from "@phosphor-icons/react";
-import type { Language, OptionView } from "@/lib/api/types";
-import type { CustomerCopy } from "@/lib/i18n/customer";
+import type { OptionView } from "@/lib/api/types";
+import type { CustomerCopy, UiLang } from "@/lib/i18n/customer";
 import { labelAmount, labelDate, parseTxLabel } from "@/lib/format";
 import type { Entry } from "./flow-types";
 import { ChargeMeta, ReasonChips, chargeAmount } from "./charge-facts";
@@ -11,13 +11,13 @@ import styles from "./option-list.module.css";
 interface Props {
   entry: Extract<Entry, { kind: "options" }>;
   copy: CustomerCopy;
-  lang: Language;
+  lang: UiLang;
   disabled: boolean;
   onPick: (option: OptionView | null) => void;
 }
 
 /** A candidate as the service sent it: structured charge data when present, else its label. */
-function Candidate({ option, copy, lang }: { option: OptionView; copy: CustomerCopy; lang: Language }) {
+function Candidate({ option, copy, lang }: { option: OptionView; copy: CustomerCopy; lang: UiLang }) {
   const charge = option.charge;
   if (charge) {
     return (
@@ -25,7 +25,7 @@ function Candidate({ option, copy, lang }: { option: OptionView; copy: CustomerC
         <span className={`${styles.merchant} mono`}>{charge.merchant_name ?? copy.txType[charge.transaction_type ?? ""] ?? "?"}</span>
         <span className={`${styles.amount} mono`}>{chargeAmount(charge, lang)}</span>
         <span className={styles.detail}><ChargeMeta charge={charge} copy={copy} lang={lang} /></span>
-        <span className={styles.detail}><ReasonChips reasons={option.reasons} copy={copy} /></span>
+        <span className={styles.detail}><ReasonChips reasons={option.reasons} copy={copy} lang={lang} /></span>
       </>
     );
   }

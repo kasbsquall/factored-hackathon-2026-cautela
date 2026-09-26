@@ -9,7 +9,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 const UPSTREAM = (process.env.CAUTELA_API_URL ?? "http://127.0.0.1:8000").replace(/\/$/, "");
-const ALLOWED = /^(auth\/(challenge|verify|logout)|demo\/(identities|outbox\/[\w-]+)|conversations\/(turn|[\w-]+(\/(confirm|recognize))?)|cases\/[\w-]+|console\/(handoffs(\/[\w-]+)?|traces\/[\w-]+|conversations\/[\w-]+\/audit)|health)$/;
+const ALLOWED = /^(auth\/(challenge|verify|logout)|demo\/(identities|outbox\/[\w-]+)|conversations\/(turn|[\w-]+(\/(confirm|recognize|translate))?)|cases\/[\w-]+|console\/(handoffs(\/[\w-]+)?|traces\/[\w-]+|conversations\/[\w-]+\/audit)|health)$/;
 
 function refuse(status: number, code: string, message: string) {
   return NextResponse.json({ error: { code, message, trace_id: null, fields: [] } }, { status, headers: { "Cache-Control": "no-store" } });

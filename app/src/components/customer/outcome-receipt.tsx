@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { ArrowUpRight } from "@phosphor-icons/react";
-import type { ClaimWindow, Language } from "@/lib/api/types";
+import type { ClaimWindow } from "@/lib/api/types";
 import { dateOnly } from "@/lib/format";
-import type { CustomerCopy } from "@/lib/i18n/customer";
+import type { CustomerCopy, UiLang } from "@/lib/i18n/customer";
 import { Receipt, type ReceiptRow } from "@/components/ui/receipt";
 import type { Entry } from "./flow-types";
 import { ChargeLine } from "./charge-label";
@@ -27,7 +27,7 @@ function writeAttempts(turn: ReceiptEntry["turn"]): number | null {
  * The claim deadline the policy engine computed for this charge, with what its window rule says
  * (agent/policy/rules.yaml); without a computed date, the rule's window alone. Then every rule id with its source.
  */
-function ruleRows(ruleIds: string[], claim: ClaimWindow | null, copy: CustomerCopy, lang: Language): ReceiptRow[] {
+function ruleRows(ruleIds: string[], claim: ClaimWindow | null, copy: CustomerCopy, lang: UiLang): ReceiptRow[] {
   const windows = claim
     ? [{ label: copy.rowClaimDeadline, value: (
       <span className={styles.deadline}>
@@ -40,7 +40,7 @@ function ruleRows(ruleIds: string[], claim: ClaimWindow | null, copy: CustomerCo
 }
 
 /** Built only from what the turn returned and what GET /cases/{id} read back. */
-export function OutcomeReceipt({ entry, copy, lang }: { entry: ReceiptEntry; copy: CustomerCopy; lang: Language }) {
+export function OutcomeReceipt({ entry, copy, lang }: { entry: ReceiptEntry; copy: CustomerCopy; lang: UiLang }) {
   const { turn, caseView } = entry;
   const reason = turn.transfer_reason;
   const charge: ReceiptRow[] = entry.charge || entry.chargeView

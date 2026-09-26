@@ -15,6 +15,7 @@ export type ApiErrorCode =
   | "confirmation_invalid"
   | "not_verified"
   | "network"
+  | "translation_unavailable"
   | "unknown";
 
 export class ApiError extends Error {
@@ -63,6 +64,18 @@ export interface ConsoleApi {
   getTrace(traceId: string): Promise<TraceView>;
 }
 
+/** One message in English, for reviewers. The conversation itself stays in Spanish or Portuguese. */
+export interface Translation {
+  text: string;
+  /** machine: the service's language model (POST /conversations/{id}/translate). authored: a mock fixture's own English. */
+  method: "machine" | "authored";
+  /** True when personal data was masked before the text reached the model. */
+  masked: boolean;
+  provider: string | null;
+  model: string | null;
+  cached: boolean;
+}
+
 /**
  * The conversation contract of api/app.py: the service orchestrates, the client sends turns, answers the
  * recognition question and answers confirmations. Mock mode implements the same contract in the browser.
@@ -73,6 +86,11 @@ export interface TurnFlowApi {
   recognize(token: string, conversationId: string, recognitionId: string, recognized: boolean): Promise<TurnResponse>;
   confirm(token: string, conversationId: string, confirmationId: string, accept: boolean): Promise<TurnResponse>;
   getCaseStatus(token: string, caseId: string): Promise<CaseView>;
+  /**
+   * English version of one message of this conversation (the text must be in its transcript). Live mode calls the
+   * service's language model; it fails with translation_unavailable when the service runs without one.
+   */
+  translate(token: string, conversationId: string, role: "customer" | "assistant", text: string): Promise<Translation>;
 }
 
 export interface CautelaApi extends AuthApi, TurnFlowApi, ConsoleApi {

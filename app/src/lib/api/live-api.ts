@@ -13,7 +13,7 @@
  *    taken from `expires_in`; a confirmation expiry is moved onto the browser clock using GET /health
  *    service_clock before the UI schedules anything.
  */
-import { ApiError, type ApiErrorCode, type CautelaApi, type TestIdentity } from "./client";
+import { ApiError, type ApiErrorCode, type CautelaApi, type TestIdentity, type Translation } from "./client";
 import type { components } from "./generated/openapi";
 import type { CaseView, Handoff, Language, LoginChallenge, SessionGrant, TraceView, TurnResponse } from "./types";
 
@@ -21,7 +21,7 @@ type Schemas = components["schemas"];
 
 const KNOWN_CODES: ApiErrorCode[] = [
   "session_invalid", "session_expired", "session_revoked", "otp_invalid", "otp_expired", "otp_locked", "rate_limited",
-  "tool_unavailable", "not_found", "policy_denied", "confirmation_invalid", "not_verified",
+  "tool_unavailable", "not_found", "policy_denied", "confirmation_invalid", "not_verified", "translation_unavailable",
 ];
 
 function toCode(code: unknown): ApiErrorCode {
@@ -136,6 +136,13 @@ export class LiveCautelaApi implements CautelaApi {
 
   getCaseStatus(token: string, caseId: string): Promise<CaseView> {
     return this.request<Schemas["CaseStatusResponse"]>("GET", `/cases/${encodeURIComponent(caseId)}`, { token });
+  }
+
+  async translate(token: string, conversationId: string, role: "customer" | "assistant", text: string): Promise<Translation> {
+    const t = await this.request<Schemas["TranslationResponse"]>("POST", `/conversations/${encodeURIComponent(conversationId)}/translate`, {
+      token, body: { role, text },
+    });
+    return { text: t.translation, method: "machine", masked: t.masked, provider: t.provider, model: t.model, cached: t.cached };
   }
 
   /* ---------- console (through the server-side proxy, which adds the console key) ---------- */

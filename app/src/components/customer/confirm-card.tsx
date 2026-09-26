@@ -1,8 +1,7 @@
 "use client";
 
 import { ArrowRight, HandTap, UserSwitch } from "@phosphor-icons/react";
-import type { Language } from "@/lib/api/types";
-import type { CustomerCopy } from "@/lib/i18n/customer";
+import type { CustomerCopy, UiLang } from "@/lib/i18n/customer";
 import { dateOnly, timeOnly } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import type { Entry } from "./flow-types";
@@ -12,7 +11,7 @@ import styles from "./confirm-card.module.css";
 interface Props {
   entry: Extract<Entry, { kind: "confirm" }>;
   copy: CustomerCopy;
-  lang: Language;
+  lang: UiLang;
   onConfirm: () => void;
   onCancel: () => void;
 }

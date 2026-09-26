@@ -4,11 +4,13 @@ import { useCallback, useRef, useState } from "react";
 import { ApiError, getApi } from "@/lib/api";
 import type { ChargeView, Language, OptionView, TurnResponse } from "@/lib/api/types";
 import type { CustomerCopy } from "@/lib/i18n/customer";
-import { type Entry, type Flow, entryId } from "./flow-types";
+import type { TurnCause } from "@/lib/narration";
+import { type Entry, type Flow, type TurnRecord, entryId } from "./flow-types";
 
 interface TurnFlowOptions {
   token: string;
   language: Language;
+  /** Copy in the conversation language: the greeting and the texts the buttons send are part of the conversation. */
   copy: CustomerCopy;
   onSessionEnd: () => void;
 }
@@ -27,6 +29,10 @@ export function useTurnFlow({ token, language, copy, onSessionEnd }: TurnFlowOpt
   const greeting = (): Entry => ({ id: entryId(), kind: "system", say: (c) => c.greeting });
   const [entries, setEntries] = useState<Entry[]>(() => [greeting()]);
   const [busy, setBusy] = useState(false);
+  const [turns, setTurns] = useState<TurnRecord[]>([]);
+  const [pending, setPending] = useState<TurnCause | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const inFlight = useRef(false);
   const conversation = useRef<string | null>(null);
   const shown = useRef(new Set<string>());
@@ -40,13 +46,17 @@ export function useTurnFlow({ token, language, copy, onSessionEnd }: TurnFlowOpt
   }, []);
   const dismissError = useCallback(() => setEntries((prev) => prev.filter((e) => e.kind !== "error")), []);
 
-  const render = useCallback(async (turn: TurnResponse) => {
+  const render = useCallback(async (turn: TurnResponse, cause: TurnCause) => {
     conversation.current = turn.conversation_id;
+    setConversationId(turn.conversation_id);
+    setTurns((prev) => [...prev, { id: entryId(), cause, turn }]);
+    const template = turn.trail.find((step) => step.step === "reply")?.detail.kind;
     // The options also come as numbered lines in the reply; they are shown once, as buttons.
     const reply = turn.options.length
       ? turn.reply.split("\n").filter((line) => !/^\d+\)\s/.test(line)).join("\n")
       : turn.reply;
-    const items: Entry[] = [{ id: entryId(), kind: "system", say: () => reply }];
+    const items: Entry[] = [{ id: entryId(), kind: "system", say: () => reply,
+      reply: { source: turn.reply_source, template: typeof template === "string" ? template : null, language: turn.language } }];
     if (turn.options.length) items.push({ id: entryId(), kind: "options", options: turn.options });
     // A reminder repeats the question as a new card after the customer's message (older cards are frozen).
     if (turn.recognition) {
@@ -73,11 +83,13 @@ export function useTurnFlow({ token, language, copy, onSessionEnd }: TurnFlowOpt
     push(...items);
   }, [api, token, push]);
 
-  const run = useCallback(async (work: () => Promise<void>, retry: () => void) => {
+  const run = useCallback(async (work: () => Promise<void>, retry: () => void, cause: TurnCause) => {
     // One step at a time: a second tap while a step runs would start a parallel flow.
     if (inFlight.current) return;
     inFlight.current = true;
     setBusy(true);
+    setPending(cause);
+    setFailed(false);
     setEntries((prev) => [...prev.filter((e) => e.kind !== "error"), { id: entryId(), kind: "thinking" }]);
     try {
       await work();
@@ -86,19 +98,22 @@ export function useTurnFlow({ token, language, copy, onSessionEnd }: TurnFlowOpt
         onSessionEnd();
         return;
       }
+      setFailed(true);
       const limited = err instanceof ApiError && err.code === "rate_limited";
       push({ id: entryId(), kind: "error", retry, ...(limited ? { body: (c) => c.errOtp.rate_limited } : {}) });
     } finally {
       inFlight.current = false;
       setBusy(false);
+      setPending(null);
       setEntries((prev) => prev.filter((e) => e.kind !== "thinking"));
     }
   }, [onSessionEnd, push]);
 
-  const say = useCallback((shownText: string, message: string = shownText) => {
+  const say = useCallback((shownText: string, message: string = shownText, cause: TurnCause = { kind: "message" }) => {
     if (inFlight.current) return;
-    setEntries((prev) => [...prev, { id: entryId(), kind: "user", text: shownText }]);
-    const attempt = () => run(async () => render(await api.turn(token, message, conversation.current, language)), attempt);
+    const option = cause.kind === "option" ? cause.index : undefined;
+    setEntries((prev) => [...prev, { id: entryId(), kind: "user", text: shownText, ...(option !== undefined ? { option } : {}) }]);
+    const attempt = () => run(async () => render(await api.turn(token, message, conversation.current, language), cause), attempt, cause);
     void attempt();
   }, [api, token, language, run, render]);
 
@@ -106,8 +121,8 @@ export function useTurnFlow({ token, language, copy, onSessionEnd }: TurnFlowOpt
     if (inFlight.current) return;
     patch(entry, { pickedIndex: option?.index ?? null } as Partial<Entry>);
     // The service reads the option number; "none of these" is sent as the customer would say it.
-    if (option) say(option.label, String(option.index));
-    else say(copy.none);
+    if (option) say(option.label, String(option.index), { kind: "option", index: option.index });
+    else say(copy.none, copy.none, { kind: "none" });
   }, [patch, say, copy.none]);
 
   const recognize = useCallback((entry: RecognizeEntry, recognized: boolean) => {
@@ -131,8 +146,8 @@ export function useTurnFlow({ token, language, copy, onSessionEnd }: TurnFlowOpt
         return;
       }
       patch(entry.id, { state: recognized ? "yes" : "no" } as Partial<Entry>);
-      await render(turn);
-    }, dismissError);
+      await render(turn, { kind: "recognize", recognized });
+    }, dismissError, { kind: "recognize", recognized });
   }, [api, token, patch, push, run, render, dismissError]);
 
   const answer = useCallback((entry: ConfirmEntry, accept: boolean) => {
@@ -156,21 +171,35 @@ export function useTurnFlow({ token, language, copy, onSessionEnd }: TurnFlowOpt
         return;
       }
       patch(entry.id, { state: accept ? "done" : "cancelled" } as Partial<Entry>);
-      await render(turn);
-    }, dismissError);
+      await render(turn, { kind: "confirm", accept });
+    }, dismissError, { kind: "confirm", accept });
   }, [api, token, patch, push, run, render, dismissError]);
+
+  const translate = useCallback((role: "customer" | "assistant", text: string) => {
+    const id = conversation.current;
+    if (!id) return Promise.reject(new ApiError("not_found", "There is no conversation to translate yet"));
+    return api.translate(token, id, role, text);
+  }, [api, token]);
 
   const restart = useCallback(() => {
     conversation.current = null;
     shown.current.clear();
     charge.current = null;
     chargeView.current = null;
+    setConversationId(null);
+    setTurns([]);
+    setFailed(false);
     setEntries([greeting()]);
   }, []);
 
   return {
     entries,
     busy,
+    turns,
+    pending,
+    failed,
+    conversationId,
+    translate,
     send: (text) => say(text),
     askHuman: () => say(copy.askHumanMessage),
     restart,

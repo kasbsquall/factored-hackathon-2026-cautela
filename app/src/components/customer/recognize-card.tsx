@@ -2,8 +2,7 @@
 
 import { ArrowRight, CalendarBlank, CreditCard, MapPin, Receipt, SealQuestion, Tag } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
-import type { Language } from "@/lib/api/types";
-import type { CustomerCopy } from "@/lib/i18n/customer";
+import type { CustomerCopy, UiLang } from "@/lib/i18n/customer";
 import { dateOnly } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import type { Entry } from "./flow-types";
@@ -13,7 +12,7 @@ import styles from "./recognize-card.module.css";
 interface Props {
   entry: Extract<Entry, { kind: "recognize" }>;
   copy: CustomerCopy;
-  lang: Language;
+  lang: UiLang;
   onAnswer: (recognized: boolean) => void;
 }
 
@@ -68,7 +67,7 @@ export function RecognizeCard({ entry, copy, lang, onAnswer }: Props) {
 
       <div className={styles.why}>
         <p className="eyebrow">{copy.whyMatched}</p>
-        <ReasonChips reasons={r.reasons} copy={copy} />
+        <ReasonChips reasons={r.reasons} copy={copy} lang={lang} />
       </div>
 
       <div className={styles.actions}>

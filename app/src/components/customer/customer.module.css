@@ -4,17 +4,32 @@
   flex-direction: column;
 }
 
+/*
+ * Narrow: phone, then the reviewer narration (collapsible), then the walkthrough.
+ * 1024 to 1279: phone on the left; narration and walkthrough stacked beside it.
+ * 1280 and up: walkthrough, phone, narration, so the narration sits right beside the chat.
+ */
 .layout {
   flex: 1;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "phone" "narr" "walk";
 }
 
 .phone {
+  grid-area: phone;
   min-width: 0;
   display: flex;
   flex-direction: column;
   background: var(--sf);
+}
+
+.narration {
+  grid-area: narr;
+}
+
+.walk {
+  grid-area: walk;
 }
 
 @media (min-width: 768px) {
@@ -22,7 +37,7 @@
     padding: var(--s-32) var(--s-32) var(--s-64);
     justify-content: center;
     grid-template-columns: minmax(0, 480px);
-    gap: var(--s-48);
+    column-gap: var(--s-48);
   }
 
   .phone {
@@ -35,8 +50,40 @@
 
 @media (min-width: 1024px) {
   .layout {
-    grid-template-columns: minmax(0, 480px) minmax(0, 340px);
-    gap: var(--s-96);
+    grid-template-columns: minmax(0, 480px) minmax(0, 400px);
+    grid-template-rows: auto 1fr;
+    grid-template-areas: "phone narr" "phone walk";
+    column-gap: var(--s-48);
     align-items: start;
+  }
+
+  /* One column holds both: the narration scrolls inside itself, the walkthrough follows below it. */
+  .layout > .narration {
+    position: static;
+    max-height: 70dvh;
+  }
+
+  .layout > .walk {
+    position: static;
+    padding-top: var(--s-32);
+  }
+}
+
+@media (min-width: 1280px) {
+  .layout {
+    grid-template-columns: minmax(0, 260px) minmax(0, 480px) minmax(0, 420px);
+    grid-template-rows: auto;
+    grid-template-areas: "walk phone narr";
+    column-gap: var(--s-48);
+  }
+
+  .layout > .narration {
+    position: sticky;
+    max-height: 100dvh;
+  }
+
+  .layout > .walk {
+    position: sticky;
+    padding-top: var(--s-48);
   }
 }

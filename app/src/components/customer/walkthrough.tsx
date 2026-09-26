@@ -7,9 +7,9 @@ import styles from "./walkthrough.module.css";
 
 const ICONS = [IdentificationCard, ListMagnifyingGlass, SealQuestion, HandTap, Receipt];
 
-export function Walkthrough({ copy, stage }: { copy: CustomerCopy; stage: number }) {
+export function Walkthrough({ copy, stage, className }: { copy: CustomerCopy; stage: number; className?: string }) {
   return (
-    <aside className={`${styles.aside} rise`} style={{ "--i": 2 } as React.CSSProperties} aria-labelledby="walk-title">
+    <aside className={`${styles.aside} ${className ?? ""} rise`} style={{ "--i": 2 } as React.CSSProperties} aria-labelledby="walk-title">
       <h2 id="walk-title" className={styles.title}>{copy.walkTitle}</h2>
       <p className={styles.lede}>{copy.walkLede}</p>
       <ol className={styles.steps}>

@@ -208,6 +208,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/conversations/{conversation_id}/translate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Translate
+         * @description English machine translation of one message of this conversation, for reviewers who read English.
+         */
+        post: operations["translate_conversations__conversation_id__translate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/demo/identities": {
         parameters: {
             query?: never;
@@ -792,6 +812,58 @@ export interface components {
             confidence?: number | null;
             /** Rule Ids */
             rule_ids: string[];
+        };
+        /**
+         * TranslateRequest
+         * @description One message of the conversation, as the transcript shows it (a part of it is accepted, since clients drop
+         *     the numbered option lines). Text that is not in the conversation answers 404, so this is no free translator.
+         */
+        TranslateRequest: {
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "customer" | "assistant";
+            /** Text */
+            text: string;
+        };
+        /**
+         * TranslationResponse
+         * @description Machine translation for reviewers who read English; the conversation itself stays in its language.
+         */
+        TranslationResponse: {
+            /**
+             * Cached
+             * @description True when this message was already translated; no model call was made
+             */
+            cached: boolean;
+            /**
+             * Machine Translation
+             * @constant
+             */
+            machine_translation: true;
+            /**
+             * Masked
+             * @description True when PII masking changed the text sent to the model
+             */
+            masked: boolean;
+            /** Model */
+            model: string | null;
+            /** Provider */
+            provider: string | null;
+            /**
+             * Source Language
+             * @description The conversation language
+             * @enum {string}
+             */
+            source_language: "es" | "pt";
+            /**
+             * Target Language
+             * @constant
+             */
+            target_language: "en";
+            /** Translation */
+            translation: string;
         };
         /** TurnRequest */
         TurnRequest: {
@@ -1893,6 +1965,104 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    translate_conversations__conversation_id__translate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TranslateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranslationResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

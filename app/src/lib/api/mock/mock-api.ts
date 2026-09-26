@@ -4,12 +4,13 @@
  * console reads. State lives in browser memory and resets on reload; every step writes a real hash-chained audit
  * record so the audit view can show the trace of a case the viewer just ran.
  */
-import { ApiError, type CautelaApi } from "../client";
+import { ApiError, type CautelaApi, type Translation } from "../client";
 import type { CaseView, Handoff, Language, LoginChallenge, SessionGrant, TraceView, TransactionView, TransferReasonCode, TurnResponse } from "../types";
 import { money } from "@/lib/format";
 import { MockAuditLog } from "./audit";
 import { MOCK_CUSTOMERS, TEST_OTP, findCustomerByDocument, type MockCustomer } from "./fixtures/customers";
 import { SEEDED_HANDOFFS } from "./fixtures/handoffs";
+import { AUTHORED_ENGLISH } from "./fixtures/translations";
 import { SEEDED_TRACES, TAMPER_TRACE_ID, guarded, seedTrace } from "./fixtures/traces";
 import { MockOrchestrator, type MockBackend, type MockSession, type ToolResultSpec } from "./orchestrator";
 import { hex, randomLatency, sleep } from "./util";
@@ -158,6 +159,16 @@ export class MockCautelaApi implements CautelaApi, MockBackend {
     // A failing case store retries three times before giving up.
     await this.wait(accept && s.customer.outcome === "tool_unavailable" ? [900, 1300] : this.latency);
     return this.orchestrator.confirm(this.session(token), conversationId, confirmationId, accept);
+  }
+
+  /** No model in mock mode: only the fixtures' own English exists; any other text is unavailable, as live without a model. */
+  async translate(token: string, conversationId: string, role: "customer" | "assistant", text: string): Promise<Translation> {
+    await this.wait([60, 140]);
+    this.session(token);
+    void conversationId;
+    const english = role === "customer" ? AUTHORED_ENGLISH[text.trim()] : undefined;
+    if (!english) throw new ApiError("translation_unavailable", "Mock mode has no language model");
+    return { text: english, method: "authored", masked: false, provider: null, model: null, cached: false };
   }
 
   async getCaseStatus(token: string, caseId: string): Promise<CaseView> {

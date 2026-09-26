@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowUp, ChatCircleText, UserSwitch } from "@phosphor-icons/react";
 import type { Language } from "@/lib/api/types";
-import type { CustomerCopy } from "@/lib/i18n/customer";
+import type { CustomerCopy, UiLang } from "@/lib/i18n/customer";
 import { Button } from "@/components/ui/button";
-import type { Auth } from "./customer-app";
+import type { Auth, TrailState } from "./customer-app";
 import { stageOf, type Entry } from "./flow-types";
 import { useTurnFlow } from "./use-turn-flow";
 import { EntryView } from "./entry-view";
@@ -13,10 +13,15 @@ import styles from "./conversation.module.css";
 
 interface Props {
   auth: Auth;
+  /** Labels: the conversation language, or English in the reviewer view. */
   copy: CustomerCopy;
+  /** Conversation language copy: the greeting and every text the customer sends. */
+  talk: CustomerCopy;
   lang: Language;
+  ui: UiLang;
   onSessionEnd: () => void;
   onStage: (stage: number) => void;
+  onTrail: (trail: TrailState) => void;
 }
 
 const INTERACTIVE = new Set<Entry["kind"]>(["options", "recognize", "confirm"]);
@@ -30,11 +35,11 @@ function freeze(entry: Entry): Entry {
   return entry;
 }
 
-function announcement(entries: Entry[], copy: CustomerCopy): string {
+function announcement(entries: Entry[], copy: CustomerCopy, talk: CustomerCopy): string {
   const last = entries[entries.length - 1];
   if (last?.kind === "thinking") return copy.thinking;
   const said = [...entries].reverse().find((e) => e.kind === "system");
-  return said?.kind === "system" ? said.say(copy) : "";
+  return said?.kind === "system" ? said.say(talk) : "";
 }
 
 function scrollBehavior(): ScrollBehavior {
@@ -42,8 +47,8 @@ function scrollBehavior(): ScrollBehavior {
 }
 
 /** The service drives the conversation (live api/ or the in-browser mock); this view renders its turns. */
-export function Conversation({ auth, copy, lang, onSessionEnd, onStage }: Props) {
-  const flow = useTurnFlow({ token: auth.token, language: lang, copy, onSessionEnd });
+export function Conversation({ auth, copy, talk, lang, ui, onSessionEnd, onStage, onTrail }: Props) {
+  const flow = useTurnFlow({ token: auth.token, language: lang, copy: talk, onSessionEnd });
   const [draft, setDraft] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
   const logRef = useRef<HTMLOListElement>(null);
@@ -52,8 +57,11 @@ export function Conversation({ auth, copy, lang, onSessionEnd, onStage }: Props)
   const lastUser = entries.findLastIndex((e) => e.kind === "user");
   const last = entries[entries.length - 1];
   const handedOff = entries.some((e) => e.kind === "receipt" && Boolean(e.turn.handoff_id));
-  const suggestion = auth.identity?.messages?.[lang]?.[0] ?? copy.suggestion;
+  const suggestion = auth.identity?.messages?.[lang]?.[0] ?? talk.suggestion;
   const finished = last?.kind === "receipt";
+
+  const { turns, pending, failed } = flow;
+  useEffect(() => onTrail({ turns, pending, failed }), [turns, pending, failed, onTrail]);
 
   useEffect(() => {
     onStage(stageOf(entries));
@@ -79,14 +87,14 @@ export function Conversation({ auth, copy, lang, onSessionEnd, onStage }: Props)
 
   return (
     <div className={styles.wrap}>
-      <p className="sr-only" role="status" aria-live="polite">{announcement(entries, copy)}</p>
+      <p className="sr-only" role="status" aria-live="polite">{announcement(entries, copy, talk)}</p>
       <ol className={styles.log} ref={logRef}>
         {entries.map((entry, i) => {
           const stale = i < lastUser && INTERACTIVE.has(entry.kind);
           return (
             <li key={entry.id} data-entry={entry.id} tabIndex={-1} className={`${styles.item} ${styles[entry.kind] ?? ""} rise`}>
               <EntryView entry={stale ? freeze(entry) : entry} isLast={i === entries.length - 1} flow={stale ? { ...flow, busy: true } : flow}
-                copy={copy} lang={lang} canAskHuman={!handedOff} />
+                copy={copy} talk={talk} lang={lang} ui={ui} canAskHuman={!handedOff} />
             </li>
           );
         })}
@@ -105,7 +113,7 @@ export function Conversation({ auth, copy, lang, onSessionEnd, onStage }: Props)
             <span className="eyebrow">{copy.suggestionLabel}</span>
             <button type="button" className={styles.chip} disabled={flow.busy} onClick={() => flow.send(suggestion)}>
               <ChatCircleText aria-hidden />
-              <span>{suggestion}</span>
+              <span lang={lang}>{suggestion}</span>
             </button>
           </div>
         ) : null}

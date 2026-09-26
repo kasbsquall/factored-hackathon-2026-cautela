@@ -69,3 +69,43 @@ test("a customer who recognizes the charge stops before any dispute", async ({ p
   await expect(receipt.getByText("ninguno", { exact: true })).toBeVisible();
   await expect(page.getByText("Confirma antes de abrir la disputa")).toHaveCount(0);
 });
+
+test("reviewer view: English labels, narration and translations while the conversation stays in Spanish", async ({ page }) => {
+  await page.goto("/customer?review=en");
+  await expect(page.getByText("Test identity")).toBeVisible();
+  await expect(page.getByRole("button", { name: /EN reviewer view/ })).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: /Vague description/ }).click();
+  await page.getByRole("button", { name: /Send code/ }).click();
+  await page.getByRole("button", { name: /Use this code/ }).click();
+  await page.getByRole("button", { name: "Log in", exact: true }).click();
+
+  await page.getByRole("button", { name: /Me cobraron algo/ }).click();
+  const log = page.locator("#conversation ol").first();
+  await expect(log.getByText(/Encontré más de un cargo que coincide/)).toBeVisible();
+  await expect(page.getByRole("group", { name: "Which of these charges do you not recognize?" })).toBeVisible();
+
+  // Narration: collapsed under the chat on a phone, English, built from the trail.
+  const disclose = page.getByRole("button", { name: /Show the explanation/ });
+  await expect(disclose).toContainText("1 turn");
+  await disclose.click();
+  const narration = page.getByRole("region", { name: "What the system did (for reviewers)" });
+  await expect(narration.getByText(/Found 3 candidate charges that fit the description/)).toBeVisible();
+  await expect(narration.getByText(/None was preselected; the customer must choose/)).toBeVisible();
+
+  // Translations: the reply template is translated without a model; the test message has its written English.
+  const toggles = log.getByRole("button", { name: "Show English translation" });
+  await toggles.last().click();
+  await expect(log.getByText("I found more than one charge that fits. Which one do you not recognize?", { exact: false })).toBeVisible();
+  await expect(log.getByText(/fixed reply template "clarify_options"/)).toBeVisible();
+  await log.getByRole("button", { name: "Show English translation" }).nth(1).click();
+  await expect(log.getByText(/about 50 thousand pesos, on Sunday or Monday/)).toBeVisible();
+
+  // "None of these" is labeled in English but sent in Spanish.
+  await page.getByRole("button", { name: "None of these" }).click();
+  await expect(log.getByText("Ninguno de estos", { exact: true })).toBeVisible();
+
+  // Turning the reviewer view off brings the Spanish labels back; the conversation does not change.
+  await page.getByRole("button", { name: /EN reviewer view/ }).click();
+  await expect(page.getByRole("button", { name: "Hablar con una persona" }).first()).toBeVisible();
+  await expect(log.getByText(/Encontré más de un cargo que coincide/)).toBeVisible();
+});

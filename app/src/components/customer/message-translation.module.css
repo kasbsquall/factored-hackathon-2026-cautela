@@ -1,0 +1,120 @@
+.wrap {
+  display: grid;
+  justify-items: start;
+  gap: var(--s-4);
+  max-width: 88%;
+  margin-top: var(--s-2);
+}
+
+.end {
+  justify-items: end;
+  align-self: flex-end;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-6);
+  min-height: 32px;
+  padding: 0 var(--s-8);
+  margin-inline: calc(var(--s-8) * -1);
+  border: 0;
+  border-radius: var(--r-btn);
+  background: transparent;
+  color: var(--ink2);
+  font-family: var(--f-mono);
+  font-size: var(--t-11);
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: color var(--d-ui) var(--ease-out), background-color var(--d-ui) var(--ease-out), transform var(--d-fast) var(--ease-out);
+}
+
+.toggle svg {
+  width: 14px;
+  height: 14px;
+}
+
+.toggle:hover {
+  color: var(--ink);
+  background: var(--sf2);
+}
+
+.toggle:active {
+  transform: scale(0.97);
+}
+
+.toggle[aria-expanded="true"] {
+  color: var(--ink);
+}
+
+.panel {
+  display: grid;
+  gap: var(--s-6);
+  padding: var(--s-8) var(--s-12);
+  border-radius: var(--r);
+  border: 1px dashed var(--btn-s-line);
+  animation: rise var(--d-ui) var(--ease-out) both;
+}
+
+.text {
+  font-size: var(--t-13);
+  line-height: 1.45;
+  white-space: pre-line;
+  font-variant-numeric: proportional-nums;
+}
+
+.note {
+  font-family: var(--f-mono);
+  font-size: var(--t-11);
+  line-height: 1.45;
+  color: var(--ink2);
+}
+
+.loading {
+  display: grid;
+  gap: var(--s-6);
+  min-width: 180px;
+  padding: var(--s-4) 0;
+}
+
+.line {
+  height: 10px;
+  width: 100%;
+}
+
+.short {
+  width: 60%;
+}
+
+.error {
+  display: grid;
+  gap: var(--s-6);
+  justify-items: start;
+}
+
+.retry {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-6);
+  min-height: 32px;
+  padding: 0 var(--s-12);
+  border: 1px solid var(--btn-s-line);
+  border-radius: var(--r-btn);
+  background: transparent;
+  font-size: var(--t-12);
+  cursor: pointer;
+  transition: background-color var(--d-ui) var(--ease-out), transform var(--d-fast) var(--ease-out);
+}
+
+.retry svg {
+  width: 14px;
+  height: 14px;
+}
+
+.retry:hover {
+  background: var(--sf2);
+}
+
+.retry:active {
+  transform: scale(0.97);
+}

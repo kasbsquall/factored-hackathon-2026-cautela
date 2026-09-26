@@ -1,16 +1,21 @@
 "use client";
 
-import { Flask, LockSimple, SignOut } from "@phosphor-icons/react";
+import { Eyeglasses, Flask, LockSimple, SignOut } from "@phosphor-icons/react";
 import { Wordmark } from "@/components/brand/wordmark";
 import type { Language } from "@/lib/api/types";
-import type { CustomerCopy } from "@/lib/i18n/customer";
+import { LANGUAGE_LABEL, type CustomerCopy, type UiLang } from "@/lib/i18n/customer";
 import { timeOnly } from "@/lib/format";
 import styles from "./customer-header.module.css";
 
 interface Props {
   copy: CustomerCopy;
+  /** Conversation language. */
   lang: Language;
+  /** Language of the labels: the conversation language, or English in the reviewer view. */
+  ui: UiLang;
   onLang: (lang: Language) => void;
+  reviewEn: boolean;
+  onReview: () => void;
   expiresAt: string | null;
   expiringSoon: boolean;
   onLogout?: () => void;
@@ -18,10 +23,10 @@ interface Props {
 
 const LANGS: Language[] = ["es", "pt"];
 
-export function CustomerHeader({ copy, lang, onLang, expiresAt, expiringSoon, onLogout }: Props) {
+export function CustomerHeader({ copy, lang, ui, onLang, reviewEn, onReview, expiresAt, expiringSoon, onLogout }: Props) {
   return (
     <header className={styles.header}>
-      <Wordmark size="sm" label={lang === "pt" ? "Cautela, início" : "Cautela, inicio"} />
+      <Wordmark size="sm" label={ui === "en" ? "Cautela, home" : lang === "pt" ? "Cautela, início" : "Cautela, inicio"} />
       <div className={styles.meta}>
         <span className={styles.badge}>
           <Flask aria-hidden />
@@ -30,7 +35,12 @@ export function CustomerHeader({ copy, lang, onLang, expiresAt, expiringSoon, on
         {expiresAt ? (
           <span className={`${styles.badge} ${expiringSoon ? styles.soon : ""} num`}>
             <LockSimple aria-hidden />
-            {copy.testSession} · {copy.expires(timeOnly(expiresAt, lang))}
+            {copy.testSession} · {copy.expires(timeOnly(expiresAt, ui))}
+          </span>
+        ) : null}
+        {reviewEn ? (
+          <span className={`${styles.badge} ${styles.reviewNote}`} lang="en">
+            Reviewer view: labels in English, conversation in {LANGUAGE_LABEL[lang]}
           </span>
         ) : null}
         <span className="sr-only" role="status">{expiresAt && expiringSoon ? copy.expiringSoon : ""}</span>
@@ -44,6 +54,12 @@ export function CustomerHeader({ copy, lang, onLang, expiresAt, expiringSoon, on
             </button>
           ))}
         </div>
+        <button type="button" className={styles.review} aria-pressed={reviewEn} onClick={onReview} lang="en"
+          title="Reviewer view: show the labels in English; the conversation keeps its language">
+          <Eyeglasses aria-hidden />
+          <span>EN</span>
+          <span className="sr-only"> reviewer view, labels in English</span>
+        </button>
         {onLogout ? (
           <button type="button" className={styles.logout} onClick={onLogout}>
             <SignOut aria-hidden />
