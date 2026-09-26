@@ -241,7 +241,7 @@ Gold is built from silver inside the same warehouse, in the `gold` schema. Each 
 | `demand_by_day` | aggregate | analytics | contacts by source, workflow, country, channel and calendar day |
 | `workflow_selection` | view | analytics | one complaint type with volume, share and outcomes, ranked by volume |
 
-The agent tools in `agent/tools/repository.py` still read silver; pointing them at these tables is the AI engineering team's call.
+The agent tools in `agent/tools/repository.py` read `customer_profile`, `customer_transactions` and `dispute_policy_inputs`, and refuse to start when gold is missing or older than silver. They still read `silver.customers` for the identity directory and `silver.products` for products: a product-level serving table (number, currency, status) is the missing piece.
 
 **Workflow label.** `is_unrecognized_charge` matches the literal "Cargo no reconocido" in `category` or `subcategory`. The organizer data puts it in `subcategory` under category "Transactions" (12,297 complaints); the fixture puts it in `category`. The 1,283 "Transactions" complaints without a subcategory are not counted, since nothing says what they are.
 

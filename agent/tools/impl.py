@@ -75,13 +75,14 @@ def get_customer_profile(ctx: ToolContext, _: c.GetCustomerProfileInput) -> c.Cu
     customer = ctx.call(lambda: ctx.repo.get_customer(ctx.customer_id))
     if customer is None:
         raise ToolFailure("not_found")
+    contact = ctx.repo.contact_of(ctx.customer_id) or {}  # identity directory, never faulted
     products = ctx.call(lambda: ctx.repo.products_of(ctx.customer_id))
     return c.CustomerProfile(
         customer_ref=ctx.session.customer_ref,
         display_name=f"{customer['first_name']} {str(customer['last_name'])[:1]}.",
-        document_masked=document_hint(customer["document_number"]),
-        email_masked=mask_field("email", customer.get("email")),
-        phone_masked=mask_field("mobile_phone", customer.get("mobile_phone")),
+        document_masked=document_hint(contact.get("document_number") or ""),
+        email_masked=mask_field("email", contact.get("email")),
+        phone_masked=mask_field("mobile_phone", contact.get("mobile_phone")),
         country=customer.get("country"), segment=customer.get("segment"),
         products=[c.ProductSummary(product_id=p["product_id"], product_type=p["product_type"],
                                    product_number_masked=mask_digits_keep_last(str(p["product_number"])),

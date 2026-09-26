@@ -50,7 +50,7 @@ Every step writes an execution record (trace id, inputs, rule ids, tool calls, o
 
 ### 3.2 Serving data and mock banking tools (`agent/tools/`)
 
-These are mock tools over the silver tables (read-only connection; gold serving views are still a placeholder). Writes go to a separate sandbox case store and never modify source data. Each tool has a documented contract (input schema, output schema, errors, side effects) exported to `docs/schemas/tools/`. Every call goes through one entry point, `agent/service.py`. Details and the reasons behind each control: [agent/README.md](../agent/README.md).
+These are mock tools over the gold serving tables (`gold.customer_profile`, `gold.customer_transactions`, `gold.dispute_policy_inputs`; read-only connection). The identity directory and products are still read from silver: gold keeps no contact details by design and has no product-level table yet. Writes go to a separate sandbox case store and never modify source data. Each tool has a documented contract (input schema, output schema, errors, side effects) exported to `docs/schemas/tools/`. Every call goes through one entry point, `agent/service.py`. Details and the reasons behind each control: [agent/README.md](../agent/README.md).
 
 | Tool | Kind | Notes |
 |---|---|---|

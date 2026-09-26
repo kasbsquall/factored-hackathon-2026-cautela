@@ -6,7 +6,7 @@ moving any enforcement. The language model is treated as untrusted: it proposes 
 
 ```bash
 uv sync
-uv run pytest tests/agent                     # 178 tests on the synthetic fixture warehouse, about 40 s
+uv run pytest tests/agent                     # 236 tests on the synthetic fixture warehouse (gold built on a copy)
 uv run python -m agent.tools.export_schemas   # rewrite docs/schemas/tools/*.json from the contracts
 ```
 
@@ -24,7 +24,7 @@ Generate one with `python -c "import secrets; print(secrets.token_urlsafe(48))"`
 | `security/pii.py` | PII masking for anything that leaves the service |
 | `policy/rules.yaml`, `policy/engine.py` | Deterministic rules with ids and sources; `narrow()` for model proposals |
 | `tools/contracts.py`, `tools/registry.py` | Pydantic input and output contracts, error codes, the tool allowlist |
-| `tools/impl.py`, `tools/repository.py` | Tool logic over the read-only silver warehouse and a sandbox case store |
+| `tools/impl.py`, `tools/repository.py` | Tool logic over the read-only gold serving tables and a sandbox case store |
 | `tools/ranking.py` | `CandidateRanker` protocol, rule-based default ranker, ambiguity rule |
 | `tools/faults.py` | Failure injection and bounded retries with backoff |
 | `service.py` | `ToolService`: the single entry point (guard, execute, verify, audit) |
@@ -91,6 +91,24 @@ date, which is never later than the legal anchor; the approximation can only sen
 days skip weekends but not public holidays.
 
 Decreto 587 covers payment reversal for non-face-to-face sales, so it is applied to the Web and App channels only.
+
+## Data source: gold serving tables
+
+`WarehouseRepository` reads the gold layer built by `data_engineering/gold` (`make gold`), through a read-only
+connection. Contracts, permissions and fault behavior are the same as when it read silver; only the tables changed.
+
+| Read | Table | Used by |
+|---|---|---|
+| Customer profile (names, country, segment, status) | `gold.customer_profile` | `get_customer_profile`, policy country, name masking |
+| Transactions, transaction ownership | `gold.customer_transactions` | `list_recent_transactions`, `get_transaction`, `find_candidate_charges`, the ownership check |
+| Policy facts for one transaction | `gold.dispute_policy_inputs` | `get_dispute_policy` and the guard that gates writes |
+| Identity directory (document, phone, email) | `silver.customers` | login and the masked hints in the profile; gold leaves contact details out on purpose |
+| Products (number, currency, status) and product ownership | `silver.products` | `get_customer_profile`, `block_card`; gold has no product-level serving table yet |
+
+The repository refuses to start (`WarehouseNotReady`) when the gold serving tables are missing or the latest gold
+run is older than the latest silver run, so a tool never answers from stale rows. After `make pipeline`, run
+`make gold` (with the same `TARGET`). `tests/agent/test_gold_source.py` checks that every gold read returns what the
+silver read it replaced returned, and that a row missing from gold is missing for the tools.
 
 ## Tools
 
@@ -264,7 +282,8 @@ measurement, 20 model-backed turns per language, not a statistical evaluation:
   identity provider and OTP channel, and throttling per source address as well as per document.
 - The sandbox case store is a single DuckDB file; concurrent writers are safe through unique constraints, but a
   multi-process deployment needs the bank's case system or a server database.
-- The warehouse is read through the silver tables; gold serving views are still a placeholder.
+- Tools read the gold serving tables (see "Data source" above). Products and the identity directory still come
+  from silver: gold has no product-level serving table, and it leaves contact details out on purpose.
 - A duplicated document number (the fixture has two) never authenticates; the real remedy is a data fix upstream.
 - Amounts with dot thousands separators ("2.140.000") look like dotted document numbers. The masker keeps a
   number when a currency code, symbol or amount word sits right next to it, or when it has decimals, and masks it

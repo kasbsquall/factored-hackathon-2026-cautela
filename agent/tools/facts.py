@@ -25,7 +25,7 @@ def policy_decision(repo: WarehouseRepository, cases: CaseStore, customer_id: st
     customer = repo.get_customer(customer_id, faulted=False) or {}
     tx_facts = None
     if transaction_id:
-        tx = repo.get_transaction(transaction_id, faulted=False)
+        tx = repo.policy_inputs(transaction_id)
         if tx and tx["customer_id"] == customer_id:
             tx_facts = TransactionFacts(**{k: (float(v) if k in {"amount", "amount_usd", "fraud_score"}
                                                 and v is not None else v) for k, v in tx.items()})

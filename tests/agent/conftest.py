@@ -7,6 +7,7 @@ random test value generated per run; no real secret is read.
 from __future__ import annotations
 
 import secrets
+import shutil
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -20,6 +21,7 @@ from agent.security.session import IdentityService, MockChannel
 from agent.service import ToolService
 from agent.tools.faults import FaultInjector
 from agent.tools.repository import CaseStore, WarehouseRepository
+from data_engineering.gold.run import run_gold
 
 NOW = datetime(2026, 6, 1, 12, 0, tzinfo=UTC)
 
@@ -62,8 +64,13 @@ def _query(db: Path, sql: str, params: list | None = None) -> list[dict]:
 
 
 @pytest.fixture(scope="session")
-def warehouse(full_run) -> Path:
-    return full_run[1]
+def warehouse(full_run, tmp_path_factory) -> Path:
+    """The fixture warehouse with gold built on a copy: the tools read gold, and the shared silver warehouse other
+    tests read is never modified."""
+    db = tmp_path_factory.mktemp("agent_gold") / "warehouse.duckdb"
+    shutil.copy2(full_run[1], db)
+    run_gold(db, reports_dir=db.parent / "reports")
+    return db
 
 
 @pytest.fixture(scope="session")

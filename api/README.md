@@ -7,7 +7,7 @@ tests exercise.
 
 ```bash
 uv sync
-make fixture pipeline                  # synthetic warehouse at data/warehouse.duckdb (team-generated, seed 42)
+make fixture pipeline gold             # synthetic warehouse at data/warehouse.duckdb (team-generated, seed 42)
 uv run python -m api                   # http://127.0.0.1:8000, docs at /docs
 uv run python -m api.export_openapi    # rewrite docs/schemas/openapi.json after changing a route or model
 uv run python -m api.seed              # rewrite api/seed/demo_customers.json from the fixture

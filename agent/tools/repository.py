@@ -1,9 +1,22 @@
 """Data access for the tools.
 
-WarehouseRepository reads the silver tables through a read-only DuckDB connection, so no tool can modify source
-data even by mistake. CaseStore is a separate sandbox database (a file or in memory) that holds the only writes
-the service makes: dispute cases and card blocks. Source rows are never updated; a card's effective status is
-the source status overlaid with any sandbox block.
+WarehouseRepository reads the gold serving tables (data_engineering/gold) through a read-only DuckDB connection, so
+no tool can modify source data even by mistake:
+
+* ``gold.customer_profile``: the customer profile (names, country, segment, status);
+* ``gold.customer_transactions``: transactions with the product they moved, for every transaction read and for
+  transaction ownership;
+* ``gold.dispute_policy_inputs``: the transaction facts the policy engine evaluates.
+
+Two reads stay on silver, by design of the gold layer: the identity directory (document number, phone, email),
+which gold leaves out on purpose so that only the identity service holds contact details, and products (number,
+currency, status), which have no gold serving table yet. Both are marked below.
+
+The repository refuses to start on a warehouse without the gold serving tables, or whose latest gold run is older
+than its latest silver run: tools would otherwise answer from stale or missing rows. CaseStore is a separate
+sandbox database (a file or in memory) that holds the only writes the service makes: dispute cases and card
+blocks. Source rows are never updated; a card's effective status is the source status overlaid with any sandbox
+block.
 """
 
 from __future__ import annotations
@@ -18,6 +31,11 @@ import duckdb
 from agent.security.session import DirectoryEntry, normalize_document
 from agent.tools.faults import FaultInjector, FaultMode
 
+GOLD_SERVING = ("customer_profile", "customer_transactions", "dispute_policy_inputs")
+PROFILE_COLUMNS = ("customer_id", "first_name", "last_name", "country", "state", "city", "segment", "customer_status",
+                   "registration_date")
+POLICY_COLUMNS = ("transaction_id", "customer_id", "transaction_date", "amount", "currency", "amount_usd", "channel",
+                  "transaction_type", "transaction_status", "fraud_score", "is_fraud", "product_type")
 TX_COLUMNS = ("transaction_id", "transaction_date", "amount", "currency", "amount_usd", "merchant_name", "channel",
               "transaction_type", "transaction_status", "product_id", "customer_id", "transaction_country",
               "transaction_city", "fraud_score", "is_fraud")
@@ -28,9 +46,32 @@ def _rows(cursor: duckdb.DuckDBPyConnection) -> list[dict[str, Any]]:
     return [dict(zip(names, row, strict=True)) for row in cursor.fetchall()]
 
 
+class WarehouseNotReady(RuntimeError):
+    """The warehouse has no gold serving tables, or gold is older than silver."""
+
+
+def check_gold_ready(con: duckdb.DuckDBPyConnection) -> None:
+    present = {r[0] for r in con.execute(
+        "SELECT table_name FROM information_schema.tables WHERE table_schema = 'gold'").fetchall()}
+    missing = [t for t in GOLD_SERVING if t not in present]
+    if missing:
+        raise WarehouseNotReady(f"gold serving tables missing ({', '.join(missing)}): build them with "
+                                "`uv run python -m data_engineering.gold.run --target <warehouse>` (make gold)")
+    latest = con.execute(
+        "SELECT (SELECT max(started_at) FROM control.runs WHERE status = 'succeeded'), "
+        "(SELECT max(started_at) FROM control.gold_runs WHERE status = 'succeeded')").fetchone()
+    if latest[0] is not None and (latest[1] is None or latest[1] < latest[0]):
+        raise WarehouseNotReady("gold is older than the latest silver run: rebuild it with make gold")
+
+
 class WarehouseRepository:
     def __init__(self, db_path: str | Path, faults: FaultInjector | None = None) -> None:
         self._con = duckdb.connect(str(db_path), read_only=True)
+        try:
+            check_gold_ready(self._con)
+        except BaseException:
+            self._con.close()
+            raise
         self.faults = faults or FaultInjector()
 
     def close(self) -> None:
@@ -41,7 +82,7 @@ class WarehouseRepository:
             self.faults.check("warehouse.read")
         return _rows(self._con.cursor().execute(sql, params))
 
-    # ---- identity directory (never faulted: login is a separate service) ------------------------------
+    # ---- identity directory: silver, never faulted (login is a separate service; gold keeps no contact data) ----
     def lookup_by_document(self, document_number: str) -> DirectoryEntry | None:
         rows = self._query(
             "SELECT customer_id, mobile_phone, email, customer_status FROM silver.customers "
@@ -53,20 +94,28 @@ class WarehouseRepository:
         r = rows[0]
         return DirectoryEntry(r["customer_id"], r["mobile_phone"], r["email"], r["customer_status"])
 
+    def contact_of(self, customer_id: str) -> dict[str, Any] | None:
+        """Document number, email and phone of one customer, for the masked hints in the profile."""
+        rows = self._query("SELECT document_number, email, mobile_phone FROM silver.customers WHERE customer_id = ?",
+                           [customer_id], faulted=False)
+        return rows[0] if rows else None
+
     # ---- ownership lookups for the permission layer (never faulted) -------------------------------------
     def owner_of(self, kind: str, record_id: str) -> str | None:
-        table = {"transaction": ("transactions", "transaction_id"), "product": ("products", "product_id")}.get(kind)
+        table = {"transaction": ("gold.customer_transactions", "transaction_id"),
+                 "product": ("silver.products", "product_id")}.get(kind)  # products: no gold serving table yet
         if table is None:
             return None
-        rows = self._query(f"SELECT customer_id FROM silver.{table[0]} WHERE {table[1]} = ?", [record_id],
-                           faulted=False)
+        rows = self._query(f"SELECT customer_id FROM {table[0]} WHERE {table[1]} = ?", [record_id], faulted=False)
         return rows[0]["customer_id"] if rows else None
 
     # ---- tool reads (faulted by default; policy fact lookups pass faulted=False) ---------------
     def get_customer(self, customer_id: str, faulted: bool = True) -> dict[str, Any] | None:
-        rows = self._query("SELECT * FROM silver.customers WHERE customer_id = ?", [customer_id], faulted)
+        rows = self._query(f"SELECT {', '.join(PROFILE_COLUMNS)} FROM gold.customer_profile WHERE customer_id = ?",
+                           [customer_id], faulted)
         return rows[0] if rows else None
 
+    # products stay on silver: gold has no product-level serving table (number, currency, status per product)
     def products_of(self, customer_id: str) -> list[dict[str, Any]]:
         return self._query("SELECT product_id, product_type, product_number, currency, product_status "
                            "FROM silver.products WHERE customer_id = ? ORDER BY product_id", [customer_id])
@@ -77,9 +126,14 @@ class WarehouseRepository:
         return rows[0] if rows else None
 
     def get_transaction(self, transaction_id: str, faulted: bool = True) -> dict[str, Any] | None:
-        rows = self._query(
-            f"SELECT t.{', t.'.join(TX_COLUMNS)}, p.product_type FROM silver.transactions t "
-            "LEFT JOIN silver.products p USING (product_id) WHERE t.transaction_id = ?", [transaction_id], faulted)
+        rows = self._query(f"SELECT {', '.join(TX_COLUMNS)}, product_type FROM gold.customer_transactions "
+                           "WHERE transaction_id = ?", [transaction_id], faulted)
+        return rows[0] if rows else None
+
+    def policy_inputs(self, transaction_id: str) -> dict[str, Any] | None:
+        """The facts the policy engine reads for one transaction (policy lookups are never faulted)."""
+        rows = self._query(f"SELECT {', '.join(POLICY_COLUMNS)} FROM gold.dispute_policy_inputs "
+                           "WHERE transaction_id = ?", [transaction_id], faulted=False)
         return rows[0] if rows else None
 
     def transactions_of(self, customer_id: str, start: datetime, end: datetime, limit: int,
@@ -87,7 +141,7 @@ class WarehouseRepository:
         """Own transactions in [start, end], newest first, at most `limit` rows."""
         excluded = list(exclude_types) or ["__none__"]
         return self._query(
-            f"SELECT {', '.join(TX_COLUMNS)} FROM silver.transactions WHERE customer_id = ? "
+            f"SELECT {', '.join(TX_COLUMNS)} FROM gold.customer_transactions WHERE customer_id = ? "
             "AND transaction_date BETWEEN ? AND ? AND transaction_type NOT IN (SELECT unnest(?)) "
             "ORDER BY transaction_date DESC, transaction_id LIMIT ?",
             [customer_id, start.replace(tzinfo=None), end.replace(tzinfo=None), excluded, limit],
