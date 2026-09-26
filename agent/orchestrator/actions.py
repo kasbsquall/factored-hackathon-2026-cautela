@@ -37,8 +37,8 @@ def usd_fact(facts: dict[str, Any]) -> str:
         return "USD amount unknown"
     if not fx:
         return f"USD amount {usd:.2f}"
-    return (f"USD amount {usd:.2f} (not in the data; converted from {fx['currency']} at the fixed synthetic rate "
-            f"{fx['rate']} per USD of {fx['reference_date']}, {fx['rule_id']})")
+    return (f"USD amount {usd:.2f} (not in the data; converted from {fx['currency']} at the dataset's fixed rate "
+            f"{fx['rate']} per USD, {fx['rule_id']})")
 
 
 class ActionsMixin(StepsMixin):

@@ -220,9 +220,9 @@ def _evaluate_transaction(b: _Builder, tx: TransactionFacts, country: str | None
     if fx is not None:
         rule = rules["fx_rates"]
         b.facts["amount_usd_fx"] = {"rule_id": rule["id"], "currency": tx.currency, "rate": fx["rate"],
-                                    "reference_date": rule["reference_date"]}
+                                    "basis": rule["basis"]}
         b.fire(rule, f"no USD amount in the data: USD {usd:.2f} from {tx.amount:.2f} {tx.currency} at the fixed "
-                     f"rate {fx['rate']} {tx.currency} per USD of {rule['reference_date']} ({fx['publisher']})")
+                     f"rate {fx['rate']} {tx.currency} per USD ({rule['basis']})")
     if usd is None:
         b.fire(rules["missing_data"], "USD amount unknown, threshold cannot be applied", "policy_requires_review")
     elif usd >= rules["amount_review"]["threshold_usd"]:

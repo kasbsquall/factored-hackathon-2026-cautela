@@ -1,4 +1,5 @@
-"""SYN-FX-001: fixed official rates let the USD 450 threshold apply to local-currency charges with no amount_usd."""
+"""SYN-FX-001: the dataset's own fixed rates let the USD 450 threshold apply to local-currency charges with no
+amount_usd. The official central-bank rates stay in the file as a documented alternative that the engine never uses."""
 
 from __future__ import annotations
 
@@ -25,27 +26,37 @@ def decide(country: str, transaction: TransactionFacts):
     return evaluate(PolicyInput(customer_country=country, as_of=AS_OF, transaction=transaction))
 
 
-def test_the_rule_is_labeled_dated_and_sourced():
+def test_the_rule_is_labeled_and_uses_the_dataset_convention():
     rule = RULES["fx_rates"]
     assert rule["id"] == "SYN-FX-001" and rule["source"] == "synthetic_policy"
-    assert rule["verification"] == "verified_primary" and rule["reference_date"] == "2026-09-25"
-    assert set(RATES) == {"MXN", "COP", "ARS", "BRL"}
+    assert rule["verification"] == "measured_in_data" and "dataset" in rule["basis"]
+    assert {k: v["rate"] for k, v in RATES.items()} == {"COP": 4000, "ARS": 350, "MXN": 17}
     for entry in RATES.values():
+        assert entry["evidence"]
+
+
+def test_official_rates_are_documented_but_not_used():
+    alt = RULES["fx_rates"]["alternative_official_rates"]
+    assert alt["used"] is False and alt["verification"] == "verified_primary" and alt["reference_date"] == "2026-09-25"
+    assert set(alt["units_per_usd"]) == {"MXN", "COP", "ARS", "BRL"}
+    for entry in alt["units_per_usd"].values():
         assert entry["rate"] > 0 and entry["url"].startswith("https://") and entry["publisher"]
+    d = decide("Argentina", tx(amount=350 * 500, currency="ARS"))  # USD 500 by the dataset, about 115 officially
+    assert d.facts["amount_usd"] == 500.0 and "amount_above_threshold" in d.escalation_reasons
 
 
-@pytest.mark.parametrize("currency", ["MXN", "COP", "ARS", "BRL"])
+@pytest.mark.parametrize("currency", ["MXN", "COP", "ARS"])
 def test_a_listed_currency_without_amount_usd_is_converted_at_its_fixed_rate(currency):
     amount = 100 * RATES[currency]["rate"]  # exactly USD 100
     d = decide("Mexico", tx(amount=amount, currency=currency))
     assert "SYN-FX-001" in d.rule_ids and "SYN-DATA-001" not in d.rule_ids
     assert d.facts["amount_usd"] == pytest.approx(100.0)
     assert d.facts["amount_usd_fx"] == {"rule_id": "SYN-FX-001", "currency": currency,
-                                        "rate": RATES[currency]["rate"], "reference_date": "2026-09-25"}
+                                        "rate": RATES[currency]["rate"], "basis": RULES["fx_rates"]["basis"]}
     assert not d.must_escalate and d.allows("open_dispute_case")
     hit = next(h for h in d.rules_fired if h.rule_id == "SYN-FX-001")
-    assert hit.source == "synthetic_policy" and hit.verification == "verified_primary"
-    assert RATES[currency]["publisher"] in hit.message
+    assert hit.source == "synthetic_policy" and hit.verification == "measured_in_data"
+    assert "dataset" in hit.message and f"{RATES[currency]['rate']} {currency} per USD" in hit.message
 
 
 @pytest.mark.parametrize(("usd", "escalates"), [(449.99, False), (450.0, True), (1200.0, True)])
@@ -66,7 +77,7 @@ def test_a_usd_charge_needs_no_conversion():
     assert usd_amount(tx(amount=80.0, currency="USD"), RULES) == (80.0, None)
 
 
-@pytest.mark.parametrize("currency", ["EUR", "CLP", None])
+@pytest.mark.parametrize("currency", ["EUR", "CLP", "BRL", None])
 def test_an_unknown_currency_keeps_syn_data_001(currency):
     d = decide("Mexico", tx(amount=1000.0, currency=currency))
     assert "SYN-DATA-001" in d.rule_ids and "SYN-FX-001" not in d.rule_ids
@@ -74,9 +85,9 @@ def test_an_unknown_currency_keeps_syn_data_001(currency):
 
 
 def test_the_handoff_fact_says_the_usd_amount_was_converted():
-    d = decide("Mexico", tx(amount=1771.0, currency="MXN"))
-    assert usd_fact(d.facts) == ("USD amount 100.00 (not in the data; converted from MXN at the fixed synthetic rate "
-                                 "17.71 per USD of 2026-09-25, SYN-FX-001)")
+    d = decide("Mexico", tx(amount=1700.0, currency="MXN"))
+    assert usd_fact(d.facts) == ("USD amount 100.00 (not in the data; converted from MXN at the dataset's fixed rate "
+                                 "17 per USD, SYN-FX-001)")
     assert usd_fact({"amount_usd": 12.5}) == "USD amount 12.50"
     assert usd_fact({"amount_usd": None}) == "USD amount unknown"
 

@@ -33,7 +33,7 @@ export const RULES: Record<string, { source: "legal" | "synthetic_policy"; summa
   "SYN-STATUS-003": { source: "synthetic_policy", summary: "Reversed: already returned, explain instead" },
   "SYN-AMOUNT-001": { source: "synthetic_policy", summary: "USD 450 or more goes to human review" },
   "SYN-DATA-001": { source: "synthetic_policy", summary: "USD amount not establishable or required field missing: human review" },
-  "SYN-FX-001": { source: "synthetic_policy", summary: "No USD amount in the data: fixed official rates of 2026-09-25 (MXN, COP, ARS, BRL)" },
+  "SYN-FX-001": { source: "synthetic_policy", summary: "No USD amount in the data: the dataset's own fixed rates (COP 4000, ARS 350, MXN 17 per USD)" },
   "SYN-FRAUD-001": { source: "synthetic_policy", summary: "Fraud score 50 or more, or fraud flag: escalate, offer card block" },
   "SYN-CONFIRM-001": { source: "synthetic_policy", summary: "Writes need an explicit confirmation bound to the arguments" },
   "SYN-SCOPE-001": { source: "synthetic_policy", summary: "Only unrecognized-charge intake; never moves money" },
