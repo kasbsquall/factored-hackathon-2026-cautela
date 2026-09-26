@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   agentRules: false,
   devIndicators: false,
+  // The production build type-checks the app only. Tests read shared fixtures outside app/ (docs/format-vectors.json)
+  // that a deploy shipping just app/ does not have; `npm run typecheck` still checks them locally.
+  typescript: { tsconfigPath: "tsconfig.build.json" },
   async headers() {
     return [
       {
