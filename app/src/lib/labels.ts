@@ -19,7 +19,7 @@ export const ACTION_STATUS: Record<ActionStatus, { label: string; kind: StatusKi
 };
 
 /**
- * Rule catalog, copied from agent/policy/rules.yaml (version 2026-09-25.1). Only the source type and a short
+ * Rule catalog, copied from agent/policy/rules.yaml (version 2026-09-26.1). Only the source type and a short
  * summary; the yaml stays the source of truth.
  */
 export const RULES: Record<string, { source: "legal" | "synthetic_policy"; summary: string }> = {
@@ -32,7 +32,8 @@ export const RULES: Record<string, { source: "legal" | "synthetic_policy"; summa
   "SYN-STATUS-002": { source: "synthetic_policy", summary: "Declined: no money moved, explain instead" },
   "SYN-STATUS-003": { source: "synthetic_policy", summary: "Reversed: already returned, explain instead" },
   "SYN-AMOUNT-001": { source: "synthetic_policy", summary: "USD 450 or more goes to human review" },
-  "SYN-DATA-001": { source: "synthetic_policy", summary: "Missing USD amount or required field: human review" },
+  "SYN-DATA-001": { source: "synthetic_policy", summary: "USD amount not establishable or required field missing: human review" },
+  "SYN-FX-001": { source: "synthetic_policy", summary: "No USD amount in the data: fixed official rates of 2026-09-25 (MXN, COP, ARS, BRL)" },
   "SYN-FRAUD-001": { source: "synthetic_policy", summary: "Fraud score 50 or more, or fraud flag: escalate, offer card block" },
   "SYN-CONFIRM-001": { source: "synthetic_policy", summary: "Writes need an explicit confirmation bound to the arguments" },
   "SYN-SCOPE-001": { source: "synthetic_policy", summary: "Only unrecognized-charge intake; never moves money" },

@@ -3,7 +3,7 @@
 import { CalendarBlank, Info, Question } from "@phosphor-icons/react";
 import type { Language, OptionView } from "@/lib/api/types";
 import type { CustomerCopy } from "@/lib/i18n/customer";
-import { labelAmount, parseTxLabel } from "@/lib/format";
+import { labelAmount, labelDate, parseTxLabel } from "@/lib/format";
 import type { Entry } from "./flow-types";
 import { ChargeMeta, ReasonChips, chargeAmount } from "./charge-facts";
 import styles from "./option-list.module.css";
@@ -35,7 +35,7 @@ function Candidate({ option, copy, lang }: { option: OptionView; copy: CustomerC
     <>
       <span className={`${styles.merchant} mono`}>{parts.who}</span>
       <span className={`${styles.amount} mono`}>{labelAmount(parts, lang)}</span>
-      <span className={styles.when}><CalendarBlank aria-hidden />{parts.when}</span>
+      <span className={styles.when}><CalendarBlank aria-hidden />{labelDate(parts, lang)}</span>
     </>
   );
 }

@@ -1,4 +1,7 @@
-import { dateOnly, labelAmount, money, parseTxLabel } from "@/lib/format";
+import { dateOnly, labelAmount, labelDate, labelText, money, parseTxLabel } from "@/lib/format";
+import vectors from "../../../docs/format-vectors.json";
+
+type Lang = "es" | "pt";
 import { summarize } from "@/lib/audit";
 import { MockCautelaApi } from "@/lib/api/mock/mock-api";
 
@@ -18,6 +21,23 @@ describe("format", () => {
     expect(labelAmount(label!, "es")).toBe("MXN 5,335.32");
     expect(parseTxLabel("**** 4417")).toBeNull();
     expect(labelAmount(parseTxLabel("30/05/2026, Tienda, ?")!, "es")).toBe("?");
+  });
+
+  // Same vectors as tests/agent/test_fmt.py: reply bubbles (service) and cards (app) must print the same text.
+  it.each(vectors.money)("formats $amount $currency in $lang like the service's replies", (v) => {
+    expect(money(v.amount, v.currency, v.lang as Lang)).toBe(v.text);
+  });
+
+  it.each(vectors.date)("formats $value in $lang like the service's replies", (v) => {
+    expect(dateOnly(v.value, v.lang as Lang)).toBe(v.text);
+  });
+
+  it.each(vectors.label)("prints label $label in $lang like the service's replies", (v) => {
+    expect(labelText(v.label, v.lang as Lang)).toBe(v.text);
+  });
+
+  it("keeps a label date of another shape as sent", () => {
+    expect(labelDate({ when: "ayer", who: "x", amount: 1, currency: "USD", rawAmount: "1 USD" }, "es")).toBe("ayer");
   });
 
   it("sums LLM cost from the priced calls of a trace", async () => {

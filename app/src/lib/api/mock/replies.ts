@@ -2,6 +2,7 @@
  * Reply templates for mock mode, copied from agent/orchestrator/replies.py (TEMPLATES, REASONS, REVIEW,
  * CASE_NOTE) so a mock turn reads like a live one with no model configured. Keep them in sync by hand.
  */
+import { labelText } from "@/lib/format";
 import type { Language, TransferReasonCode } from "../types";
 
 type Fields = Record<string, string>;
@@ -80,7 +81,9 @@ function fill(template: string, fields: Fields): string {
 }
 
 export function reply(kind: keyof typeof TEMPLATES, lang: Language, fields: Fields = {}): string {
-  return fill(TEMPLATES[kind][lang], fields);
+  // Like the service, a charge label reaches reply text in the customer's format; API fields keep the machine form.
+  const shown = fields.label === undefined ? fields : { ...fields, label: labelText(fields.label, lang) };
+  return fill(TEMPLATES[kind][lang], shown);
 }
 
 export function reasonText(code: TransferReasonCode, lang: Language): string {

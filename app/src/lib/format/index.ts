@@ -9,7 +9,12 @@ function locale(lang: Language | "en", currency?: string | null): string {
   return (currency && ES_LOCALE[currency]) || "es-419";
 }
 
-/** "COP 48.900", "MXN 9,840.00". Unknown amounts return an empty string. */
+/**
+ * "COP 48.900", "MXN 9,840.00". Unknown amounts return an empty string. Convention (the service writes reply text
+ * the same way, agent/orchestrator/fmt.py; both are tested on docs/format-vectors.json): Spanish uses the number
+ * format of the currency's country (COP and ARS 1.234,56; MXN, USD and others 1,234.56), Portuguese the Brazilian
+ * one for every code; COP without decimals.
+ */
 export function money(amount: number | null, currency: string | null, lang: Language | "en"): string {
   if (amount === null || currency === null) return "";
   const digits = ZERO_DECIMALS.has(currency) ? 0 : 2;
@@ -100,7 +105,20 @@ export function parseTxLabel(label: string): TxLabel | null {
   };
 }
 
+/** Date of a parsed label ("30/05/2026") in the customer's format, or the service's text when it is another shape. */
+export function labelDate(label: TxLabel, lang: Language | "en"): string {
+  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(label.when);
+  return match ? dateOnly(`${match[3]}-${match[2]}-${match[1]}`, lang) : label.when;
+}
+
 /** Amount of a parsed label in the customer's locale, or the service's text when it could not be parsed. */
 export function labelAmount(label: TxLabel, lang: Language | "en"): string {
   return label.amount === null ? label.rawAmount : money(label.amount, label.currency, lang);
+}
+
+/** A service label as reply text reads it: "30 may 2026, Marketplace Uno, MXN 5,335.32" (agent/orchestrator/fmt.py). */
+export function labelText(label: string, lang: Language): string {
+  const parts = parseTxLabel(label);
+  if (!parts || parts.amount === null || !/^\d{2}\/\d{2}\/\d{4}$/.test(parts.when)) return label;
+  return `${labelDate(parts, lang)}, ${parts.who}, ${labelAmount(parts, lang)}`;
 }

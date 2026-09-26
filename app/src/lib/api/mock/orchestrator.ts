@@ -7,6 +7,7 @@ import { ApiError } from "../client";
 import type { CaseView, Language, MatchReason, OptionView, TransactionView, TransferReasonCode, TurnResponse, TurnStage } from "../types";
 import type { MockCustomer } from "./fixtures/customers";
 import { chargeOf, matchReasons, reason } from "./evidence";
+import { labelText } from "@/lib/format";
 import { caseNote, reasonText, reply, reviewNote } from "./replies";
 import { hex, intentOf, randomLatency } from "./util";
 
@@ -215,7 +216,7 @@ export class MockOrchestrator {
     turn.tool("get_customer_profile", {});
     const lines = conv.options.map((o) => {
       const t = transactions.find((x) => x.transaction_id === o.transactionId);
-      return `${o.index}) ${t ? txLabel(t) : o.transactionId}`;
+      return `${o.index}) ${t ? labelText(txLabel(t), conv.language) : o.transactionId}`;
     });
     return this.respond(conv, turn, "clarify_options", reply("clarify_options", conv.language, { options: lines.join("\n") }));
   }

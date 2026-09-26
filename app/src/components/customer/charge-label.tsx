@@ -1,7 +1,7 @@
 import { CalendarBlank } from "@phosphor-icons/react";
 import type { ChargeView, Language } from "@/lib/api/types";
 import type { CustomerCopy } from "@/lib/i18n/customer";
-import { labelAmount, parseTxLabel } from "@/lib/format";
+import { labelAmount, labelDate, parseTxLabel } from "@/lib/format";
 import { ChargeMeta, chargeAmount } from "./charge-facts";
 import styles from "./confirm-card.module.css";
 
@@ -24,7 +24,7 @@ export function ChargeLabel({ label, lang }: { label: string; lang: Language }) 
     <div className={styles.charge}>
       <span className="mono">{parts.who}</span>
       <span className={`${styles.chargeAmount} mono`}>{labelAmount(parts, lang)}</span>
-      <span className={styles.chargeWhen}><CalendarBlank aria-hidden />{parts.when}</span>
+      <span className={styles.chargeWhen}><CalendarBlank aria-hidden />{labelDate(parts, lang)}</span>
     </div>
   );
 }
@@ -47,7 +47,7 @@ export function ChargeText({ label, lang }: { label: string; lang: Language }) {
   if (!parts) return <span className="mono">{label}</span>;
   return (
     <span>
-      {parts.who} · <span className="mono" style={{ whiteSpace: "nowrap" }}>{labelAmount(parts, lang)}</span> · <span className="num">{parts.when}</span>
+      {parts.who} · <span className="mono" style={{ whiteSpace: "nowrap" }}>{labelAmount(parts, lang)}</span> · <span className="num">{labelDate(parts, lang)}</span>
     </span>
   );
 }
