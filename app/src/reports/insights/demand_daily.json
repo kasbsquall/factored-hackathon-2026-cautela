@@ -1,0 +1,67 @@
+{
+ "title": "Contacts per calendar day, zero days included",
+ "unit": "contacts per day",
+ "denominator": "calendar days in the window",
+ "provenance": {
+  "warehouse": "warehouse_real.duckdb",
+  "source_is_fixture": false,
+  "silver_runs": [
+   "20260925T222037Z-1028ed",
+   "20260925T224334Z-40a446"
+  ],
+  "latest_gold_run": "20260926T032254Z-9e0aff"
+ },
+ "data": {
+  "disputes": [
+   {
+    "country": "all",
+    "days": 1098,
+    "contacts": 12297,
+    "mean_per_day": 11.2,
+    "p50_per_day": 11,
+    "p95_per_day": 18,
+    "max_per_day": 26
+   }
+  ],
+  "disputes_by_country": [
+   {
+    "country": "Mexico",
+    "days": 1098,
+    "contacts": 6149,
+    "mean_per_day": 5.6,
+    "p50_per_day": 5,
+    "p95_per_day": 10,
+    "max_per_day": 17
+   },
+   {
+    "country": "Colombia",
+    "days": 1098,
+    "contacts": 3727,
+    "mean_per_day": 3.39,
+    "p50_per_day": 3,
+    "p95_per_day": 7,
+    "max_per_day": 11
+   },
+   {
+    "country": "Argentina",
+    "days": 1098,
+    "contacts": 2421,
+    "mean_per_day": 2.2,
+    "p50_per_day": 2,
+    "p95_per_day": 5,
+    "max_per_day": 9
+   }
+  ],
+  "interactions": [
+   {
+    "country": "all",
+    "days": 1098,
+    "contacts": 686296,
+    "mean_per_day": 625.04,
+    "p50_per_day": 664.5,
+    "p95_per_day": 818,
+    "max_per_day": 894
+   }
+  ]
+ }
+}

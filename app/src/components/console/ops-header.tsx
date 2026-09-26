@@ -10,6 +10,7 @@ const LINKS = [
   { href: "/console", label: "Agent console" },
   { href: "/audit", label: "Audit trail" },
   { href: "/customer", label: "Customer view" },
+  { href: "/insights", label: "Insights" },
 ];
 
 export function OpsHeader() {

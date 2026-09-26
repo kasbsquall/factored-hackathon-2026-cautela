@@ -93,6 +93,36 @@
   max-width: 58ch;
 }
 
+.reviewer {
+  display: flex;
+  gap: var(--s-8);
+  align-items: flex-start;
+  margin-top: var(--s-8);
+  font-size: var(--t-13);
+  color: var(--ink2);
+  max-width: 58ch;
+}
+
+.reviewer svg {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  color: var(--ring);
+}
+
+.reviewer a {
+  color: var(--ink);
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in oklab, var(--ring) 60%, transparent);
+  border-radius: var(--r-data);
+  transition: text-decoration-color var(--d-ui) var(--ease-out);
+}
+
+.reviewer a:hover {
+  text-decoration-color: currentColor;
+}
+
 .cta {
   justify-self: stretch;
   display: flex;

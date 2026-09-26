@@ -8,12 +8,13 @@
   background: var(--bg);
 }
 
+/* Four surfaces do not fit one line at 375px: wrap instead of a horizontal scroll that hides the last link. */
 .nav {
   display: flex;
-  gap: var(--s-4);
+  flex-wrap: wrap;
+  gap: 0 var(--s-4);
   order: 3;
   width: 100%;
-  overflow-x: auto;
 }
 
 .link {

@@ -1,0 +1,423 @@
+/*
+ * Emphasis encoding: the row the story is about is brass (--mark-hi); every other row one neutral (--mark). Checked
+ * with the dataviz validator on --sf: both clear 3:1 against the surface and stay apart under CVD (Delta E 15.4).
+ */
+.frame {
+  --mark: #6f7d74;
+  --mark-hi: var(--brass-500);
+  --label-w: var(--chart-label-w, 168px);
+  margin: 0;
+  display: grid;
+  gap: var(--s-12);
+  padding: var(--s-24) var(--s-16);
+  border-radius: var(--r-card);
+  background: var(--sf);
+  box-shadow: var(--highlight);
+  min-width: 0;
+}
+
+.caption {
+  display: grid;
+  gap: var(--s-4);
+}
+
+.title {
+  font-family: var(--f-disp);
+  font-variation-settings: "opsz" 48;
+  font-size: var(--t-20);
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+}
+
+.sub {
+  font-size: var(--t-13);
+  color: var(--ink2);
+  max-width: 62ch;
+}
+
+.readout {
+  min-height: 2.9em;
+  padding: var(--s-6) var(--s-8);
+  border-radius: var(--r-data);
+  background: var(--bg);
+  font-family: var(--f-mono);
+  font-size: var(--t-12);
+  line-height: 1.45;
+  color: var(--ink2);
+}
+
+/* ---------- horizontal bars and dot rows ---------- */
+.bars {
+  display: grid;
+  gap: var(--s-2);
+}
+
+.barRow,
+.axisRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-4);
+}
+
+.barRow {
+  padding: var(--s-6) var(--s-4);
+  margin-inline: calc(var(--s-4) * -1);
+  border-radius: var(--r-data);
+  cursor: default;
+  outline-offset: 0;
+  transition: background-color var(--d-fast) var(--ease-out);
+}
+
+.barRow.on {
+  background: var(--sf2);
+}
+
+.barLabel {
+  font-size: var(--t-13);
+  color: var(--ink2);
+  overflow-wrap: anywhere;
+}
+
+.hi .barLabel {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.track,
+.axis {
+  position: relative;
+  display: block;
+  height: 16px;
+  margin-right: 72px;
+}
+
+.axis {
+  height: 18px;
+}
+
+.grid {
+  position: absolute;
+  top: -6px;
+  bottom: -6px;
+  width: 1px;
+  background: var(--line);
+}
+
+.bar {
+  position: absolute;
+  left: 0;
+  top: 1px;
+  height: 14px;
+  background: var(--mark);
+  border-radius: 0 4px 4px 0;
+  transform-origin: left center;
+  animation: grow-x 260ms var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+.hi .bar,
+.hi .dot {
+  background: var(--mark-hi);
+}
+
+.ci,
+.whisker {
+  position: absolute;
+  top: 7px;
+  height: 2px;
+  background: var(--ink);
+  opacity: 0.7;
+}
+
+.ci::before,
+.ci::after,
+.whisker::before,
+.whisker::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  width: 1px;
+  height: 10px;
+  background: inherit;
+}
+
+.ci::before,
+.whisker::before {
+  left: 0;
+}
+
+.ci::after,
+.whisker::after {
+  right: 0;
+}
+
+.whisker {
+  background: var(--ink2);
+  opacity: 1;
+  transform-origin: center;
+  animation: grow-x 260ms var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+.dot {
+  position: absolute;
+  top: 8px;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  background: var(--mark);
+  box-shadow: 0 0 0 2px var(--sf);
+  animation: fade-in 240ms var(--ease-out) both;
+  animation-delay: calc(120ms + var(--i, 0) * 70ms);
+}
+
+.on .dot {
+  box-shadow: 0 0 0 2px var(--sf2);
+}
+
+.tip {
+  position: absolute;
+  top: -1px;
+  padding-left: var(--s-8);
+  font-family: var(--f-mono);
+  font-size: var(--t-12);
+  line-height: 18px;
+  white-space: nowrap;
+  color: var(--ink2);
+}
+
+.hi .tip {
+  color: var(--ink);
+}
+
+.tick {
+  position: absolute;
+  top: 2px;
+  transform: translateX(-50%);
+  font-family: var(--f-mono);
+  font-size: var(--t-11);
+  color: var(--ink2);
+  white-space: nowrap;
+}
+
+.axisRow > span:first-child {
+  display: none;
+}
+
+/* ---------- columns ---------- */
+.colWrap {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--s-8);
+  padding-top: var(--s-16);
+}
+
+.yAxis {
+  position: relative;
+  width: 3.2em;
+  height: 160px;
+  font-family: var(--f-mono);
+  font-size: var(--t-11);
+  color: var(--ink2);
+}
+
+.yAxis span {
+  position: absolute;
+  right: 0;
+  transform: translateY(50%);
+}
+
+.plot {
+  position: relative;
+  min-width: 0;
+}
+
+.hgrid {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--line);
+}
+
+.cols {
+  position: relative;
+  height: 160px;
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  align-items: end;
+}
+
+.col {
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 1px;
+  border-radius: var(--r-data) var(--r-data) 0 0;
+  transition: background-color var(--d-fast) var(--ease-out);
+}
+
+.col.on {
+  background: var(--sf2);
+}
+
+.colBar {
+  position: relative;
+  width: 100%;
+  max-width: 24px;
+  background: var(--mark);
+  border-radius: 4px 4px 0 0;
+  transform-origin: bottom center;
+  animation: grow-y 260ms var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 30ms);
+}
+
+.hi .colBar {
+  background: var(--mark-hi);
+}
+
+.cap {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding-bottom: var(--s-4);
+  font-family: var(--f-mono);
+  font-size: var(--t-11);
+  white-space: nowrap;
+  color: var(--ink);
+}
+
+.xAxis {
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  padding-top: var(--s-6);
+  border-top: 1px solid var(--line);
+  font-family: var(--f-mono);
+  font-size: var(--t-11);
+  color: var(--ink2);
+  text-align: center;
+}
+
+/* ---------- table view ---------- */
+.table {
+  border-top: 1px solid var(--line-soft);
+  padding-top: var(--s-8);
+}
+
+.table summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-6);
+  min-height: 44px;
+  padding: 0 var(--s-8);
+  margin-inline: calc(var(--s-8) * -1);
+  border-radius: var(--r-btn);
+  font-size: var(--t-13);
+  cursor: pointer;
+  list-style: none;
+  transition: background-color var(--d-ui) var(--ease-out);
+}
+
+.table summary::-webkit-details-marker {
+  display: none;
+}
+
+.table summary:hover {
+  background: var(--sf2);
+}
+
+.table summary svg {
+  width: 16px;
+  height: 16px;
+  color: var(--ink2);
+}
+
+.caret {
+  transition: transform var(--d-ui) var(--ease-out);
+}
+
+.table[open] .caret {
+  transform: rotate(90deg);
+}
+
+.tableScroll {
+  overflow-x: auto;
+  margin-top: var(--s-8);
+}
+
+.tableScroll table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--t-12);
+}
+
+.tableScroll th,
+.tableScroll td {
+  padding: var(--s-6) var(--s-8);
+  border-bottom: 1px solid var(--line-soft);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.tableScroll th:first-child,
+.tableScroll thead th:first-child {
+  text-align: left;
+  white-space: normal;
+}
+
+.tableScroll thead th {
+  font-weight: 600;
+  color: var(--ink2);
+}
+
+.tableScroll tbody th {
+  font-weight: 400;
+}
+
+.source {
+  font-size: var(--t-11);
+  color: var(--ink2);
+}
+
+@keyframes grow-y {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (min-width: 768px) {
+  .frame {
+    padding: var(--s-32);
+  }
+
+  .barRow,
+  .axisRow {
+    grid-template-columns: var(--label-w) minmax(0, 1fr);
+    gap: var(--s-16);
+    align-items: center;
+  }
+
+  .axisRow > span:first-child {
+    display: block;
+  }
+
+  .yAxis,
+  .cols {
+    height: 200px;
+  }
+}

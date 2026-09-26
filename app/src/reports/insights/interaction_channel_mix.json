@@ -1,0 +1,46 @@
+{
+ "title": "Contact-center interactions by channel",
+ "unit": "interactions",
+ "denominator": "all interactions",
+ "provenance": {
+  "warehouse": "warehouse_real.duckdb",
+  "source_is_fixture": false,
+  "silver_runs": [
+   "20260925T222037Z-1028ed",
+   "20260925T224334Z-40a446"
+  ],
+  "latest_gold_run": "20260926T032254Z-9e0aff"
+ },
+ "data": [
+  {
+   "channel": "Phone",
+   "interactions": 583250,
+   "share": 0.849852
+  },
+  {
+   "channel": "Email",
+   "interactions": 27543,
+   "share": 0.040133
+  },
+  {
+   "channel": "App",
+   "interactions": 26364,
+   "share": 0.038415
+  },
+  {
+   "channel": "WhatsApp",
+   "interactions": 22888,
+   "share": 0.03335
+  },
+  {
+   "channel": "Web Chat",
+   "interactions": 22856,
+   "share": 0.033303
+  },
+  {
+   "channel": "Web",
+   "interactions": 3395,
+   "share": 0.004947
+  }
+ ]
+}

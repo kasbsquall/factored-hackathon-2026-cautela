@@ -1,0 +1,359 @@
+.page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: var(--s-32) var(--s-16) var(--s-96);
+  display: grid;
+  gap: var(--s-64);
+}
+
+/* ---------- hero ---------- */
+.hero {
+  display: grid;
+  gap: var(--s-24);
+}
+
+.kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-8);
+  font-family: var(--f-mono);
+  font-size: var(--t-11);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink2);
+}
+
+.kicker svg {
+  color: var(--ring);
+}
+
+.h1 {
+  font-family: var(--f-disp);
+  font-variation-settings: "opsz" 96;
+  font-size: clamp(1.9375rem, 1rem + 3vw, 3.0625rem);
+  line-height: 0.98;
+  letter-spacing: -0.03em;
+  max-width: 24ch;
+}
+
+.headline {
+  display: grid;
+  gap: var(--s-12);
+  padding-top: var(--s-8);
+}
+
+.big {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-4) var(--s-16);
+}
+
+/* The hero figure: the same display family, proportional figures at this size. */
+.bigValue {
+  font-family: var(--f-disp);
+  font-variation-settings: "opsz" 96;
+  font-weight: 650;
+  font-size: clamp(3.8125rem, 2rem + 7vw, 7.5rem);
+  line-height: 0.85;
+  letter-spacing: -0.04em;
+  font-variant-numeric: proportional-nums lining-nums;
+  color: var(--ring);
+}
+
+.bigOf {
+  font-family: var(--f-disp);
+  font-size: var(--t-25);
+  letter-spacing: -0.015em;
+  color: var(--ink);
+}
+
+.bigText {
+  font-size: var(--t-16);
+  color: var(--ink2);
+  max-width: 62ch;
+}
+
+.provenance {
+  display: flex;
+  gap: var(--s-8);
+  align-items: flex-start;
+  font-size: var(--t-12);
+  color: var(--ink2);
+  max-width: 80ch;
+}
+
+.provenance svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+/* ---------- stat tiles ---------- */
+.stats {
+  margin: calc(var(--s-32) * -1) 0 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.stat {
+  display: grid;
+  align-content: start;
+  gap: var(--s-4);
+  padding: var(--s-16) var(--s-12) var(--s-16) 0;
+}
+
+.stat:nth-child(2n) {
+  padding-left: var(--s-12);
+  border-left: 1px solid var(--line-soft);
+}
+
+.stat:nth-child(n + 3) {
+  border-top: 1px solid var(--line-soft);
+}
+
+.stat dt {
+  display: flex;
+  align-items: center;
+  gap: var(--s-6);
+  font-size: var(--t-12);
+  color: var(--ink2);
+}
+
+.stat dt svg {
+  width: 16px;
+  height: 16px;
+  color: var(--ring);
+}
+
+.stat dd {
+  margin: 0;
+}
+
+.statValue {
+  display: block;
+  font-family: var(--f-disp);
+  font-variation-settings: "opsz" 48;
+  font-weight: 650;
+  font-size: var(--t-39);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: proportional-nums lining-nums;
+}
+
+.statUnit {
+  display: block;
+  margin-top: var(--s-4);
+  font-size: var(--t-13);
+}
+
+.statNote {
+  font-family: var(--f-mono);
+  font-size: var(--t-11);
+  color: var(--ink2);
+}
+
+/* ---------- sections ---------- */
+.section {
+  display: grid;
+  gap: var(--s-24);
+}
+
+.sectionHead {
+  display: grid;
+  gap: var(--s-8);
+  max-width: 68ch;
+}
+
+.sectionHead .eyebrow {
+  color: var(--ring);
+}
+
+.h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--s-12);
+  font-family: var(--f-disp);
+  font-variation-settings: "opsz" 96;
+  font-size: var(--t-31);
+  line-height: 1.02;
+  letter-spacing: -0.022em;
+}
+
+.h2 svg {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  color: var(--ring);
+}
+
+.lede {
+  color: var(--ink2);
+}
+
+.charts {
+  display: grid;
+  gap: var(--s-16);
+  min-width: 0;
+}
+
+.withNote {
+  display: grid;
+  gap: var(--s-12);
+  min-width: 0;
+}
+
+.note {
+  display: flex;
+  gap: var(--s-12);
+  align-items: flex-start;
+  padding: var(--s-16);
+  border-radius: var(--r-card);
+  background: color-mix(in oklab, var(--stop) 8%, var(--bg));
+  font-size: var(--t-13);
+  color: var(--ink);
+}
+
+.note svg {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  color: var(--stop);
+}
+
+.note strong {
+  font-weight: 700;
+}
+
+/* ---------- evaluation headline ---------- */
+.evalHead {
+  margin: 0;
+  display: grid;
+  gap: var(--s-16);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.evalHead > div {
+  display: grid;
+  gap: var(--s-4);
+}
+
+.evalHead dt {
+  font-size: var(--t-13);
+  color: var(--ink2);
+}
+
+.evalHead dd {
+  margin: 0;
+  display: grid;
+  gap: var(--s-4);
+}
+
+.evalValue {
+  font-family: var(--f-disp);
+  font-variation-settings: "opsz" 96;
+  font-weight: 650;
+  font-size: var(--t-61);
+  line-height: 0.9;
+  letter-spacing: -0.035em;
+  font-variant-numeric: proportional-nums lining-nums;
+  color: var(--ring);
+}
+
+.evalVs {
+  font-size: var(--t-13);
+  color: var(--ink2);
+}
+
+/* ---------- caveats ---------- */
+.caveats {
+  display: grid;
+  gap: var(--s-16);
+  padding: var(--s-24) var(--s-16);
+  border-radius: var(--r-bezel);
+  background: var(--sf);
+  box-shadow: var(--shadow), var(--highlight);
+}
+
+.caveatList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+}
+
+.caveatList li {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: var(--s-12);
+  padding: var(--s-16) 0;
+  border-top: 1px solid var(--line-soft);
+  font-size: var(--t-15);
+  color: var(--ink2);
+}
+
+.caveatList li svg {
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  color: var(--stop);
+}
+
+.caveatList strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.reproduce {
+  font-size: var(--t-12);
+  color: var(--ink2);
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 768px) {
+  .page {
+    padding: var(--s-64) var(--s-32) var(--s-96);
+    gap: var(--s-96);
+  }
+
+  .stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-top: calc(var(--s-64) * -1);
+  }
+
+  .stat,
+  .stat:nth-child(2n) {
+    padding: var(--s-24) var(--s-16);
+    border-left: 1px solid var(--line-soft);
+  }
+
+  .stat:first-child {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .stat:nth-child(n + 3) {
+    border-top: 0;
+  }
+
+  .caveats {
+    padding: var(--s-48);
+  }
+}
+
+@media (min-width: 1024px) {
+  .charts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  .evalHead {
+    grid-column: 1 / -1;
+  }
+
+  .charts.stack {
+    grid-template-columns: minmax(0, 1fr);
+    --chart-label-w: 280px;
+  }
+}

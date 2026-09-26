@@ -1,0 +1,260 @@
+{
+ "title": "Contacts by hour of day (as stored, timezone undocumented)",
+ "unit": "contacts",
+ "denominator": "all contacts of the series",
+ "provenance": {
+  "warehouse": "warehouse_real.duckdb",
+  "source_is_fixture": false,
+  "silver_runs": [
+   "20260925T222037Z-1028ed",
+   "20260925T224334Z-40a446"
+  ],
+  "latest_gold_run": "20260926T032254Z-9e0aff"
+ },
+ "data": {
+  "disputes": [
+   {
+    "bucket": 0,
+    "contacts": 485,
+    "share": 0.039441
+   },
+   {
+    "bucket": 1,
+    "contacts": 539,
+    "share": 0.043832
+   },
+   {
+    "bucket": 2,
+    "contacts": 521,
+    "share": 0.042368
+   },
+   {
+    "bucket": 3,
+    "contacts": 509,
+    "share": 0.041392
+   },
+   {
+    "bucket": 4,
+    "contacts": 489,
+    "share": 0.039766
+   },
+   {
+    "bucket": 5,
+    "contacts": 525,
+    "share": 0.042693
+   },
+   {
+    "bucket": 6,
+    "contacts": 517,
+    "share": 0.042043
+   },
+   {
+    "bucket": 7,
+    "contacts": 507,
+    "share": 0.04123
+   },
+   {
+    "bucket": 8,
+    "contacts": 513,
+    "share": 0.041717
+   },
+   {
+    "bucket": 9,
+    "contacts": 537,
+    "share": 0.043669
+   },
+   {
+    "bucket": 10,
+    "contacts": 518,
+    "share": 0.042124
+   },
+   {
+    "bucket": 11,
+    "contacts": 531,
+    "share": 0.043181
+   },
+   {
+    "bucket": 12,
+    "contacts": 497,
+    "share": 0.040416
+   },
+   {
+    "bucket": 13,
+    "contacts": 475,
+    "share": 0.038627
+   },
+   {
+    "bucket": 14,
+    "contacts": 494,
+    "share": 0.040172
+   },
+   {
+    "bucket": 15,
+    "contacts": 535,
+    "share": 0.043507
+   },
+   {
+    "bucket": 16,
+    "contacts": 506,
+    "share": 0.041148
+   },
+   {
+    "bucket": 17,
+    "contacts": 528,
+    "share": 0.042937
+   },
+   {
+    "bucket": 18,
+    "contacts": 508,
+    "share": 0.041311
+   },
+   {
+    "bucket": 19,
+    "contacts": 522,
+    "share": 0.042449
+   },
+   {
+    "bucket": 20,
+    "contacts": 521,
+    "share": 0.042368
+   },
+   {
+    "bucket": 21,
+    "contacts": 534,
+    "share": 0.043425
+   },
+   {
+    "bucket": 22,
+    "contacts": 455,
+    "share": 0.037001
+   },
+   {
+    "bucket": 23,
+    "contacts": 531,
+    "share": 0.043181
+   }
+  ],
+  "interactions": [
+   {
+    "bucket": 0,
+    "contacts": 28527,
+    "share": 0.041567
+   },
+   {
+    "bucket": 1,
+    "contacts": 28541,
+    "share": 0.041587
+   },
+   {
+    "bucket": 2,
+    "contacts": 28270,
+    "share": 0.041192
+   },
+   {
+    "bucket": 3,
+    "contacts": 28878,
+    "share": 0.042078
+   },
+   {
+    "bucket": 4,
+    "contacts": 28465,
+    "share": 0.041476
+   },
+   {
+    "bucket": 5,
+    "contacts": 28699,
+    "share": 0.041817
+   },
+   {
+    "bucket": 6,
+    "contacts": 28516,
+    "share": 0.041551
+   },
+   {
+    "bucket": 7,
+    "contacts": 28415,
+    "share": 0.041403
+   },
+   {
+    "bucket": 8,
+    "contacts": 28625,
+    "share": 0.041709
+   },
+   {
+    "bucket": 9,
+    "contacts": 28573,
+    "share": 0.041634
+   },
+   {
+    "bucket": 10,
+    "contacts": 28664,
+    "share": 0.041766
+   },
+   {
+    "bucket": 11,
+    "contacts": 28614,
+    "share": 0.041693
+   },
+   {
+    "bucket": 12,
+    "contacts": 28634,
+    "share": 0.041723
+   },
+   {
+    "bucket": 13,
+    "contacts": 28632,
+    "share": 0.04172
+   },
+   {
+    "bucket": 14,
+    "contacts": 28542,
+    "share": 0.041588
+   },
+   {
+    "bucket": 15,
+    "contacts": 28401,
+    "share": 0.041383
+   },
+   {
+    "bucket": 16,
+    "contacts": 28644,
+    "share": 0.041737
+   },
+   {
+    "bucket": 17,
+    "contacts": 29081,
+    "share": 0.042374
+   },
+   {
+    "bucket": 18,
+    "contacts": 28545,
+    "share": 0.041593
+   },
+   {
+    "bucket": 19,
+    "contacts": 28679,
+    "share": 0.041788
+   },
+   {
+    "bucket": 20,
+    "contacts": 28767,
+    "share": 0.041916
+   },
+   {
+    "bucket": 21,
+    "contacts": 28444,
+    "share": 0.041446
+   },
+   {
+    "bucket": 22,
+    "contacts": 28310,
+    "share": 0.04125
+   },
+   {
+    "bucket": 23,
+    "contacts": 28830,
+    "share": 0.042008
+   }
+  ]
+ }
+}

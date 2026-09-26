@@ -1,0 +1,135 @@
+{
+ "source": "ml/reports/results_fresh.json",
+ "generated_by": "ml/evaluate.py",
+ "data_version": "0189e386ce7fe882",
+ "split": "test_fresh",
+ "proposed_system": "learned_ranker_disposition",
+ "baseline_system": "rules_tuned",
+ "n_cases": 1240,
+ "n_by_label": {
+  "ambiguous": 243,
+  "match": 749,
+  "no_match": 248
+ },
+ "systems": [
+  {
+   "id": "rules_fixed",
+   "decider": "fixed_top0.60_margin0.15",
+   "ranker": "rules_v1",
+   "correct_decision_rate": {
+    "value": 0.696,
+    "ci95": [
+     0.6624,
+     0.7294
+    ]
+   },
+   "safe_automated_resolution_rate": {
+    "value": 0.525,
+    "ci95": [
+     0.4908,
+     0.559
+    ]
+   },
+   "unsafe": {
+    "count": 55,
+    "denominator": 1240,
+    "acted_denominator": 706
+   },
+   "decisions": {
+    "act": 706,
+    "clarify": 534
+   },
+   "automation_attempted_share": 0.5694
+  },
+  {
+   "id": "rules_tuned",
+   "decider": "calibrated_thresholds",
+   "ranker": "rules_v1",
+   "correct_decision_rate": {
+    "value": 0.8218,
+    "ci95": [
+     0.795,
+     0.8478
+    ]
+   },
+   "safe_automated_resolution_rate": {
+    "value": 0.4782,
+    "ci95": [
+     0.4446,
+     0.5135
+    ]
+   },
+   "unsafe": {
+    "count": 24,
+    "denominator": 1240,
+    "acted_denominator": 617
+   },
+   "decisions": {
+    "abstain": 382,
+    "act": 617,
+    "clarify": 241
+   },
+   "automation_attempted_share": 0.4976
+  },
+  {
+   "id": "learned_ranker_calibrated",
+   "decider": "calibrated_thresholds",
+   "ranker": "learned_hgb_d6_lr0.1",
+   "correct_decision_rate": {
+    "value": 0.7653,
+    "ci95": [
+     0.7387,
+     0.7921
+    ]
+   },
+   "safe_automated_resolution_rate": {
+    "value": 0.4685,
+    "ci95": [
+     0.4363,
+     0.5028
+    ]
+   },
+   "unsafe": {
+    "count": 19,
+    "denominator": 1240,
+    "acted_denominator": 600
+   },
+   "decisions": {
+    "abstain": 483,
+    "act": 600,
+    "clarify": 157
+   },
+   "automation_attempted_share": 0.4839
+  },
+  {
+   "id": "learned_ranker_disposition",
+   "decider": "disposition_multinomial_logreg_C1",
+   "ranker": "learned_hgb_d6_lr0.1",
+   "correct_decision_rate": {
+    "value": 0.8984,
+    "ci95": [
+     0.8787,
+     0.918
+    ]
+   },
+   "safe_automated_resolution_rate": {
+    "value": 0.5339,
+    "ci95": [
+     0.5016,
+     0.5675
+    ]
+   },
+   "unsafe": {
+    "count": 4,
+    "denominator": 1240,
+    "acted_denominator": 666
+   },
+   "decisions": {
+    "abstain": 327,
+    "act": 666,
+    "clarify": 247
+   },
+   "automation_attempted_share": 0.5371
+  }
+ ]
+}

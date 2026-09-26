@@ -7,8 +7,11 @@
     "node": ">=20.9.0"
   },
   "scripts": {
+    "predev": "node scripts/copy-insights.mjs",
     "dev": "next dev --port 3100",
+    "prebuild": "node scripts/copy-insights.mjs",
     "build": "next build",
+    "insights:copy": "node scripts/copy-insights.mjs",
     "start": "next start --port 3100",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
