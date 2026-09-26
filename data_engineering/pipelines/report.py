@@ -44,6 +44,7 @@ def totals(tables: dict[str, dict]) -> dict:
     keys = ("bronze_in", "quarantined", "valid", "exact_duplicates", "inserted", "updated", "silver_total")
     out = {k: sum(t["rows"].get(k, 0) for t in tables.values()) for k in keys}
     out["files_new"] = sum(t["files"]["new"] for t in tables.values())
+    out["files_rewritten"] = sum(t["files"].get("rewritten", 0) for t in tables.values())
     out["drift_events"] = sum(len(t["drift_events"]) for t in tables.values())
     return out
 

@@ -5,7 +5,8 @@
 
 Each table is processed in its own transaction, parents before children. Only files not yet in the file ledger
 are read, so a rerun on the same source changes nothing, and a file that lands late in an old partition is still
-picked up. A quality report is written for every run.
+picked up. A file already loaded whose size or modification time changed is read again as a rewrite: its old
+rows are withdrawn and the new version takes their place. A quality report is written for every run.
 """
 
 from __future__ import annotations
@@ -67,36 +68,50 @@ def process_table(con: duckdb.DuckDBPyConnection, loc: SourceLocation, contract:
         warehouse.reset_table(con, name)
     discovered = list_files(con, loc, name)
     done = warehouse.loaded_files(con, name)
-    new_files = detect_encodings(con, [f for f in discovered if f.rel_path not in done])
+    rewritten = [f for f in discovered
+                 if f.rel_path in done and warehouse.is_rewritten(done[f.rel_path], f.fingerprint)]
+    unseen = [f for f in discovered if f.rel_path not in done]
+    new_files = detect_encodings(con, sorted([*unseen, *rewritten], key=lambda f: f.rel_path))
     previous_hwm = warehouse.get_watermark(con, name)
     schemas = file_schemas(con, new_files) if new_files else {}
     drift = bronze.detect_drift(contract, schemas)
     ingested_at = datetime.now(timezone.utc).replace(tzinfo=None)
     con.execute("BEGIN TRANSACTION")
     try:
+        retracted = silver.retract_files(con, contract, [f.rel_path for f in rewritten])
         batch_columns = bronze.load_batch(con, loc, contract, new_files, schemas, run_id, ingested_at)
         encoding = bronze.check_encoding(con, name, new_files, batch_columns)
         per_file = bronze.rows_per_file(con)
+        replayed = 0
+        if retracted["silver_rows"]:
+            batch_columns, replayed = bronze.append_replay(con, contract, batch_columns, silver.RETRACTED_KEYS)
         warehouse.ensure_silver(con, contract)
         fk_tables = checks.prepare_parent_keys(con, contract)
         checks.build_checked(con, contract, batch_columns, fk_tables)
         quarantined = checks.quarantine_failed(con, contract, run_id)
         silver.build_candidates(con, contract)
         merged = silver.merge(con, contract)
+        if replayed:  # batch metrics describe what was delivered, not the versions that competed again
+            con.execute(f"DELETE FROM {checks.CHECKED_TABLE} WHERE __replay")
+            silver.build_candidates(con, contract)
         metrics = silver.batch_metrics(con, contract, fk_tables, previous_hwm)
         uniques = silver.unique_violations(con, contract)
         hwm = silver.high_water_mark(con, contract)
         warehouse.set_watermark(con, name, hwm, run_id)
-        warehouse.record_files(con, name, [(f.rel_path, per_file.get(f.rel_path, 0)) for f in new_files],
-                               run_id, ingested_at)
+        warehouse.record_files(con, name, [(f.rel_path, per_file.get(f.rel_path, 0), *f.fingerprint)
+                                           for f in new_files], run_id, ingested_at)
         silver_total = con.execute(f"SELECT count(*) FROM silver.{warehouse.ident(name)}").fetchone()[0]
         con.execute("COMMIT")
     except Exception:
         con.execute("ROLLBACK")
         raise
-    files = {"discovered": len(discovered), "new": len(new_files), "already_loaded": len(discovered) - len(new_files),
+    present = {f.rel_path for f in discovered}
+    files = {"discovered": len(discovered), "new": len(unseen), "rewritten": len(rewritten),
+             "already_loaded": len(discovered) - len(new_files),
+             "missing_from_source": sum(1 for rel in done if rel not in present),
              "partition_path_keys": sorted({k for f in new_files for k in path_partitions(f.rel_path)})}
-    rows = {"bronze_in": sum(per_file.values()), "quarantined": quarantined, **merged, "silver_total": silver_total}
+    rows = {"bronze_in": sum(per_file.values()), "quarantined": quarantined, **merged, "silver_total": silver_total,
+            "retracted": {k: v for k, v in retracted.items() if k != "files"}, "replayed": replayed}
     return table_section(files, rows, metrics, drift, uniques, {"before": previous_hwm, "after": hwm}, encoding)
 
 
@@ -171,11 +186,12 @@ def main(argv: list[str] | None = None) -> int:
     if report["source_label"]:
         print(f"source: {report['source_label']}")
     print(f"run {report['run_id']}")
-    print(f"{'table':<26}{'new files':>10}{'rows in':>10}{'quarant.':>10}{'dups':>8}{'silver':>10}{'drift':>7}")
+    print(f"{'table':<26}{'new files':>10}{'rewritten':>10}{'rows in':>10}{'quarant.':>10}{'dups':>8}{'silver':>10}"
+          f"{'drift':>7}")
     for name, sec in report["tables"].items():
         r = sec["rows"]
-        print(f"{name:<26}{sec['files']['new']:>10}{r['bronze_in']:>10}{r['quarantined']:>10}"
-              f"{r['exact_duplicates']:>8}{r['silver_total']:>10}{len(sec['drift_events']):>7}")
+        print(f"{name:<26}{sec['files']['new']:>10}{sec['files']['rewritten']:>10}{r['bronze_in']:>10}"
+              f"{r['quarantined']:>10}{r['exact_duplicates']:>8}{r['silver_total']:>10}{len(sec['drift_events']):>7}")
     print(f"report: {report['report_path']}")
     return 0
 

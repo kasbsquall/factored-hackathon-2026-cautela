@@ -9,8 +9,9 @@ highest `_ingested_at` and row count seen at the last build ("source marks"). A 
                                    since the old marks; those keys are deleted and re-inserted, and keys that
                                    left silver are deleted
   row table, unsafe marks          full build, failing closed: a source whose high-water mark did not advance,
-                                   that lost rows, or that was reloaded whole (silver full refresh, the only way
-                                   silver drops keys, which a secondary source's key query cannot see)
+                                   that lost rows, that was reloaded whole (silver full refresh), or that had a
+                                   source file rewritten since the last build (a rewrite can withdraw keys, which
+                                   a secondary source's key query cannot see)
   aggregate, changed marks         full rebuild (small tables whose percentiles cannot be patched)
   view                             recreated every run
 
@@ -26,7 +27,7 @@ import duckdb
 
 from data_engineering.gold import checks
 from data_engineering.gold.contract import LINEAGE_COLUMNS, GoldContract, build_order
-from data_engineering.pipelines.warehouse import ident, literal, table_exists
+from data_engineering.pipelines.warehouse import ident, literal, replaced_files, table_exists
 
 _DDL = """
 CREATE SCHEMA IF NOT EXISTS gold;
@@ -51,8 +52,9 @@ def silver_sources(contract: GoldContract) -> list[str]:
 
 
 def source_marks(con: duckdb.DuckDBPyConnection, contract: GoldContract) -> dict[str, dict]:
-    """Silver sources are marked by their highest _ingested_at and row count; gold sources by the run that last
-    changed them, so a rebuilt gold input (new definition or new rows) also refreshes what reads it."""
+    """Silver sources are marked by their highest _ingested_at and row count, plus the number of rewritten source
+    file versions when there are any; gold sources by the run that last changed them, so a rebuilt gold input (new
+    definition or new rows) also refreshes what reads it."""
     marks = {}
     for source in contract.sources:
         if source.startswith("gold."):
@@ -66,6 +68,9 @@ def source_marks(con: duckdb.DuckDBPyConnection, contract: GoldContract) -> dict
                                    f"FROM silver.{ident(name)}").fetchone()
         marks[name] = {"min_ingested_at": lo.isoformat() if lo else None,
                        "max_ingested_at": hi.isoformat() if hi else None, "rows": rows}
+        rewrites = replaced_files(con, name)
+        if rewrites:  # only when present, so warehouses without rewrites keep the marks they already have
+            marks[name]["replaced_files"] = rewrites
     return marks
 
 
@@ -77,9 +82,12 @@ def _state(con: duckdb.DuckDBPyConnection, table: str) -> dict | None:
 
 def _unsafe_for_increment(old: dict, new: dict) -> bool:
     """True when a changed silver source cannot be patched by key: its watermark did not advance (the changed
-    rows would be invisible to `_ingested_at > wm`), it lost rows, or every row was reloaded."""
+    rows would be invisible to `_ingested_at > wm`), it lost rows, every row was reloaded, or a source file was
+    rewritten (a rewrite can withdraw keys)."""
     if old == new:
         return False
+    if old.get("replaced_files", 0) != new.get("replaced_files", 0):
+        return True
     if not (old.get("max_ingested_at") and new.get("max_ingested_at") and new.get("min_ingested_at")):
         return True
     old_hi = datetime.fromisoformat(old["max_ingested_at"])

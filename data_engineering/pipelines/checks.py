@@ -143,7 +143,8 @@ def build_checked(con: duckdb.DuckDBPyConnection, contract: TableContract, batch
                   for c in contract.columns if c.normalize]
     con.execute(f"""
         CREATE OR REPLACE TEMP TABLE {CHECKED_TABLE} AS
-        WITH raw AS (SELECT b.__rid, b._source_file, b._ingested_at, b._run_id, {raw_cols} FROM {BATCH_TABLE} b),
+        WITH raw AS (SELECT b.__rid, b.__replay, b._source_file, b._ingested_at, b._run_id, {raw_cols}
+                     FROM {BATCH_TABLE} b),
         typed AS (SELECT *, {typed_cols} FROM raw)
         SELECT t.*, {_tag_list(tags['error'])} AS __errors, {_tag_list(tags['warn'])} AS __warnings,
                {_tag_list(normalized)} AS __normalized
@@ -157,13 +158,17 @@ def pk_value_sql(contract: TableContract, alias: str = "c") -> str:
 
 
 def quarantine_failed(con: duckdb.DuckDBPyConnection, contract: TableContract, run_id: str) -> int:
-    """Move rows with at least one error tag to quarantine.records, keeping the raw record as received."""
+    """Move rows with at least one error tag to quarantine.records, keeping the raw record as received.
+
+    Replayed rows (see bronze.append_replay) were quarantined when their file was first loaded, so they are skipped.
+    """
     con.execute(f"""
         INSERT INTO quarantine.records
         SELECT {_lit(run_id)}, {_lit(contract.table)}, {pk_value_sql(contract)},
                list_sort(list_distinct(list_transform(c.__errors, x -> split_part(x, ':', 2)))),
                c.__errors, to_json(b), c._source_file, c._ingested_at
-        FROM {CHECKED_TABLE} c JOIN {BATCH_TABLE} b ON b.__rid = c.__rid
-        WHERE len(c.__errors) > 0
+        FROM {CHECKED_TABLE} c JOIN (SELECT * EXCLUDE (__replay) FROM {BATCH_TABLE}) b ON b.__rid = c.__rid
+        WHERE len(c.__errors) > 0 AND NOT c.__replay
     """)
-    return con.execute(f"SELECT count(*) FROM {CHECKED_TABLE} WHERE len(__errors) > 0").fetchone()[0]
+    return con.execute(f"SELECT count(*) FROM {CHECKED_TABLE} WHERE len(__errors) > 0 "
+                       "AND NOT __replay").fetchone()[0]

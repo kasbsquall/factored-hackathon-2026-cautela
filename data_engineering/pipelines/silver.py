@@ -12,7 +12,7 @@ import duckdb
 
 from data_engineering.contracts.loader import TableContract
 from data_engineering.pipelines.checks import CHECKED_TABLE
-from data_engineering.pipelines.warehouse import ident
+from data_engineering.pipelines.warehouse import ident, table_exists
 
 LATE_ARRIVAL_THRESHOLD_DAYS = 1  # assumption: normal delivery lag is same day or next day
 PROFILE_TOP_N = 20
@@ -25,6 +25,38 @@ def _pk_join(contract: TableContract, left: str, right: str) -> str:
 def _pk_cols(contract: TableContract, alias: str | None = None) -> str:
     prefix = f"{alias}." if alias else ""
     return ", ".join(prefix + ident(k) for k in contract.primary_key)
+
+
+RETRACTED_KEYS = "retracted_keys"
+
+
+def retract_files(con: duckdb.DuckDBPyConnection, contract: TableContract, rel_paths: list[str]) -> dict[str, int]:
+    """Withdraw the old version of rewritten source files before their new version is loaded.
+
+    The old rows leave bronze, silver and quarantine, so the table ends up as if the new version had been the only
+    one ever delivered. The primary keys whose silver row came from those files are kept in the temp table
+    retracted_keys (as text): some may still have an older version in another file, which bronze.append_replay
+    brings back into the batch.
+    """
+    name = ident(contract.table)
+    pk_text = ", ".join(f"CAST({ident(k)} AS VARCHAR) AS {ident(k)}" for k in contract.primary_key)
+    cols = ", ".join(f"{ident(k)} VARCHAR" for k in contract.primary_key)
+    con.execute(f"CREATE OR REPLACE TEMP TABLE {RETRACTED_KEYS} ({cols})")
+    if not rel_paths:
+        return {"files": 0, "bronze_rows": 0, "silver_rows": 0, "quarantine_rows": 0}
+    con.execute("CREATE OR REPLACE TEMP TABLE retracted_files AS SELECT unnest(?::VARCHAR[]) AS f", [rel_paths])
+    in_files = "_source_file IN (SELECT f FROM retracted_files)"
+    silver_rows = 0
+    if table_exists(con, "silver", contract.table):
+        con.execute(f"INSERT INTO {RETRACTED_KEYS} SELECT DISTINCT {pk_text} FROM silver.{name} WHERE {in_files}")
+        silver_rows = con.execute(f"DELETE FROM silver.{name} WHERE {in_files}").fetchone()[0]
+    bronze_rows = 0
+    if table_exists(con, "bronze", contract.table):
+        bronze_rows = con.execute(f"DELETE FROM bronze.{name} WHERE {in_files}").fetchone()[0]
+    quarantine_rows = con.execute(f"DELETE FROM quarantine.records WHERE table_name = ? AND {in_files}",
+                                  [contract.table]).fetchone()[0]
+    return {"files": len(rel_paths), "bronze_rows": bronze_rows, "silver_rows": silver_rows,
+            "quarantine_rows": quarantine_rows}
 
 
 def build_candidates(con: duckdb.DuckDBPyConnection, contract: TableContract) -> int:

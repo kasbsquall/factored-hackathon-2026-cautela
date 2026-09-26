@@ -52,6 +52,13 @@ class SourceFile:
     fmt: str
     encoding: str = "utf-8"  # set by detect_encodings for CSV; Parquet strings are UTF-8 by specification
     has_bom: bool = False
+    size: int | None = None  # bytes, from the file system or the S3 listing
+    modified_ms: int | None = None  # last modification, epoch milliseconds; S3 LastModified for s3:// sources
+
+    @property
+    def fingerprint(self) -> tuple[int | None, int | None]:
+        """What the file ledger compares to tell a rewritten file from one already loaded."""
+        return self.size, self.modified_ms
 
 
 _PARTITION_SEGMENT = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)=([^/]*)$")
@@ -176,11 +183,16 @@ def sql_list(values: list[str]) -> str:
 
 
 def list_files(con: duckdb.DuckDBPyConnection, loc: SourceLocation, table: str) -> list[SourceFile]:
+    """Every file of `table` with its size and modification time. `read_blob` without the content column only
+    reads metadata (a directory listing locally, the object listing on S3), so no file body is fetched here."""
     found: dict[str, SourceFile] = {}
     for pattern, fmt in loc.patterns(table):
-        for (uri,) in con.execute("SELECT file FROM glob(?)", [pattern]).fetchall():
+        if not con.execute("SELECT count(*) FROM glob(?)", [pattern]).fetchone()[0]:
+            continue
+        rows = con.execute("SELECT filename, size, epoch_ms(last_modified) FROM read_blob(?)", [pattern]).fetchall()
+        for uri, size, modified_ms in rows:
             norm = uri.replace("\\", "/")
-            found.setdefault(norm, SourceFile(norm, loc.relative(norm), fmt))
+            found.setdefault(norm, SourceFile(norm, loc.relative(norm), fmt, size=size, modified_ms=modified_ms))
     return sorted(found.values(), key=lambda f: f.rel_path)
 
 

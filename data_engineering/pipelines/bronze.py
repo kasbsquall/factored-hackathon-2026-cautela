@@ -14,7 +14,7 @@ import duckdb
 
 from data_engineering.contracts.loader import TableContract
 from data_engineering.pipelines.source import SourceFile, SourceLocation, path_partitions, read_relation_sql
-from data_engineering.pipelines.warehouse import ensure_bronze, ident
+from data_engineering.pipelines.warehouse import ensure_bronze, existing_columns, ident
 
 BATCH_TABLE = "batch_raw"
 
@@ -78,7 +78,8 @@ def load_batch(con: duckdb.DuckDBPyConnection, loc: SourceLocation, contract: Ta
     """
     columns = sorted({c for rel in schemas.values() for c in rel})
     defs = [f"{ident(c)} VARCHAR" for c in columns]
-    defs += ["_source_file VARCHAR", "_ingested_at TIMESTAMP", "_run_id VARCHAR", "__rid BIGINT"]
+    defs += ["_source_file VARCHAR", "_ingested_at TIMESTAMP", "_run_id VARCHAR", "__rid BIGINT",
+             "__replay BOOLEAN DEFAULT false"]
     con.execute(f"DROP TABLE IF EXISTS {BATCH_TABLE}")
     con.execute(f"CREATE TEMP TABLE {BATCH_TABLE} ({', '.join(defs)})")
     groups: dict[tuple, list[SourceFile]] = defaultdict(list)
@@ -88,8 +89,39 @@ def load_batch(con: duckdb.DuckDBPyConnection, loc: SourceLocation, contract: Ta
         _insert(con, loc, groups[key], schemas, run_id, ingested_at)
     con.execute(f"UPDATE {BATCH_TABLE} SET __rid = rowid")
     ensure_bronze(con, contract.table, columns)
-    con.execute(f"INSERT INTO bronze.{ident(contract.table)} BY NAME SELECT * EXCLUDE (__rid) FROM {BATCH_TABLE}")
+    con.execute(f"INSERT INTO bronze.{ident(contract.table)} BY NAME SELECT * EXCLUDE (__rid, __replay) "
+                f"FROM {BATCH_TABLE}")
     return columns
+
+
+def append_replay(con: duckdb.DuckDBPyConnection, contract: TableContract, columns: list[str],
+                  keys_table: str) -> tuple[list[str], int]:
+    """Bring back, from bronze, the other versions of keys whose silver row was retracted with a rewritten file.
+
+    Silver keeps only the winning version of a key, so when the winner's file is rewritten, an older version
+    delivered in another file must compete again. Those rows join batch_raw marked __replay: they are checked and
+    merged like new rows, but they are already in bronze and, if they fail a check, already in quarantine, so
+    neither step writes them twice. Returns the batch columns (extended with contract columns the batch lacked)
+    and the number of rows replayed.
+    """
+    table = ident(contract.table)
+    bronze_cols = set(existing_columns(con, "bronze", contract.table))
+    extra = [c for c in contract.column_names if c in bronze_cols and c not in columns]
+    for col in extra:
+        con.execute(f"ALTER TABLE {BATCH_TABLE} ADD COLUMN {ident(col)} VARCHAR")
+    columns = sorted([*columns, *extra])
+    match = " AND ".join(f"trim(b.{ident(k)}) = trim(k.{ident(k)})" for k in contract.primary_key)
+    selected = ", ".join(f"b.{ident(c)}" for c in columns)
+    replayed = con.execute(f"""
+        INSERT INTO {BATCH_TABLE} ({', '.join(ident(c) for c in columns)}, _source_file, _ingested_at, _run_id,
+                                   __rid, __replay)
+        SELECT {selected}, b._source_file, b._ingested_at, b._run_id, NULL, true
+        FROM bronze.{table} b SEMI JOIN {keys_table} k ON {match}
+        WHERE b._source_file NOT IN (SELECT DISTINCT _source_file FROM {BATCH_TABLE} WHERE NOT __replay)
+    """).fetchone()[0]
+    if replayed:
+        con.execute(f"UPDATE {BATCH_TABLE} SET __rid = rowid WHERE __replay")
+    return columns, replayed
 
 
 def _insert(con: duckdb.DuckDBPyConnection, loc: SourceLocation, group: list[SourceFile],
@@ -100,7 +132,8 @@ def _insert(con: duckdb.DuckDBPyConnection, loc: SourceLocation, group: list[Sou
 
 
 def rows_per_file(con: duckdb.DuckDBPyConnection) -> dict[str, int]:
-    return dict(con.execute(f"SELECT _source_file, count(*) FROM {BATCH_TABLE} GROUP BY 1").fetchall())
+    return dict(con.execute(f"SELECT _source_file, count(*) FROM {BATCH_TABLE} WHERE NOT __replay "
+                            f"GROUP BY 1").fetchall())
 
 
 def replacement_characters(con: duckdb.DuckDBPyConnection, columns: list[str]) -> dict[str, int]:
