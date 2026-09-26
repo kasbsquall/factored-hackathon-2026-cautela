@@ -1,0 +1,52 @@
+{
+  "format": 1,
+  "note": "Demo bundle for deploy/Dockerfile. The bundle is git-ignored (organizer-derived rows and the fitted model); this lock is committed. Rebuild with `make demo-artifacts`, then commit this file.",
+  "files": {
+    "demo_customers.json": {
+      "bytes": 15065,
+      "sha256": "f7396c2e489d3b4c88b9c7e74d3d76c0f7c47764b698bf68a75b9f248c564bab"
+    },
+    "models/learned.pkl": {
+      "bytes": 830712,
+      "sha256": "eac5b14a2b6cd7134efe04b6239539de463eb34968e8dfacb9f0012fa68bde75"
+    },
+    "models/systems.pkl": {
+      "bytes": 3239,
+      "sha256": "320eca7831d68816e0421c09f773b9a22f48c5ccf76858764bf60f027580b517"
+    },
+    "warehouse.duckdb": {
+      "bytes": 3944448,
+      "sha256": "f546fb3b471d753dd4dccebf4f8f7f57bdf3c905883878ecda7a13088f14bff6"
+    }
+  },
+  "as_of": "2026-06-19T12:00:00+00:00",
+  "disposition_model": "learned_ranker_disposition:disposition_multinomial_logreg_C1",
+  "scenarios": [
+    "normal",
+    "colombia",
+    "argentina",
+    "portuguese",
+    "human",
+    "ambiguous",
+    "declined",
+    "bad_data"
+  ],
+  "languages_validated": [
+    "es",
+    "pt"
+  ],
+  "warehouse_content_sha256": "b69a912672f2e9e34cf14750f2961120e69bc99e12231f455a33329bce443cc4",
+  "warehouse_rows": {
+    "bronze.customers": 8,
+    "bronze.products": 26,
+    "bronze.transactions": 284,
+    "silver.customers": 8,
+    "silver.products": 26,
+    "silver.transactions": 284,
+    "gold.customer_profile": 8,
+    "gold.customer_transactions": 284,
+    "control.file_ledger": 247
+  },
+  "source_warehouse": "warehouse_real.duckdb",
+  "model_data_version": "0189e386ce7fe882"
+}

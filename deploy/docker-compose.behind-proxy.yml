@@ -16,6 +16,8 @@ services:
     build:
       context: ..
       dockerfile: deploy/Dockerfile
+      args:
+        CAUTELA_DATA: ${CAUTELA_DATA:-bundle}   # bundle: learned model + demo customers (default); fixture: synthetic
     image: cautela-api:${CAUTELA_IMAGE_TAG:-local}
     container_name: cautela-api
     init: true

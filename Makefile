@@ -32,3 +32,19 @@ gold:  ## gold serving and analytics tables from silver, incremental; TARGET sel
 
 analytics:  ## data_analytics/reports: why-this-workflow.md and chart JSON, from a warehouse with gold built
 	uv run python -m data_analytics.run --warehouse $(REPORT_WAREHOUSE)
+
+# Public demo on organizer data. Inputs are git-ignored: the full warehouse, the learned model (data/ml/models, from
+# `uv run python -m ml.train`) and the seed. Outputs: deploy/demo-bundle/ (git-ignored) and the committed lock.
+DEMO_WAREHOUSE ?= data/warehouse_real.duckdb
+DEMO_SEED ?= data/demo/real_seed.json
+.PHONY: demo-seed demo-artifacts release
+
+demo-seed:  ## pick the demo customers per scenario and validate each with the orchestrator and the learned model
+	uv run python -m deploy.demo_select --warehouse $(DEMO_WAREHOUSE) --out $(DEMO_SEED)
+
+demo-artifacts:  ## deploy/demo-bundle/ and deploy/demo-bundle.lock.json (commit the lock afterwards)
+	@test -f $(DEMO_SEED) || $(MAKE) demo-seed
+	uv run python -m deploy.bundle --source $(DEMO_WAREHOUSE) --seed $(DEMO_SEED)
+
+release:  ## release/cautela-<sha>.tar.gz (git archive HEAD) and release/cautela-<sha>-demo-bundle.tar.gz
+	uv run python -m deploy.release

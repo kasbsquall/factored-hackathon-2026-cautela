@@ -26,3 +26,8 @@ Thumbs.db
 
 # local tooling
 .coverage
+
+# demo bundle (organizer-derived rows and the fitted model; only deploy/demo-bundle.lock.json is committed)
+deploy/demo-bundle/
+deploy/demo-bundle.tmp/
+release/

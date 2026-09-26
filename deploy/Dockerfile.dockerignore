@@ -1,6 +1,7 @@
 # Build context allowlist for deploy/Dockerfile (BuildKit reads <Dockerfile>.dockerignore next to the Dockerfile).
-# Everything is excluded unless listed, so .env files, data/, .venv/, mlruns/ and app/ never reach the builder,
-# even when the image is built from a working copy instead of a release tarball.
+# Everything is excluded unless listed, so .env files, data/, .venv/, mlruns/, eval/ and app/ never reach the
+# builder, even when the image is built from a working copy instead of a release tarball. The demo bundle is the one
+# organizer-derived input allowed in; the build checks it against the committed lock before using it.
 *
 !pyproject.toml
 !uv.lock
@@ -9,6 +10,9 @@
 !ml/
 !data_engineering/
 !deploy/serve.py
+!deploy/lock.py
+!deploy/demo-bundle.lock.json
+!deploy/demo-bundle/
 **/__pycache__
 **/*.pyc
 **/.env
