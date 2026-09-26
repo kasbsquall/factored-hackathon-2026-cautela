@@ -21,10 +21,10 @@
         },
         "n_groups": 900,
         "top1_accuracy": {
-          "value": 0.9912,
+          "value": 0.9867,
           "ci95": [
-            0.9829,
-            0.9971
+            0.9772,
+            0.9943
           ]
         },
         "top3_recall": {
@@ -42,89 +42,89 @@
           ]
         },
         "mrr": {
-          "value": 0.9956,
+          "value": 0.9934,
           "ci95": [
-            0.9914,
-            0.9986
+            0.9886,
+            0.9971
           ]
         },
         "ece": {
-          "value": 0.2113,
+          "value": 0.2149,
           "ci95": [
-            0.19,
-            0.245
+            0.1885,
+            0.2457
           ]
         },
         "correct_decision_rate": {
-          "value": 0.7191,
+          "value": 0.6947,
           "ci95": [
-            0.6894,
-            0.7487
+            0.6646,
+            0.7245
           ]
         },
         "unsafe_rate": {
-          "value": 0.0407,
+          "value": 0.0388,
           "ci95": [
-            0.0286,
-            0.0537
+            0.027,
+            0.0508
           ]
         },
         "safe_automated_resolution_rate": {
-          "value": 0.5601,
+          "value": 0.5312,
           "ci95": [
-            0.5288,
-            0.5936
+            0.4995,
+            0.5653
           ]
         },
         "decisions": {
-          "act": 665,
-          "clarify": 442
+          "act": 631,
+          "clarify": 476
         },
-        "automation_attempted_share": 0.6007,
+        "automation_attempted_share": 0.57,
         "unsafe": {
-          "count": 45,
+          "count": 43,
           "denominator": 1107,
-          "acted_denominator": 665
+          "acted_denominator": 631
         },
         "per_label": {
           "ambiguous": {
             "n": 205,
             "decisions": {
-              "act": 28,
-              "clarify": 177
+              "act": 22,
+              "clarify": 183
             },
             "outcomes": {
-              "correct": 176,
-              "safe_other": 1,
-              "unsafe": 28
+              "correct": 181,
+              "safe_other": 2,
+              "unsafe": 22
             }
           },
           "match": {
             "n": 678,
             "decisions": {
-              "act": 621,
-              "clarify": 57
+              "act": 589,
+              "clarify": 89
             },
             "outcomes": {
-              "correct": 620,
-              "safe_other": 57,
+              "correct": 588,
+              "safe_other": 89,
               "unsafe": 1
             }
           },
           "no_match": {
             "n": 224,
             "decisions": {
-              "act": 16,
-              "clarify": 208
+              "act": 20,
+              "clarify": 204
             },
             "outcomes": {
-              "safe_other": 208,
-              "unsafe": 16
+              "safe_other": 204,
+              "unsafe": 20
             }
           }
         },
         "clarify_correct_on_ambiguous": {
-          "count": 176,
+          "count": 181,
           "denominator": 205
         },
         "abstain_correct_on_no_match": {
@@ -132,7 +132,7 @@
           "denominator": 224
         },
         "asked_on_no_match": {
-          "count": 208,
+          "count": 204,
           "denominator": 224
         },
         "containment_rate": 1.0,
@@ -147,11 +147,11 @@
         "recall_error_match": {
           "n": 112,
           "top1_accuracy": 1.0,
-          "acted_correctly": 67
+          "acted_correctly": 63
         },
         "latency_ms": {
-          "p50": 1.762,
-          "p95": 4.32
+          "p50": 0.319,
+          "p95": 1.405
         }
       },
       "breakdowns": {
@@ -159,11 +159,11 @@
           "es": {
             "n": 900,
             "n_match": 542,
-            "top1_accuracy": 0.9889,
-            "mrr": 0.9945,
-            "correct_decision_rate": 0.72,
+            "top1_accuracy": 0.9834,
+            "mrr": 0.9917,
+            "correct_decision_rate": 0.6911,
             "unsafe": {
-              "count": 39,
+              "count": 36,
               "denominator": 900
             }
           },
@@ -172,9 +172,9 @@
             "n_match": 136,
             "top1_accuracy": 1.0,
             "mrr": 1.0,
-            "correct_decision_rate": 0.715,
+            "correct_decision_rate": 0.7101,
             "unsafe": {
-              "count": 6,
+              "count": 7,
               "denominator": 207
             }
           }
@@ -183,22 +183,22 @@
           "AR": {
             "n": 266,
             "n_match": 159,
-            "top1_accuracy": 0.9874,
-            "mrr": 0.9937,
-            "correct_decision_rate": 0.7143,
+            "top1_accuracy": 0.9811,
+            "mrr": 0.9906,
+            "correct_decision_rate": 0.6729,
             "unsafe": {
-              "count": 10,
+              "count": 8,
               "denominator": 266
             }
           },
           "CO": {
             "n": 357,
             "n_match": 223,
-            "top1_accuracy": 0.991,
-            "mrr": 0.9955,
-            "correct_decision_rate": 0.7311,
+            "top1_accuracy": 0.9821,
+            "mrr": 0.991,
+            "correct_decision_rate": 0.6835,
             "unsafe": {
-              "count": 11,
+              "count": 10,
               "denominator": 357
             }
           },
@@ -207,9 +207,9 @@
             "n_match": 296,
             "top1_accuracy": 0.9932,
             "mrr": 0.9966,
-            "correct_decision_rate": 0.7128,
+            "correct_decision_rate": 0.7149,
             "unsafe": {
-              "count": 24,
+              "count": 25,
               "denominator": 484
             }
           }
@@ -218,9 +218,9 @@
           "Basic": {
             "n": 592,
             "n_match": 368,
-            "top1_accuracy": 0.9973,
-            "mrr": 0.9986,
-            "correct_decision_rate": 0.7314,
+            "top1_accuracy": 0.9918,
+            "mrr": 0.9959,
+            "correct_decision_rate": 0.6976,
             "unsafe": {
               "count": 22,
               "denominator": 592
@@ -229,9 +229,9 @@
           "Plus": {
             "n": 273,
             "n_match": 166,
-            "top1_accuracy": 0.988,
-            "mrr": 0.994,
-            "correct_decision_rate": 0.7143,
+            "top1_accuracy": 0.9819,
+            "mrr": 0.991,
+            "correct_decision_rate": 0.6923,
             "unsafe": {
               "count": 18,
               "denominator": 273
@@ -242,7 +242,7 @@
             "n_match": 74,
             "top1_accuracy": 0.973,
             "mrr": 0.9865,
-            "correct_decision_rate": 0.6641,
+            "correct_decision_rate": 0.6565,
             "unsafe": {
               "count": 1,
               "denominator": 131
@@ -255,7 +255,7 @@
             "mrr": 0.9929,
             "correct_decision_rate": 0.7297,
             "unsafe": {
-              "count": 4,
+              "count": 2,
               "denominator": 111
             }
           }
@@ -264,11 +264,11 @@
           "held_out": {
             "n": 423,
             "n_match": 257,
-            "top1_accuracy": 0.9844,
-            "mrr": 0.9922,
-            "correct_decision_rate": 0.7234,
+            "top1_accuracy": 0.9728,
+            "mrr": 0.9864,
+            "correct_decision_rate": 0.6572,
             "unsafe": {
-              "count": 25,
+              "count": 18,
               "denominator": 423
             }
           },
@@ -277,9 +277,9 @@
             "n_match": 421,
             "top1_accuracy": 0.9952,
             "mrr": 0.9976,
-            "correct_decision_rate": 0.7164,
+            "correct_decision_rate": 0.7178,
             "unsafe": {
-              "count": 20,
+              "count": 25,
               "denominator": 684
             }
           }
@@ -303,7 +303,7 @@
             "mrr": 1.0,
             "correct_decision_rate": 0.6807,
             "unsafe": {
-              "count": 3,
+              "count": 5,
               "denominator": 166
             }
           },
@@ -323,9 +323,9 @@
             "n_match": 124,
             "top1_accuracy": 0.9839,
             "mrr": 0.9919,
-            "correct_decision_rate": 0.7083,
+            "correct_decision_rate": 0.7135,
             "unsafe": {
-              "count": 5,
+              "count": 8,
               "denominator": 192
             }
           },
@@ -343,11 +343,11 @@
           "F6": {
             "n": 224,
             "n_match": 137,
-            "top1_accuracy": 1.0,
-            "mrr": 1.0,
-            "correct_decision_rate": 0.7188,
+            "top1_accuracy": 0.9781,
+            "mrr": 0.9891,
+            "correct_decision_rate": 0.5938,
             "unsafe": {
-              "count": 15,
+              "count": 8,
               "denominator": 224
             }
           }
@@ -358,18 +358,18 @@
             "n_match": 0,
             "top1_accuracy": null,
             "mrr": null,
-            "correct_decision_rate": 0.8585,
+            "correct_decision_rate": 0.8829,
             "unsafe": {
-              "count": 28,
+              "count": 22,
               "denominator": 205
             }
           },
           "match": {
             "n": 678,
             "n_match": 678,
-            "top1_accuracy": 0.9912,
-            "mrr": 0.9956,
-            "correct_decision_rate": 0.9145,
+            "top1_accuracy": 0.9867,
+            "mrr": 0.9934,
+            "correct_decision_rate": 0.8673,
             "unsafe": {
               "count": 1,
               "denominator": 678
@@ -382,7 +382,7 @@
             "mrr": null,
             "correct_decision_rate": 0.0,
             "unsafe": {
-              "count": 16,
+              "count": 20,
               "denominator": 224
             }
           }
@@ -391,33 +391,33 @@
           "medium": {
             "n": 434,
             "n_match": 284,
-            "top1_accuracy": 0.9965,
-            "mrr": 0.9982,
-            "correct_decision_rate": 0.6751,
+            "top1_accuracy": 0.993,
+            "mrr": 0.9965,
+            "correct_decision_rate": 0.6521,
             "unsafe": {
-              "count": 15,
+              "count": 20,
               "denominator": 434
             }
           },
           "rich": {
             "n": 431,
             "n_match": 329,
-            "top1_accuracy": 0.9939,
-            "mrr": 0.997,
-            "correct_decision_rate": 0.6752,
+            "top1_accuracy": 0.9909,
+            "mrr": 0.9954,
+            "correct_decision_rate": 0.6265,
             "unsafe": {
-              "count": 5,
+              "count": 4,
               "denominator": 431
             }
           },
           "sparse": {
             "n": 242,
             "n_match": 65,
-            "top1_accuracy": 0.9538,
-            "mrr": 0.9769,
-            "correct_decision_rate": 0.876,
+            "top1_accuracy": 0.9385,
+            "mrr": 0.9692,
+            "correct_decision_rate": 0.8926,
             "unsafe": {
-              "count": 25,
+              "count": 19,
               "denominator": 242
             }
           }
@@ -426,9 +426,9 @@
           "3": {
             "n": 447,
             "n_match": 285,
-            "top1_accuracy": 0.9965,
-            "mrr": 0.9982,
-            "correct_decision_rate": 0.7226,
+            "top1_accuracy": 0.9895,
+            "mrr": 0.9947,
+            "correct_decision_rate": 0.6868,
             "unsafe": {
               "count": 12,
               "denominator": 447
@@ -437,11 +437,11 @@
           "4-5": {
             "n": 447,
             "n_match": 249,
-            "top1_accuracy": 0.988,
-            "mrr": 0.994,
-            "correct_decision_rate": 0.689,
+            "top1_accuracy": 0.9839,
+            "mrr": 0.992,
+            "correct_decision_rate": 0.6756,
             "unsafe": {
-              "count": 22,
+              "count": 19,
               "denominator": 447
             }
           },
@@ -450,9 +450,9 @@
             "n_match": 144,
             "top1_accuracy": 0.9861,
             "mrr": 0.9931,
-            "correct_decision_rate": 0.7746,
+            "correct_decision_rate": 0.7512,
             "unsafe": {
-              "count": 11,
+              "count": 12,
               "denominator": 213
             }
           }
@@ -461,11 +461,11 @@
           "AR/held_out": {
             "n": 109,
             "n_match": 56,
-            "top1_accuracy": 0.9643,
-            "mrr": 0.9821,
-            "correct_decision_rate": 0.6881,
+            "top1_accuracy": 0.9464,
+            "mrr": 0.9732,
+            "correct_decision_rate": 0.5872,
             "unsafe": {
-              "count": 5,
+              "count": 3,
               "denominator": 109
             }
           },
@@ -483,11 +483,11 @@
           "CO/held_out": {
             "n": 123,
             "n_match": 87,
-            "top1_accuracy": 0.9885,
-            "mrr": 0.9943,
-            "correct_decision_rate": 0.7642,
+            "top1_accuracy": 0.9655,
+            "mrr": 0.9828,
+            "correct_decision_rate": 0.6179,
             "unsafe": {
-              "count": 6,
+              "count": 3,
               "denominator": 123
             }
           },
@@ -496,9 +496,9 @@
             "n_match": 136,
             "top1_accuracy": 0.9926,
             "mrr": 0.9963,
-            "correct_decision_rate": 0.7137,
+            "correct_decision_rate": 0.7179,
             "unsafe": {
-              "count": 5,
+              "count": 7,
               "denominator": 234
             }
           },
@@ -507,9 +507,9 @@
             "n_match": 114,
             "top1_accuracy": 0.9912,
             "mrr": 0.9956,
-            "correct_decision_rate": 0.7173,
+            "correct_decision_rate": 0.7225,
             "unsafe": {
-              "count": 14,
+              "count": 12,
               "denominator": 191
             }
           },
@@ -520,7 +520,7 @@
             "mrr": 0.9973,
             "correct_decision_rate": 0.7099,
             "unsafe": {
-              "count": 10,
+              "count": 13,
               "denominator": 293
             }
           }
@@ -530,35 +530,35 @@
         {
           "threshold": 0.0,
           "coverage": 1.0,
-          "selective_accuracy": 0.607,
+          "selective_accuracy": 0.6043,
           "n_acted": 1107
         },
         {
-          "threshold": 0.2825,
-          "coverage": 0.8997,
-          "selective_accuracy": 0.6697,
-          "n_acted": 996
+          "threshold": 0.25,
+          "coverage": 0.9268,
+          "selective_accuracy": 0.6491,
+          "n_acted": 1026
         },
         {
-          "threshold": 0.5385,
-          "coverage": 0.8022,
-          "selective_accuracy": 0.732,
-          "n_acted": 888
+          "threshold": 0.4693,
+          "coverage": 0.7995,
+          "selective_accuracy": 0.7164,
+          "n_acted": 885
         },
         {
-          "threshold": 0.8046,
+          "threshold": 0.7386,
           "coverage": 0.7001,
-          "selective_accuracy": 0.729,
+          "selective_accuracy": 0.7174,
           "n_acted": 775
         },
         {
-          "threshold": 0.8887,
+          "threshold": 0.8744,
           "coverage": 0.5998,
-          "selective_accuracy": 0.7033,
+          "selective_accuracy": 0.7003,
           "n_acted": 664
         },
         {
-          "threshold": 0.9247,
+          "threshold": 0.9201,
           "coverage": 0.5005,
           "selective_accuracy": 0.6661,
           "n_acted": 554
@@ -566,32 +566,32 @@
         {
           "threshold": 0.9626,
           "coverage": 0.4011,
-          "selective_accuracy": 0.6059,
+          "selective_accuracy": 0.6036,
           "n_acted": 444
         },
         {
-          "threshold": 0.9967,
-          "coverage": 0.2999,
-          "selective_accuracy": 0.509,
-          "n_acted": 332
+          "threshold": 1.0,
+          "coverage": 0.3071,
+          "selective_accuracy": 0.5176,
+          "n_acted": 340
         },
         {
           "threshold": 1.0,
-          "coverage": 0.2809,
-          "selective_accuracy": 0.4855,
-          "n_acted": 311
+          "coverage": 0.3071,
+          "selective_accuracy": 0.5176,
+          "n_acted": 340
         },
         {
           "threshold": 1.0,
-          "coverage": 0.2809,
-          "selective_accuracy": 0.4855,
-          "n_acted": 311
+          "coverage": 0.3071,
+          "selective_accuracy": 0.5176,
+          "n_acted": 340
         },
         {
           "threshold": 1.0,
-          "coverage": 0.2809,
-          "selective_accuracy": 0.4855,
-          "n_acted": 311
+          "coverage": 0.3071,
+          "selective_accuracy": 0.5176,
+          "n_acted": 340
         }
       ]
     },
@@ -601,11 +601,11 @@
       "decider_params": {
         "calibrator": {
           "coef": [
-            2.855,
-            8.9381,
-            0.6134
+            2.5112,
+            8.1484,
+            0.519
           ],
-          "intercept": -5.8761,
+          "intercept": -5.2766,
           "features": [
             "top_score",
             "margin",
@@ -613,12 +613,11 @@
           ]
         },
         "policy": {
-          "t_act": 0.635,
+          "t_act": 0.61,
           "t_abstain": 0.2857,
           "k": 3,
           "max_unsafe_rate": 0.01,
-          "fitted_on": "val",
-          "act_floor": 0.6
+          "fitted_on": "val"
         },
         "abstain_score": "1 - top_score"
       },
@@ -631,10 +630,10 @@
         },
         "n_groups": 900,
         "top1_accuracy": {
-          "value": 0.9912,
+          "value": 0.9867,
           "ci95": [
-            0.9829,
-            0.9971
+            0.9772,
+            0.9943
           ]
         },
         "top3_recall": {
@@ -652,120 +651,120 @@
           ]
         },
         "mrr": {
-          "value": 0.9956,
+          "value": 0.9934,
           "ci95": [
-            0.9914,
-            0.9986
+            0.9886,
+            0.9971
           ]
         },
         "ece": {
-          "value": 0.028,
+          "value": 0.0393,
           "ci95": [
-            0.0227,
-            0.0515
+            0.0313,
+            0.0618
           ]
         },
         "correct_decision_rate": {
-          "value": 0.8681,
+          "value": 0.822,
           "ci95": [
-            0.8457,
-            0.8905
+            0.7971,
+            0.8467
           ]
         },
         "unsafe_rate": {
-          "value": 0.019,
+          "value": 0.0217,
           "ci95": [
-            0.0108,
-            0.0282
+            0.0127,
+            0.0316
           ]
         },
         "safe_automated_resolution_rate": {
-          "value": 0.5032,
+          "value": 0.4734,
           "ci95": [
-            0.4726,
-            0.5348
+            0.4421,
+            0.5045
           ]
         },
         "decisions": {
-          "abstain": 293,
-          "act": 578,
-          "clarify": 236
+          "abstain": 325,
+          "act": 548,
+          "clarify": 234
         },
-        "automation_attempted_share": 0.5221,
+        "automation_attempted_share": 0.495,
         "unsafe": {
-          "count": 21,
+          "count": 24,
           "denominator": 1107,
-          "acted_denominator": 578
+          "acted_denominator": 548
         },
         "per_label": {
           "ambiguous": {
             "n": 205,
             "decisions": {
-              "abstain": 2,
-              "act": 11,
-              "clarify": 192
+              "abstain": 11,
+              "act": 10,
+              "clarify": 184
             },
             "outcomes": {
-              "correct": 191,
-              "safe_other": 3,
-              "unsafe": 11
+              "correct": 183,
+              "safe_other": 12,
+              "unsafe": 10
             }
           },
           "match": {
             "n": 678,
             "decisions": {
-              "abstain": 78,
-              "act": 557,
+              "abstain": 111,
+              "act": 524,
               "clarify": 43
             },
             "outcomes": {
-              "correct": 557,
-              "safe_other": 121
+              "correct": 524,
+              "safe_other": 154
             }
           },
           "no_match": {
             "n": 224,
             "decisions": {
-              "abstain": 213,
-              "act": 10,
-              "clarify": 1
+              "abstain": 203,
+              "act": 14,
+              "clarify": 7
             },
             "outcomes": {
-              "correct": 213,
-              "safe_other": 1,
-              "unsafe": 10
+              "correct": 203,
+              "safe_other": 7,
+              "unsafe": 14
             }
           }
         },
         "clarify_correct_on_ambiguous": {
-          "count": 191,
+          "count": 183,
           "denominator": 205
         },
         "abstain_correct_on_no_match": {
-          "count": 213,
+          "count": 203,
           "denominator": 224
         },
         "asked_on_no_match": {
-          "count": 1,
+          "count": 7,
           "denominator": 224
         },
-        "containment_rate": 0.7353,
+        "containment_rate": 0.7064,
         "missed_transfers": {
-          "count": 11,
+          "count": 21,
           "denominator": 224
         },
         "unnecessary_transfers": {
-          "count": 80,
+          "count": 122,
           "denominator": 883
         },
         "recall_error_match": {
           "n": 112,
           "top1_accuracy": 1.0,
-          "acted_correctly": 31
+          "acted_correctly": 28
         },
         "latency_ms": {
-          "p50": 0.455,
-          "p95": 0.843
+          "p50": 0.537,
+          "p95": 1.059
         }
       },
       "breakdowns": {
@@ -773,11 +772,11 @@
           "es": {
             "n": 900,
             "n_match": 542,
-            "top1_accuracy": 0.9889,
-            "mrr": 0.9945,
-            "correct_decision_rate": 0.8656,
+            "top1_accuracy": 0.9834,
+            "mrr": 0.9917,
+            "correct_decision_rate": 0.8156,
             "unsafe": {
-              "count": 18,
+              "count": 19,
               "denominator": 900
             }
           },
@@ -786,9 +785,9 @@
             "n_match": 136,
             "top1_accuracy": 1.0,
             "mrr": 1.0,
-            "correct_decision_rate": 0.8792,
+            "correct_decision_rate": 0.8502,
             "unsafe": {
-              "count": 3,
+              "count": 5,
               "denominator": 207
             }
           }
@@ -797,22 +796,22 @@
           "AR": {
             "n": 266,
             "n_match": 159,
-            "top1_accuracy": 0.9874,
-            "mrr": 0.9937,
-            "correct_decision_rate": 0.8609,
+            "top1_accuracy": 0.9811,
+            "mrr": 0.9906,
+            "correct_decision_rate": 0.8008,
             "unsafe": {
-              "count": 8,
+              "count": 6,
               "denominator": 266
             }
           },
           "CO": {
             "n": 357,
             "n_match": 223,
-            "top1_accuracy": 0.991,
-            "mrr": 0.9955,
-            "correct_decision_rate": 0.8627,
+            "top1_accuracy": 0.9821,
+            "mrr": 0.991,
+            "correct_decision_rate": 0.8011,
             "unsafe": {
-              "count": 7,
+              "count": 8,
               "denominator": 357
             }
           },
@@ -821,9 +820,9 @@
             "n_match": 296,
             "top1_accuracy": 0.9932,
             "mrr": 0.9966,
-            "correct_decision_rate": 0.876,
+            "correct_decision_rate": 0.8492,
             "unsafe": {
-              "count": 6,
+              "count": 10,
               "denominator": 484
             }
           }
@@ -832,22 +831,22 @@
           "Basic": {
             "n": 592,
             "n_match": 368,
-            "top1_accuracy": 0.9973,
-            "mrr": 0.9986,
-            "correct_decision_rate": 0.8716,
+            "top1_accuracy": 0.9918,
+            "mrr": 0.9959,
+            "correct_decision_rate": 0.8176,
             "unsafe": {
-              "count": 8,
+              "count": 11,
               "denominator": 592
             }
           },
           "Plus": {
             "n": 273,
             "n_match": 166,
-            "top1_accuracy": 0.988,
-            "mrr": 0.994,
-            "correct_decision_rate": 0.8571,
+            "top1_accuracy": 0.9819,
+            "mrr": 0.991,
+            "correct_decision_rate": 0.8095,
             "unsafe": {
-              "count": 9,
+              "count": 10,
               "denominator": 273
             }
           },
@@ -856,7 +855,7 @@
             "n_match": 74,
             "top1_accuracy": 0.973,
             "mrr": 0.9865,
-            "correct_decision_rate": 0.8702,
+            "correct_decision_rate": 0.8473,
             "unsafe": {
               "count": 1,
               "denominator": 131
@@ -867,9 +866,9 @@
             "n_match": 70,
             "top1_accuracy": 0.9857,
             "mrr": 0.9929,
-            "correct_decision_rate": 0.8739,
+            "correct_decision_rate": 0.8468,
             "unsafe": {
-              "count": 3,
+              "count": 2,
               "denominator": 111
             }
           }
@@ -878,11 +877,11 @@
           "held_out": {
             "n": 423,
             "n_match": 257,
-            "top1_accuracy": 0.9844,
-            "mrr": 0.9922,
-            "correct_decision_rate": 0.8487,
+            "top1_accuracy": 0.9728,
+            "mrr": 0.9864,
+            "correct_decision_rate": 0.747,
             "unsafe": {
-              "count": 11,
+              "count": 9,
               "denominator": 423
             }
           },
@@ -891,9 +890,9 @@
             "n_match": 421,
             "top1_accuracy": 0.9952,
             "mrr": 0.9976,
-            "correct_decision_rate": 0.8801,
+            "correct_decision_rate": 0.8684,
             "unsafe": {
-              "count": 10,
+              "count": 15,
               "denominator": 684
             }
           }
@@ -904,7 +903,7 @@
             "n_match": 106,
             "top1_accuracy": 1.0,
             "mrr": 1.0,
-            "correct_decision_rate": 0.8807,
+            "correct_decision_rate": 0.8693,
             "unsafe": {
               "count": 4,
               "denominator": 176
@@ -915,9 +914,9 @@
             "n_match": 94,
             "top1_accuracy": 1.0,
             "mrr": 1.0,
-            "correct_decision_rate": 0.8434,
+            "correct_decision_rate": 0.8253,
             "unsafe": {
-              "count": 1,
+              "count": 4,
               "denominator": 166
             }
           },
@@ -937,9 +936,9 @@
             "n_match": 124,
             "top1_accuracy": 0.9839,
             "mrr": 0.9919,
-            "correct_decision_rate": 0.9062,
+            "correct_decision_rate": 0.8906,
             "unsafe": {
-              "count": 2,
+              "count": 4,
               "denominator": 192
             }
           },
@@ -948,7 +947,7 @@
             "n_match": 120,
             "top1_accuracy": 0.9667,
             "mrr": 0.9833,
-            "correct_decision_rate": 0.8543,
+            "correct_decision_rate": 0.8442,
             "unsafe": {
               "count": 3,
               "denominator": 199
@@ -957,11 +956,11 @@
           "F6": {
             "n": 224,
             "n_match": 137,
-            "top1_accuracy": 1.0,
-            "mrr": 1.0,
-            "correct_decision_rate": 0.8438,
+            "top1_accuracy": 0.9781,
+            "mrr": 0.9891,
+            "correct_decision_rate": 0.6607,
             "unsafe": {
-              "count": 8,
+              "count": 6,
               "denominator": 224
             }
           }
@@ -972,18 +971,18 @@
             "n_match": 0,
             "top1_accuracy": null,
             "mrr": null,
-            "correct_decision_rate": 0.9317,
+            "correct_decision_rate": 0.8927,
             "unsafe": {
-              "count": 11,
+              "count": 10,
               "denominator": 205
             }
           },
           "match": {
             "n": 678,
             "n_match": 678,
-            "top1_accuracy": 0.9912,
-            "mrr": 0.9956,
-            "correct_decision_rate": 0.8215,
+            "top1_accuracy": 0.9867,
+            "mrr": 0.9934,
+            "correct_decision_rate": 0.7729,
             "unsafe": {
               "count": 0,
               "denominator": 678
@@ -994,9 +993,9 @@
             "n_match": 0,
             "top1_accuracy": null,
             "mrr": null,
-            "correct_decision_rate": 0.9509,
+            "correct_decision_rate": 0.9062,
             "unsafe": {
-              "count": 10,
+              "count": 14,
               "denominator": 224
             }
           }
@@ -1005,33 +1004,33 @@
           "medium": {
             "n": 434,
             "n_match": 284,
-            "top1_accuracy": 0.9965,
-            "mrr": 0.9982,
-            "correct_decision_rate": 0.8871,
+            "top1_accuracy": 0.993,
+            "mrr": 0.9965,
+            "correct_decision_rate": 0.8456,
             "unsafe": {
-              "count": 7,
+              "count": 13,
               "denominator": 434
             }
           },
           "rich": {
             "n": 431,
             "n_match": 329,
-            "top1_accuracy": 0.9939,
-            "mrr": 0.997,
-            "correct_decision_rate": 0.8167,
+            "top1_accuracy": 0.9909,
+            "mrr": 0.9954,
+            "correct_decision_rate": 0.7564,
             "unsafe": {
-              "count": 4,
+              "count": 3,
               "denominator": 431
             }
           },
           "sparse": {
             "n": 242,
             "n_match": 65,
-            "top1_accuracy": 0.9538,
-            "mrr": 0.9769,
-            "correct_decision_rate": 0.9256,
+            "top1_accuracy": 0.9385,
+            "mrr": 0.9692,
+            "correct_decision_rate": 0.8967,
             "unsafe": {
-              "count": 10,
+              "count": 8,
               "denominator": 242
             }
           }
@@ -1040,22 +1039,22 @@
           "3": {
             "n": 447,
             "n_match": 285,
-            "top1_accuracy": 0.9965,
-            "mrr": 0.9982,
-            "correct_decision_rate": 0.8904,
+            "top1_accuracy": 0.9895,
+            "mrr": 0.9947,
+            "correct_decision_rate": 0.8322,
             "unsafe": {
-              "count": 4,
+              "count": 7,
               "denominator": 447
             }
           },
           "4-5": {
             "n": 447,
             "n_match": 249,
-            "top1_accuracy": 0.988,
-            "mrr": 0.994,
-            "correct_decision_rate": 0.8523,
+            "top1_accuracy": 0.9839,
+            "mrr": 0.992,
+            "correct_decision_rate": 0.8255,
             "unsafe": {
-              "count": 13,
+              "count": 10,
               "denominator": 447
             }
           },
@@ -1064,9 +1063,9 @@
             "n_match": 144,
             "top1_accuracy": 0.9861,
             "mrr": 0.9931,
-            "correct_decision_rate": 0.8545,
+            "correct_decision_rate": 0.7934,
             "unsafe": {
-              "count": 4,
+              "count": 7,
               "denominator": 213
             }
           }
@@ -1075,11 +1074,11 @@
           "AR/held_out": {
             "n": 109,
             "n_match": 56,
-            "top1_accuracy": 0.9643,
-            "mrr": 0.9821,
-            "correct_decision_rate": 0.8349,
+            "top1_accuracy": 0.9464,
+            "mrr": 0.9732,
+            "correct_decision_rate": 0.6881,
             "unsafe": {
-              "count": 5,
+              "count": 3,
               "denominator": 109
             }
           },
@@ -1097,11 +1096,11 @@
           "CO/held_out": {
             "n": 123,
             "n_match": 87,
-            "top1_accuracy": 0.9885,
-            "mrr": 0.9943,
-            "correct_decision_rate": 0.8211,
+            "top1_accuracy": 0.9655,
+            "mrr": 0.9828,
+            "correct_decision_rate": 0.6829,
             "unsafe": {
-              "count": 4,
+              "count": 2,
               "denominator": 123
             }
           },
@@ -1110,9 +1109,9 @@
             "n_match": 136,
             "top1_accuracy": 0.9926,
             "mrr": 0.9963,
-            "correct_decision_rate": 0.8846,
+            "correct_decision_rate": 0.8632,
             "unsafe": {
-              "count": 3,
+              "count": 6,
               "denominator": 234
             }
           },
@@ -1121,9 +1120,9 @@
             "n_match": 114,
             "top1_accuracy": 0.9912,
             "mrr": 0.9956,
-            "correct_decision_rate": 0.8743,
+            "correct_decision_rate": 0.822,
             "unsafe": {
-              "count": 2,
+              "count": 4,
               "denominator": 191
             }
           },
@@ -1132,9 +1131,9 @@
             "n_match": 182,
             "top1_accuracy": 0.9945,
             "mrr": 0.9973,
-            "correct_decision_rate": 0.8771,
+            "correct_decision_rate": 0.8669,
             "unsafe": {
-              "count": 4,
+              "count": 6,
               "denominator": 293
             }
           }
@@ -1142,67 +1141,67 @@
       },
       "selective_curve": [
         {
-          "threshold": 0.0055,
+          "threshold": 0.009,
           "coverage": 1.0,
-          "selective_accuracy": 0.607,
+          "selective_accuracy": 0.6043,
           "n_acted": 1107
         },
         {
-          "threshold": 0.0615,
+          "threshold": 0.0582,
           "coverage": 0.8997,
-          "selective_accuracy": 0.6707,
+          "selective_accuracy": 0.6627,
           "n_acted": 996
         },
         {
-          "threshold": 0.1024,
-          "coverage": 0.822,
-          "selective_accuracy": 0.7264,
-          "n_acted": 910
+          "threshold": 0.1145,
+          "coverage": 0.8157,
+          "selective_accuracy": 0.7198,
+          "n_acted": 903
         },
         {
-          "threshold": 0.1396,
+          "threshold": 0.1391,
           "coverage": 0.7001,
-          "selective_accuracy": 0.8465,
+          "selective_accuracy": 0.8206,
           "n_acted": 775
         },
         {
-          "threshold": 0.4986,
+          "threshold": 0.4216,
           "coverage": 0.5998,
-          "selective_accuracy": 0.9142,
+          "selective_accuracy": 0.9111,
           "n_acted": 664
         },
         {
-          "threshold": 0.8124,
+          "threshold": 0.7288,
           "coverage": 0.5005,
-          "selective_accuracy": 0.9747,
+          "selective_accuracy": 0.9585,
           "n_acted": 554
         },
         {
-          "threshold": 0.9447,
+          "threshold": 0.9077,
           "coverage": 0.4002,
-          "selective_accuracy": 0.9774,
+          "selective_accuracy": 0.9661,
           "n_acted": 443
         },
         {
-          "threshold": 0.9781,
-          "coverage": 0.2999,
-          "selective_accuracy": 0.9789,
-          "n_acted": 332
+          "threshold": 0.9647,
+          "coverage": 0.3008,
+          "selective_accuracy": 0.967,
+          "n_acted": 333
         },
         {
-          "threshold": 0.9932,
+          "threshold": 0.9878,
           "coverage": 0.2005,
-          "selective_accuracy": 0.9685,
+          "selective_accuracy": 0.973,
           "n_acted": 222
         },
         {
-          "threshold": 0.9982,
+          "threshold": 0.9968,
           "coverage": 0.1003,
           "selective_accuracy": 0.982,
           "n_acted": 111
         },
         {
-          "threshold": 0.9993,
+          "threshold": 0.9985,
           "coverage": 0.0009,
           "selective_accuracy": 1.0,
           "n_acted": 1
@@ -1215,11 +1214,11 @@
       "decider_params": {
         "calibrator": {
           "coef": [
-            -0.1533,
-            6.6742,
-            -0.1452
+            -0.1808,
+            6.3979,
+            -0.1765
           ],
-          "intercept": -3.7508,
+          "intercept": -3.5022,
           "features": [
             "top_score",
             "margin",
@@ -1227,12 +1226,11 @@
           ]
         },
         "policy": {
-          "t_act": 0.91,
-          "t_abstain": 0.0147,
+          "t_act": 0.915,
+          "t_abstain": 0.8607,
           "k": 3,
           "max_unsafe_rate": 0.01,
-          "fitted_on": "val",
-          "act_floor": 0.6
+          "fitted_on": "val"
         },
         "abstain_score": "1 - top_score"
       },
@@ -1245,10 +1243,10 @@
         },
         "n_groups": 900,
         "top1_accuracy": {
-          "value": 0.9985,
+          "value": 0.9897,
           "ci95": [
-            0.9953,
-            1.0
+            0.9803,
+            0.9971
           ]
         },
         "top3_recall": {
@@ -1266,120 +1264,120 @@
           ]
         },
         "mrr": {
-          "value": 0.9993,
+          "value": 0.9946,
           "ci95": [
-            0.9977,
-            1.0
+            0.9897,
+            0.9985
           ]
         },
         "ece": {
-          "value": 0.0544,
+          "value": 0.0971,
           "ci95": [
-            0.0414,
-            0.0749
+            0.0804,
+            0.1206
           ]
         },
         "correct_decision_rate": {
-          "value": 0.794,
+          "value": 0.7498,
           "ci95": [
-            0.7673,
-            0.8194
+            0.7193,
+            0.7785
           ]
         },
         "unsafe_rate": {
-          "value": 0.0181,
+          "value": 0.0081,
           "ci95": [
-            0.0099,
-            0.0265
+            0.0027,
+            0.0142
           ]
         },
         "safe_automated_resolution_rate": {
-          "value": 0.4959,
+          "value": 0.3975,
           "ci95": [
-            0.4644,
-            0.5311
+            0.3662,
+            0.4312
           ]
         },
         "decisions": {
-          "abstain": 390,
-          "act": 569,
-          "clarify": 148
+          "abstain": 258,
+          "act": 449,
+          "clarify": 400
         },
-        "automation_attempted_share": 0.514,
+        "automation_attempted_share": 0.4056,
         "unsafe": {
-          "count": 20,
+          "count": 9,
           "denominator": 1107,
-          "acted_denominator": 569
+          "acted_denominator": 449
         },
         "per_label": {
           "ambiguous": {
             "n": 205,
             "decisions": {
-              "abstain": 78,
-              "act": 19,
-              "clarify": 108
+              "abstain": 9,
+              "act": 8,
+              "clarify": 188
             },
             "outcomes": {
-              "correct": 108,
-              "safe_other": 78,
-              "unsafe": 19
+              "correct": 187,
+              "safe_other": 10,
+              "unsafe": 8
             }
           },
           "match": {
             "n": 678,
             "decisions": {
-              "abstain": 90,
-              "act": 549,
-              "clarify": 39
+              "abstain": 46,
+              "act": 440,
+              "clarify": 192
             },
             "outcomes": {
-              "correct": 549,
-              "safe_other": 129
+              "correct": 440,
+              "safe_other": 238
             }
           },
           "no_match": {
             "n": 224,
             "decisions": {
-              "abstain": 222,
+              "abstain": 203,
               "act": 1,
-              "clarify": 1
+              "clarify": 20
             },
             "outcomes": {
-              "correct": 222,
-              "safe_other": 1,
+              "correct": 203,
+              "safe_other": 20,
               "unsafe": 1
             }
           }
         },
         "clarify_correct_on_ambiguous": {
-          "count": 108,
+          "count": 187,
           "denominator": 205
         },
         "abstain_correct_on_no_match": {
-          "count": 222,
+          "count": 203,
           "denominator": 224
         },
         "asked_on_no_match": {
-          "count": 1,
+          "count": 20,
           "denominator": 224
         },
-        "containment_rate": 0.6477,
+        "containment_rate": 0.7669,
         "missed_transfers": {
-          "count": 2,
+          "count": 21,
           "denominator": 224
         },
         "unnecessary_transfers": {
-          "count": 168,
+          "count": 55,
           "denominator": 883
         },
         "recall_error_match": {
           "n": 112,
           "top1_accuracy": 1.0,
-          "acted_correctly": 53
+          "acted_correctly": 40
         },
         "latency_ms": {
-          "p50": 3.354,
-          "p95": 4.086
+          "p50": 3.423,
+          "p95": 4.111
         }
       },
       "breakdowns": {
@@ -1387,22 +1385,22 @@
           "es": {
             "n": 900,
             "n_match": 542,
-            "top1_accuracy": 0.9982,
-            "mrr": 0.9991,
-            "correct_decision_rate": 0.7811,
+            "top1_accuracy": 0.9889,
+            "mrr": 0.9942,
+            "correct_decision_rate": 0.7478,
             "unsafe": {
-              "count": 16,
+              "count": 7,
               "denominator": 900
             }
           },
           "pt": {
             "n": 207,
             "n_match": 136,
-            "top1_accuracy": 1.0,
-            "mrr": 1.0,
-            "correct_decision_rate": 0.8502,
+            "top1_accuracy": 0.9926,
+            "mrr": 0.9963,
+            "correct_decision_rate": 0.7585,
             "unsafe": {
-              "count": 4,
+              "count": 2,
               "denominator": 207
             }
           }
@@ -1411,33 +1409,33 @@
           "AR": {
             "n": 266,
             "n_match": 159,
-            "top1_accuracy": 0.9937,
-            "mrr": 0.9969,
-            "correct_decision_rate": 0.7782,
+            "top1_accuracy": 0.9874,
+            "mrr": 0.9937,
+            "correct_decision_rate": 0.7256,
             "unsafe": {
-              "count": 4,
+              "count": 3,
               "denominator": 266
             }
           },
           "CO": {
             "n": 357,
             "n_match": 223,
-            "top1_accuracy": 1.0,
-            "mrr": 1.0,
-            "correct_decision_rate": 0.7927,
+            "top1_accuracy": 0.9821,
+            "mrr": 0.9903,
+            "correct_decision_rate": 0.7227,
             "unsafe": {
-              "count": 3,
+              "count": 1,
               "denominator": 357
             }
           },
           "MX": {
             "n": 484,
             "n_match": 296,
-            "top1_accuracy": 1.0,
-            "mrr": 1.0,
-            "correct_decision_rate": 0.8037,
+            "top1_accuracy": 0.9966,
+            "mrr": 0.9983,
+            "correct_decision_rate": 0.7831,
             "unsafe": {
-              "count": 13,
+              "count": 5,
               "denominator": 484
             }
           }
@@ -1446,11 +1444,11 @@
           "Basic": {
             "n": 592,
             "n_match": 368,
-            "top1_accuracy": 1.0,
-            "mrr": 1.0,
-            "correct_decision_rate": 0.8024,
+            "top1_accuracy": 0.9837,
+            "mrr": 0.9914,
+            "correct_decision_rate": 0.7432,
             "unsafe": {
-              "count": 12,
+              "count": 7,
               "denominator": 592
             }
           },
@@ -1459,9 +1457,9 @@
             "n_match": 166,
             "top1_accuracy": 1.0,
             "mrr": 1.0,
-            "correct_decision_rate": 0.7949,
+            "correct_decision_rate": 0.7656,
             "unsafe": {
-              "count": 6,
+              "count": 2,
               "denominator": 273
             }
           },
@@ -1470,7 +1468,7 @@
             "n_match": 74,
             "top1_accuracy": 0.9865,
             "mrr": 0.9932,
-            "correct_decision_rate": 0.7557,
+            "correct_decision_rate": 0.7634,
             "unsafe": {
               "count": 0,
               "denominator": 131
@@ -1481,9 +1479,9 @@
             "n_match": 70,
             "top1_accuracy": 1.0,
             "mrr": 1.0,
-            "correct_decision_rate": 0.7928,
+            "correct_decision_rate": 0.7297,
             "unsafe": {
-              "count": 2,
+              "count": 0,
               "denominator": 111
             }
           }
@@ -1492,11 +1490,11 @@
           "held_out": {
             "n": 423,
             "n_match": 257,
-            "top1_accuracy": 0.9961,
-            "mrr": 0.9981,
-            "correct_decision_rate": 0.7612,
+            "top1_accuracy": 0.9728,
+            "mrr": 0.9857,
+            "correct_decision_rate": 0.6738,
             "unsafe": {
-              "count": 10,
+              "count": 4,
               "denominator": 423
             }
           },
@@ -1505,9 +1503,9 @@
             "n_match": 421,
             "top1_accuracy": 1.0,
             "mrr": 1.0,
-            "correct_decision_rate": 0.8143,
+            "correct_decision_rate": 0.7968,
             "unsafe": {
-              "count": 10,
+              "count": 5,
               "denominator": 684
             }
           }
@@ -1518,9 +1516,9 @@
             "n_match": 106,
             "top1_accuracy": 1.0,
             "mrr": 1.0,
-            "correct_decision_rate": 0.8125,
+            "correct_decision_rate": 0.7955,
             "unsafe": {
-              "count": 4,
+              "count": 2,
               "denominator": 176
             }
           },
@@ -1529,9 +1527,9 @@
             "n_match": 94,
             "top1_accuracy": 1.0,
             "mrr": 1.0,
-            "correct_decision_rate": 0.8072,
+            "correct_decision_rate": 0.8313,
             "unsafe": {
-              "count": 3,
+              "count": 2,
               "denominator": 166
             }
           },
@@ -1540,9 +1538,9 @@
             "n_match": 97,
             "top1_accuracy": 1.0,
             "mrr": 1.0,
-            "correct_decision_rate": 0.76,
+            "correct_decision_rate": 0.7733,
             "unsafe": {
-              "count": 2,
+              "count": 0,
               "denominator": 150
             }
           },
@@ -1551,7 +1549,7 @@
             "n_match": 124,
             "top1_accuracy": 1.0,
             "mrr": 1.0,
-            "correct_decision_rate": 0.8646,
+            "correct_decision_rate": 0.7865,
             "unsafe": {
               "count": 1,
               "denominator": 192
@@ -1560,22 +1558,22 @@
           "F5": {
             "n": 199,
             "n_match": 120,
-            "top1_accuracy": 0.9917,
-            "mrr": 0.9958,
-            "correct_decision_rate": 0.7136,
+            "top1_accuracy": 0.9833,
+            "mrr": 0.9917,
+            "correct_decision_rate": 0.7236,
             "unsafe": {
-              "count": 6,
+              "count": 3,
               "denominator": 199
             }
           },
           "F6": {
             "n": 224,
             "n_match": 137,
-            "top1_accuracy": 1.0,
-            "mrr": 1.0,
-            "correct_decision_rate": 0.8036,
+            "top1_accuracy": 0.9635,
+            "mrr": 0.9805,
+            "correct_decision_rate": 0.6295,
             "unsafe": {
-              "count": 4,
+              "count": 1,
               "denominator": 224
             }
           }
@@ -1586,18 +1584,18 @@
             "n_match": 0,
             "top1_accuracy": null,
             "mrr": null,
-            "correct_decision_rate": 0.5268,
+            "correct_decision_rate": 0.9122,
             "unsafe": {
-              "count": 19,
+              "count": 8,
               "denominator": 205
             }
           },
           "match": {
             "n": 678,
             "n_match": 678,
-            "top1_accuracy": 0.9985,
-            "mrr": 0.9993,
-            "correct_decision_rate": 0.8097,
+            "top1_accuracy": 0.9897,
+            "mrr": 0.9946,
+            "correct_decision_rate": 0.649,
             "unsafe": {
               "count": 0,
               "denominator": 678
@@ -1608,7 +1606,7 @@
             "n_match": 0,
             "top1_accuracy": null,
             "mrr": null,
-            "correct_decision_rate": 0.9911,
+            "correct_decision_rate": 0.9062,
             "unsafe": {
               "count": 1,
               "denominator": 224
@@ -1619,20 +1617,20 @@
           "medium": {
             "n": 434,
             "n_match": 284,
-            "top1_accuracy": 1.0,
-            "mrr": 1.0,
-            "correct_decision_rate": 0.8433,
+            "top1_accuracy": 0.9894,
+            "mrr": 0.9947,
+            "correct_decision_rate": 0.7535,
             "unsafe": {
-              "count": 8,
+              "count": 5,
               "denominator": 434
             }
           },
           "rich": {
             "n": 431,
             "n_match": 329,
-            "top1_accuracy": 0.997,
-            "mrr": 0.9985,
-            "correct_decision_rate": 0.877,
+            "top1_accuracy": 0.9939,
+            "mrr": 0.9965,
+            "correct_decision_rate": 0.7193,
             "unsafe": {
               "count": 0,
               "denominator": 431
@@ -1641,11 +1639,11 @@
           "sparse": {
             "n": 242,
             "n_match": 65,
-            "top1_accuracy": 1.0,
-            "mrr": 1.0,
-            "correct_decision_rate": 0.5579,
+            "top1_accuracy": 0.9692,
+            "mrr": 0.9846,
+            "correct_decision_rate": 0.7975,
             "unsafe": {
-              "count": 12,
+              "count": 4,
               "denominator": 242
             }
           }
@@ -1654,11 +1652,11 @@
           "3": {
             "n": 447,
             "n_match": 285,
-            "top1_accuracy": 1.0,
-            "mrr": 1.0,
-            "correct_decision_rate": 0.8412,
+            "top1_accuracy": 0.986,
+            "mrr": 0.993,
+            "correct_decision_rate": 0.8345,
             "unsafe": {
-              "count": 3,
+              "count": 2,
               "denominator": 447
             }
           },
@@ -1667,20 +1665,20 @@
             "n_match": 249,
             "top1_accuracy": 0.996,
             "mrr": 0.998,
-            "correct_decision_rate": 0.7696,
+            "correct_decision_rate": 0.8031,
             "unsafe": {
-              "count": 11,
+              "count": 7,
               "denominator": 447
             }
           },
           "6+": {
             "n": 213,
             "n_match": 144,
-            "top1_accuracy": 1.0,
-            "mrr": 1.0,
-            "correct_decision_rate": 0.7465,
+            "top1_accuracy": 0.9861,
+            "mrr": 0.9919,
+            "correct_decision_rate": 0.4601,
             "unsafe": {
-              "count": 6,
+              "count": 0,
               "denominator": 213
             }
           }
@@ -1689,11 +1687,11 @@
           "AR/held_out": {
             "n": 109,
             "n_match": 56,
-            "top1_accuracy": 0.9821,
-            "mrr": 0.9911,
-            "correct_decision_rate": 0.7706,
+            "top1_accuracy": 0.9643,
+            "mrr": 0.9821,
+            "correct_decision_rate": 0.6697,
             "unsafe": {
-              "count": 2,
+              "count": 1,
               "denominator": 109
             }
           },
@@ -1702,7 +1700,7 @@
             "n_match": 103,
             "top1_accuracy": 1.0,
             "mrr": 1.0,
-            "correct_decision_rate": 0.7834,
+            "correct_decision_rate": 0.7643,
             "unsafe": {
               "count": 2,
               "denominator": 157
@@ -1711,11 +1709,11 @@
           "CO/held_out": {
             "n": 123,
             "n_match": 87,
-            "top1_accuracy": 1.0,
-            "mrr": 1.0,
-            "correct_decision_rate": 0.748,
+            "top1_accuracy": 0.954,
+            "mrr": 0.9751,
+            "correct_decision_rate": 0.5528,
             "unsafe": {
-              "count": 2,
+              "count": 1,
               "denominator": 123
             }
           },
@@ -1724,20 +1722,20 @@
             "n_match": 136,
             "top1_accuracy": 1.0,
             "mrr": 1.0,
-            "correct_decision_rate": 0.8162,
+            "correct_decision_rate": 0.812,
             "unsafe": {
-              "count": 1,
+              "count": 0,
               "denominator": 234
             }
           },
           "MX/held_out": {
             "n": 191,
             "n_match": 114,
-            "top1_accuracy": 1.0,
-            "mrr": 1.0,
-            "correct_decision_rate": 0.7644,
+            "top1_accuracy": 0.9912,
+            "mrr": 0.9956,
+            "correct_decision_rate": 0.7539,
             "unsafe": {
-              "count": 6,
+              "count": 2,
               "denominator": 191
             }
           },
@@ -1746,9 +1744,9 @@
             "n_match": 182,
             "top1_accuracy": 1.0,
             "mrr": 1.0,
-            "correct_decision_rate": 0.8294,
+            "correct_decision_rate": 0.802,
             "unsafe": {
-              "count": 7,
+              "count": 3,
               "denominator": 293
             }
           }
@@ -1756,78 +1754,78 @@
       },
       "selective_curve": [
         {
-          "threshold": 0.0134,
+          "threshold": 0.0159,
           "coverage": 1.0,
-          "selective_accuracy": 0.6116,
+          "selective_accuracy": 0.6061,
           "n_acted": 1107
         },
         {
-          "threshold": 0.0183,
-          "coverage": 0.9088,
-          "selective_accuracy": 0.666,
-          "n_acted": 1006
+          "threshold": 0.0222,
+          "coverage": 0.9024,
+          "selective_accuracy": 0.6647,
+          "n_acted": 999
         },
         {
-          "threshold": 0.0196,
-          "coverage": 0.8031,
-          "selective_accuracy": 0.7503,
-          "n_acted": 889
+          "threshold": 0.0242,
+          "coverage": 0.8049,
+          "selective_accuracy": 0.7318,
+          "n_acted": 891
         },
         {
-          "threshold": 0.0438,
+          "threshold": 0.0304,
           "coverage": 0.7001,
-          "selective_accuracy": 0.8426,
+          "selective_accuracy": 0.8155,
           "n_acted": 775
         },
         {
-          "threshold": 0.7054,
+          "threshold": 0.4382,
           "coverage": 0.5998,
-          "selective_accuracy": 0.9292,
+          "selective_accuracy": 0.8931,
           "n_acted": 664
         },
         {
-          "threshold": 0.92,
-          "coverage": 0.5005,
-          "selective_accuracy": 0.9711,
-          "n_acted": 554
+          "threshold": 0.8961,
+          "coverage": 0.5014,
+          "selective_accuracy": 0.9694,
+          "n_acted": 555
         },
         {
-          "threshold": 0.9248,
+          "threshold": 0.9158,
           "coverage": 0.4002,
-          "selective_accuracy": 0.9752,
+          "selective_accuracy": 0.9797,
           "n_acted": 443
         },
         {
-          "threshold": 0.9279,
+          "threshold": 0.9191,
           "coverage": 0.2999,
-          "selective_accuracy": 0.9849,
+          "selective_accuracy": 0.988,
           "n_acted": 332
         },
         {
-          "threshold": 0.9288,
+          "threshold": 0.922,
           "coverage": 0.2005,
           "selective_accuracy": 0.991,
           "n_acted": 222
         },
         {
-          "threshold": 0.9314,
+          "threshold": 0.9254,
           "coverage": 0.1003,
           "selective_accuracy": 1.0,
           "n_acted": 111
         },
         {
-          "threshold": 0.9315,
-          "coverage": 0.0018,
+          "threshold": 0.9256,
+          "coverage": 0.0027,
           "selective_accuracy": 1.0,
-          "n_acted": 2
+          "n_acted": 3
         }
       ]
     },
     "learned_ranker_disposition": {
       "ranker": "learned_hgb_d6_lr0.1",
-      "decider": "disposition_multinomial_logreg_C1",
+      "decider": "disposition_hgb_d3",
       "decider_params": {
-        "model": "multinomial_logreg_C1",
+        "model": "hgb_d3",
         "features": [
           "s1",
           "s2",
@@ -1847,12 +1845,11 @@
           "top1_full"
         ],
         "policy": {
-          "t_act": 0.79,
-          "t_abstain": 0.0464,
+          "t_act": 0.28,
+          "t_abstain": 0.772,
           "k": 3,
           "max_unsafe_rate": 0.01,
-          "fitted_on": "val",
-          "act_floor": 0.6
+          "fitted_on": "val"
         },
         "act_score": "P(match)",
         "abstain_score": "P(no_match)"
@@ -1866,10 +1863,10 @@
         },
         "n_groups": 900,
         "top1_accuracy": {
-          "value": 0.9985,
+          "value": 0.9897,
           "ci95": [
-            0.9953,
-            1.0
+            0.9803,
+            0.9971
           ]
         },
         "top3_recall": {
@@ -1887,120 +1884,120 @@
           ]
         },
         "mrr": {
-          "value": 0.9993,
+          "value": 0.9946,
           "ci95": [
-            0.9977,
-            1.0
+            0.9897,
+            0.9985
           ]
         },
         "ece": {
-          "value": 0.0251,
+          "value": 0.0414,
           "ci95": [
-            0.0159,
-            0.0377
+            0.0322,
+            0.0588
           ]
         },
         "correct_decision_rate": {
-          "value": 0.9386,
+          "value": 0.9223,
           "ci95": [
-            0.9205,
-            0.9545
+            0.9043,
+            0.9389
           ]
         },
         "unsafe_rate": {
-          "value": 0.0027,
+          "value": 0.0154,
           "ci95": [
-            0.0,
-            0.0063
+            0.0081,
+            0.024
           ]
         },
         "safe_automated_resolution_rate": {
-          "value": 0.5691,
+          "value": 0.5664,
           "ci95": [
-            0.5378,
-            0.6024
+            0.5372,
+            0.6005
           ]
         },
         "decisions": {
-          "abstain": 270,
-          "act": 633,
-          "clarify": 204
+          "abstain": 239,
+          "act": 644,
+          "clarify": 224
         },
-        "automation_attempted_share": 0.5718,
+        "automation_attempted_share": 0.5818,
         "unsafe": {
-          "count": 3,
+          "count": 17,
           "denominator": 1107,
-          "acted_denominator": 633
+          "acted_denominator": 644
         },
         "per_label": {
           "ambiguous": {
             "n": 205,
             "decisions": {
-              "abstain": 16,
-              "act": 1,
-              "clarify": 188
+              "abstain": 6,
+              "act": 3,
+              "clarify": 196
             },
             "outcomes": {
-              "correct": 188,
-              "safe_other": 16,
-              "unsafe": 1
+              "correct": 195,
+              "safe_other": 7,
+              "unsafe": 3
             }
           },
           "match": {
             "n": 678,
             "decisions": {
-              "abstain": 33,
-              "act": 630,
-              "clarify": 15
+              "abstain": 34,
+              "act": 627,
+              "clarify": 17
             },
             "outcomes": {
-              "correct": 630,
-              "safe_other": 48
+              "correct": 627,
+              "safe_other": 51
             }
           },
           "no_match": {
             "n": 224,
             "decisions": {
-              "abstain": 221,
-              "act": 2,
-              "clarify": 1
+              "abstain": 199,
+              "act": 14,
+              "clarify": 11
             },
             "outcomes": {
-              "correct": 221,
-              "safe_other": 1,
-              "unsafe": 2
+              "correct": 199,
+              "safe_other": 11,
+              "unsafe": 14
             }
           }
         },
         "clarify_correct_on_ambiguous": {
-          "count": 188,
+          "count": 195,
           "denominator": 205
         },
         "abstain_correct_on_no_match": {
-          "count": 221,
+          "count": 199,
           "denominator": 224
         },
         "asked_on_no_match": {
-          "count": 1,
+          "count": 11,
           "denominator": 224
         },
-        "containment_rate": 0.7561,
+        "containment_rate": 0.7841,
         "missed_transfers": {
-          "count": 3,
+          "count": 25,
           "denominator": 224
         },
         "unnecessary_transfers": {
-          "count": 49,
+          "count": 40,
           "denominator": 883
         },
         "recall_error_match": {
           "n": 112,
           "top1_accuracy": 1.0,
-          "acted_correctly": 88
+          "acted_correctly": 99
         },
         "latency_ms": {
-          "p50": 3.939,
-          "p95": 4.684
+          "p50": 12.844,
+          "p95": 14.866
         }
       },
       "breakdowns": {
@@ -2008,22 +2005,22 @@
           "es": {
             "n": 900,
             "n_match": 542,
-            "top1_accuracy": 0.9982,
-            "mrr": 0.9991,
-            "correct_decision_rate": 0.94,
+            "top1_accuracy": 0.9889,
+            "mrr": 0.9942,
+            "correct_decision_rate": 0.9167,
             "unsafe": {
-              "count": 3,
+              "count": 14,
               "denominator": 900
             }
           },
           "pt": {
             "n": 207,
             "n_match": 136,
-            "top1_accuracy": 1.0,
-            "mrr": 1.0,
-            "correct_decision_rate": 0.9324,
+            "top1_accuracy": 0.9926,
+            "mrr": 0.9963,
+            "correct_decision_rate": 0.9469,
             "unsafe": {
-              "count": 0,
+              "count": 3,
               "denominator": 207
             }
           }
@@ -2032,33 +2029,33 @@
           "AR": {
             "n": 266,
             "n_match": 159,
-            "top1_accuracy": 0.9937,
-            "mrr": 0.9969,
-            "correct_decision_rate": 0.9211,
+            "top1_accuracy": 0.9874,
+            "mrr": 0.9937,
+            "correct_decision_rate": 0.9098,
             "unsafe": {
-              "count": 1,
+              "count": 3,
               "denominator": 266
             }
           },
           "CO": {
             "n": 357,
             "n_match": 223,
-            "top1_accuracy": 1.0,
-            "mrr": 1.0,
-            "correct_decision_rate": 0.9496,
+            "top1_accuracy": 0.9821,
+            "mrr": 0.9903,
+            "correct_decision_rate": 0.9076,
             "unsafe": {
-              "count": 0,
+              "count": 5,
               "denominator": 357
             }
           },
           "MX": {
             "n": 484,
             "n_match": 296,
-            "top1_accuracy": 1.0,
-            "mrr": 1.0,
+            "top1_accuracy": 0.9966,
+            "mrr": 0.9983,
             "correct_decision_rate": 0.9401,
             "unsafe": {
-              "count": 2,
+              "count": 9,
               "denominator": 484
             }
           }
@@ -2067,11 +2064,11 @@
           "Basic": {
             "n": 592,
             "n_match": 368,
-            "top1_accuracy": 1.0,
-            "mrr": 1.0,
-            "correct_decision_rate": 0.9476,
+            "top1_accuracy": 0.9837,
+            "mrr": 0.9914,
+            "correct_decision_rate": 0.9139,
             "unsafe": {
-              "count": 3,
+              "count": 12,
               "denominator": 592
             }
           },
@@ -2080,9 +2077,9 @@
             "n_match": 166,
             "top1_accuracy": 1.0,
             "mrr": 1.0,
-            "correct_decision_rate": 0.9377,
+            "correct_decision_rate": 0.9267,
             "unsafe": {
-              "count": 0,
+              "count": 4,
               "denominator": 273
             }
           },
@@ -2091,7 +2088,7 @@
             "n_match": 74,
             "top1_accuracy": 0.9865,
             "mrr": 0.9932,
-            "correct_decision_rate": 0.9084,
+            "correct_decision_rate": 0.9466,
             "unsafe": {
               "count": 0,
               "denominator": 131
@@ -2104,7 +2101,7 @@
             "mrr": 1.0,
             "correct_decision_rate": 0.9279,
             "unsafe": {
-              "count": 0,
+              "count": 1,
               "denominator": 111
             }
           }
@@ -2113,11 +2110,11 @@
           "held_out": {
             "n": 423,
             "n_match": 257,
-            "top1_accuracy": 0.9961,
-            "mrr": 0.9981,
-            "correct_decision_rate": 0.9007,
+            "top1_accuracy": 0.9728,
+            "mrr": 0.9857,
+            "correct_decision_rate": 0.8392,
             "unsafe": {
-              "count": 2,
+              "count": 8,
               "denominator": 423
             }
           },
@@ -2126,9 +2123,9 @@
             "n_match": 421,
             "top1_accuracy": 1.0,
             "mrr": 1.0,
-            "correct_decision_rate": 0.962,
+            "correct_decision_rate": 0.9737,
             "unsafe": {
-              "count": 1,
+              "count": 9,
               "denominator": 684
             }
           }
@@ -2139,9 +2136,9 @@
             "n_match": 106,
             "top1_accuracy": 1.0,
             "mrr": 1.0,
-            "correct_decision_rate": 0.9545,
+            "correct_decision_rate": 0.9773,
             "unsafe": {
-              "count": 0,
+              "count": 2,
               "denominator": 176
             }
           },
@@ -2150,9 +2147,9 @@
             "n_match": 94,
             "top1_accuracy": 1.0,
             "mrr": 1.0,
-            "correct_decision_rate": 0.9639,
+            "correct_decision_rate": 0.9578,
             "unsafe": {
-              "count": 1,
+              "count": 5,
               "denominator": 166
             }
           },
@@ -2161,7 +2158,7 @@
             "n_match": 97,
             "top1_accuracy": 1.0,
             "mrr": 1.0,
-            "correct_decision_rate": 0.9667,
+            "correct_decision_rate": 1.0,
             "unsafe": {
               "count": 0,
               "denominator": 150
@@ -2174,29 +2171,29 @@
             "mrr": 1.0,
             "correct_decision_rate": 0.9635,
             "unsafe": {
-              "count": 0,
+              "count": 2,
               "denominator": 192
             }
           },
           "F5": {
             "n": 199,
             "n_match": 120,
-            "top1_accuracy": 0.9917,
-            "mrr": 0.9958,
-            "correct_decision_rate": 0.8894,
+            "top1_accuracy": 0.9833,
+            "mrr": 0.9917,
+            "correct_decision_rate": 0.9246,
             "unsafe": {
-              "count": 1,
+              "count": 4,
               "denominator": 199
             }
           },
           "F6": {
             "n": 224,
             "n_match": 137,
-            "top1_accuracy": 1.0,
-            "mrr": 1.0,
-            "correct_decision_rate": 0.9107,
+            "top1_accuracy": 0.9635,
+            "mrr": 0.9805,
+            "correct_decision_rate": 0.7634,
             "unsafe": {
-              "count": 1,
+              "count": 4,
               "denominator": 224
             }
           }
@@ -2207,18 +2204,18 @@
             "n_match": 0,
             "top1_accuracy": null,
             "mrr": null,
-            "correct_decision_rate": 0.9171,
+            "correct_decision_rate": 0.9512,
             "unsafe": {
-              "count": 1,
+              "count": 3,
               "denominator": 205
             }
           },
           "match": {
             "n": 678,
             "n_match": 678,
-            "top1_accuracy": 0.9985,
-            "mrr": 0.9993,
-            "correct_decision_rate": 0.9292,
+            "top1_accuracy": 0.9897,
+            "mrr": 0.9946,
+            "correct_decision_rate": 0.9248,
             "unsafe": {
               "count": 0,
               "denominator": 678
@@ -2229,9 +2226,9 @@
             "n_match": 0,
             "top1_accuracy": null,
             "mrr": null,
-            "correct_decision_rate": 0.9866,
+            "correct_decision_rate": 0.8884,
             "unsafe": {
-              "count": 2,
+              "count": 14,
               "denominator": 224
             }
           }
@@ -2240,33 +2237,33 @@
           "medium": {
             "n": 434,
             "n_match": 284,
-            "top1_accuracy": 1.0,
-            "mrr": 1.0,
-            "correct_decision_rate": 0.9378,
+            "top1_accuracy": 0.9894,
+            "mrr": 0.9947,
+            "correct_decision_rate": 0.9032,
             "unsafe": {
-              "count": 2,
+              "count": 11,
               "denominator": 434
             }
           },
           "rich": {
             "n": 431,
             "n_match": 329,
-            "top1_accuracy": 0.997,
-            "mrr": 0.9985,
-            "correct_decision_rate": 0.9582,
+            "top1_accuracy": 0.9939,
+            "mrr": 0.9965,
+            "correct_decision_rate": 0.9327,
             "unsafe": {
-              "count": 0,
+              "count": 4,
               "denominator": 431
             }
           },
           "sparse": {
             "n": 242,
             "n_match": 65,
-            "top1_accuracy": 1.0,
-            "mrr": 1.0,
-            "correct_decision_rate": 0.905,
+            "top1_accuracy": 0.9692,
+            "mrr": 0.9846,
+            "correct_decision_rate": 0.938,
             "unsafe": {
-              "count": 1,
+              "count": 2,
               "denominator": 242
             }
           }
@@ -2275,11 +2272,11 @@
           "3": {
             "n": 447,
             "n_match": 285,
-            "top1_accuracy": 1.0,
-            "mrr": 1.0,
-            "correct_decision_rate": 0.9329,
+            "top1_accuracy": 0.986,
+            "mrr": 0.993,
+            "correct_decision_rate": 0.9128,
             "unsafe": {
-              "count": 2,
+              "count": 8,
               "denominator": 447
             }
           },
@@ -2288,20 +2285,20 @@
             "n_match": 249,
             "top1_accuracy": 0.996,
             "mrr": 0.998,
-            "correct_decision_rate": 0.9508,
+            "correct_decision_rate": 0.9418,
             "unsafe": {
-              "count": 1,
+              "count": 3,
               "denominator": 447
             }
           },
           "6+": {
             "n": 213,
             "n_match": 144,
-            "top1_accuracy": 1.0,
-            "mrr": 1.0,
-            "correct_decision_rate": 0.9249,
+            "top1_accuracy": 0.9861,
+            "mrr": 0.9919,
+            "correct_decision_rate": 0.9014,
             "unsafe": {
-              "count": 0,
+              "count": 6,
               "denominator": 213
             }
           }
@@ -2310,11 +2307,11 @@
           "AR/held_out": {
             "n": 109,
             "n_match": 56,
-            "top1_accuracy": 0.9821,
-            "mrr": 0.9911,
-            "correct_decision_rate": 0.8807,
+            "top1_accuracy": 0.9643,
+            "mrr": 0.9821,
+            "correct_decision_rate": 0.8073,
             "unsafe": {
-              "count": 1,
+              "count": 3,
               "denominator": 109
             }
           },
@@ -2323,7 +2320,7 @@
             "n_match": 103,
             "top1_accuracy": 1.0,
             "mrr": 1.0,
-            "correct_decision_rate": 0.949,
+            "correct_decision_rate": 0.9809,
             "unsafe": {
               "count": 0,
               "denominator": 157
@@ -2332,11 +2329,11 @@
           "CO/held_out": {
             "n": 123,
             "n_match": 87,
-            "top1_accuracy": 1.0,
-            "mrr": 1.0,
-            "correct_decision_rate": 0.9431,
+            "top1_accuracy": 0.954,
+            "mrr": 0.9751,
+            "correct_decision_rate": 0.7886,
             "unsafe": {
-              "count": 0,
+              "count": 2,
               "denominator": 123
             }
           },
@@ -2345,20 +2342,20 @@
             "n_match": 136,
             "top1_accuracy": 1.0,
             "mrr": 1.0,
-            "correct_decision_rate": 0.953,
+            "correct_decision_rate": 0.9701,
             "unsafe": {
-              "count": 0,
+              "count": 3,
               "denominator": 234
             }
           },
           "MX/held_out": {
             "n": 191,
             "n_match": 114,
-            "top1_accuracy": 1.0,
-            "mrr": 1.0,
-            "correct_decision_rate": 0.8848,
+            "top1_accuracy": 0.9912,
+            "mrr": 0.9956,
+            "correct_decision_rate": 0.8901,
             "unsafe": {
-              "count": 1,
+              "count": 3,
               "denominator": 191
             }
           },
@@ -2367,9 +2364,9 @@
             "n_match": 182,
             "top1_accuracy": 1.0,
             "mrr": 1.0,
-            "correct_decision_rate": 0.9761,
+            "correct_decision_rate": 0.9727,
             "unsafe": {
-              "count": 1,
+              "count": 6,
               "denominator": 293
             }
           }
@@ -2379,62 +2376,62 @@
         {
           "threshold": 0.0,
           "coverage": 1.0,
-          "selective_accuracy": 0.6116,
+          "selective_accuracy": 0.6061,
           "n_acted": 1107
         },
         {
-          "threshold": 0.0022,
-          "coverage": 0.8997,
-          "selective_accuracy": 0.6767,
-          "n_acted": 996
+          "threshold": 0.0002,
+          "coverage": 0.9033,
+          "selective_accuracy": 0.665,
+          "n_acted": 1000
         },
         {
-          "threshold": 0.0042,
-          "coverage": 0.8013,
-          "selective_accuracy": 0.7576,
-          "n_acted": 887
+          "threshold": 0.0005,
+          "coverage": 0.7995,
+          "selective_accuracy": 0.7469,
+          "n_acted": 885
         },
         {
-          "threshold": 0.009,
+          "threshold": 0.0024,
           "coverage": 0.7001,
-          "selective_accuracy": 0.8632,
+          "selective_accuracy": 0.849,
           "n_acted": 775
         },
         {
-          "threshold": 0.3304,
+          "threshold": 0.0853,
           "coverage": 0.5998,
-          "selective_accuracy": 0.9789,
+          "selective_accuracy": 0.9548,
           "n_acted": 664
         },
         {
-          "threshold": 0.9742,
-          "coverage": 0.5014,
-          "selective_accuracy": 0.9964,
-          "n_acted": 555
+          "threshold": 0.9887,
+          "coverage": 0.5005,
+          "selective_accuracy": 0.9946,
+          "n_acted": 554
         },
         {
-          "threshold": 0.9922,
-          "coverage": 0.402,
+          "threshold": 0.9996,
+          "coverage": 0.4002,
           "selective_accuracy": 1.0,
-          "n_acted": 445
+          "n_acted": 443
         },
         {
-          "threshold": 0.9951,
-          "coverage": 0.2999,
+          "threshold": 0.9998,
+          "coverage": 0.3017,
           "selective_accuracy": 1.0,
-          "n_acted": 332
+          "n_acted": 334
         },
         {
-          "threshold": 0.9971,
-          "coverage": 0.2033,
+          "threshold": 0.9999,
+          "coverage": 0.2005,
           "selective_accuracy": 1.0,
-          "n_acted": 225
+          "n_acted": 222
         },
         {
-          "threshold": 0.9977,
-          "coverage": 0.1003,
+          "threshold": 1.0,
+          "coverage": 0.103,
           "selective_accuracy": 1.0,
-          "n_acted": 111
+          "n_acted": 114
         },
         {
           "threshold": 1.0,
@@ -2445,432 +2442,13 @@
       ]
     }
   },
-  "act_floor_ablation": {
-    "rules_tuned": {
-      "act_floor": 0.6,
-      "val_t_act": 0.635,
-      "with_floor": {
-        "unsafe": {
-          "count": 21,
-          "denominator": 1107,
-          "acted_denominator": 578
-        },
-        "correct_decision_rate": {
-          "value": 0.8681
-        },
-        "safe_automated_resolution_rate": {
-          "value": 0.5032
-        },
-        "automation_attempted_share": 0.5221
-      },
-      "without_floor": {
-        "unsafe": {
-          "count": 21,
-          "denominator": 1107,
-          "acted_denominator": 578
-        },
-        "correct_decision_rate": {
-          "value": 0.8681
-        },
-        "safe_automated_resolution_rate": {
-          "value": 0.5032
-        },
-        "automation_attempted_share": 0.5221
-      },
-      "with_minus_without": {
-        "unsafe_rate": {
-          "diff": 0.0,
-          "ci95": [
-            0.0,
-            0.0
-          ],
-          "n_cases": 1107
-        },
-        "safe_automated_resolution_rate": {
-          "diff": 0.0,
-          "ci95": [
-            0.0,
-            0.0
-          ],
-          "n_cases": 1107
-        },
-        "correct_decision_rate": {
-          "diff": 0.0,
-          "ci95": [
-            0.0,
-            0.0
-          ],
-          "n_cases": 1107
-        }
-      }
-    },
-    "learned_ranker_calibrated": {
-      "act_floor": 0.6,
-      "val_t_act": 0.91,
-      "with_floor": {
-        "unsafe": {
-          "count": 20,
-          "denominator": 1107,
-          "acted_denominator": 569
-        },
-        "correct_decision_rate": {
-          "value": 0.794
-        },
-        "safe_automated_resolution_rate": {
-          "value": 0.4959
-        },
-        "automation_attempted_share": 0.514
-      },
-      "without_floor": {
-        "unsafe": {
-          "count": 20,
-          "denominator": 1107,
-          "acted_denominator": 569
-        },
-        "correct_decision_rate": {
-          "value": 0.794
-        },
-        "safe_automated_resolution_rate": {
-          "value": 0.4959
-        },
-        "automation_attempted_share": 0.514
-      },
-      "with_minus_without": {
-        "unsafe_rate": {
-          "diff": 0.0,
-          "ci95": [
-            0.0,
-            0.0
-          ],
-          "n_cases": 1107
-        },
-        "safe_automated_resolution_rate": {
-          "diff": 0.0,
-          "ci95": [
-            0.0,
-            0.0
-          ],
-          "n_cases": 1107
-        },
-        "correct_decision_rate": {
-          "diff": 0.0,
-          "ci95": [
-            0.0,
-            0.0
-          ],
-          "n_cases": 1107
-        }
-      }
-    },
-    "learned_ranker_disposition": {
-      "act_floor": 0.6,
-      "val_t_act": 0.79,
-      "with_floor": {
-        "unsafe": {
-          "count": 3,
-          "denominator": 1107,
-          "acted_denominator": 633
-        },
-        "correct_decision_rate": {
-          "value": 0.9386
-        },
-        "safe_automated_resolution_rate": {
-          "value": 0.5691
-        },
-        "automation_attempted_share": 0.5718
-      },
-      "without_floor": {
-        "unsafe": {
-          "count": 3,
-          "denominator": 1107,
-          "acted_denominator": 633
-        },
-        "correct_decision_rate": {
-          "value": 0.9386
-        },
-        "safe_automated_resolution_rate": {
-          "value": 0.5691
-        },
-        "automation_attempted_share": 0.5718
-      },
-      "with_minus_without": {
-        "unsafe_rate": {
-          "diff": 0.0,
-          "ci95": [
-            0.0,
-            0.0
-          ],
-          "n_cases": 1107
-        },
-        "safe_automated_resolution_rate": {
-          "diff": 0.0,
-          "ci95": [
-            0.0,
-            0.0
-          ],
-          "n_cases": 1107
-        },
-        "correct_decision_rate": {
-          "diff": 0.0,
-          "ci95": [
-            0.0,
-            0.0
-          ],
-          "n_cases": 1107
-        }
-      }
-    }
-  },
-  "country_disparity": {
-    "by_country": {
-      "AR": {
-        "n": 266,
-        "correct_decision_rate": {
-          "baseline": {
-            "value": 0.8609,
-            "ci95": [
-              0.8092,
-              0.9111
-            ]
-          },
-          "proposed": {
-            "value": 0.9211,
-            "ci95": [
-              0.8779,
-              0.9567
-            ]
-          },
-          "proposed_minus_baseline": {
-            "diff": 0.0602,
-            "ci95": [
-              0.0078,
-              0.1148
-            ],
-            "n_cases": 266
-          }
-        },
-        "unsafe_rate": {
-          "baseline": {
-            "value": 0.0301,
-            "ci95": [
-              0.0075,
-              0.0573
-            ]
-          },
-          "proposed": {
-            "value": 0.0038,
-            "ci95": [
-              0.0,
-              0.0118
-            ]
-          },
-          "proposed_minus_baseline": {
-            "diff": -0.0263,
-            "ci95": [
-              -0.0536,
-              -0.0071
-            ],
-            "n_cases": 266
-          }
-        },
-        "safe_automated_resolution_rate": {
-          "baseline": {
-            "value": 0.4962,
-            "ci95": [
-              0.4275,
-              0.5677
-            ]
-          },
-          "proposed": {
-            "value": 0.5301,
-            "ci95": [
-              0.4618,
-              0.6038
-            ]
-          },
-          "proposed_minus_baseline": {
-            "diff": 0.0338,
-            "ci95": [
-              -0.0075,
-              0.0787
-            ],
-            "n_cases": 266
-          }
-        }
-      },
-      "CO": {
-        "n": 357,
-        "correct_decision_rate": {
-          "baseline": {
-            "value": 0.8627,
-            "ci95": [
-              0.8247,
-              0.8984
-            ]
-          },
-          "proposed": {
-            "value": 0.9496,
-            "ci95": [
-              0.9192,
-              0.9744
-            ]
-          },
-          "proposed_minus_baseline": {
-            "diff": 0.0868,
-            "ci95": [
-              0.0491,
-              0.1272
-            ],
-            "n_cases": 357
-          }
-        },
-        "unsafe_rate": {
-          "baseline": {
-            "value": 0.0196,
-            "ci95": [
-              0.0079,
-              0.035
-            ]
-          },
-          "proposed": {
-            "value": 0.0,
-            "ci95": [
-              0.0,
-              0.0
-            ]
-          },
-          "proposed_minus_baseline": {
-            "diff": -0.0196,
-            "ci95": [
-              -0.0354,
-              -0.0059
-            ],
-            "n_cases": 357
-          }
-        },
-        "safe_automated_resolution_rate": {
-          "baseline": {
-            "value": 0.5098,
-            "ci95": [
-              0.4474,
-              0.5677
-            ]
-          },
-          "proposed": {
-            "value": 0.5938,
-            "ci95": [
-              0.5318,
-              0.6518
-            ]
-          },
-          "proposed_minus_baseline": {
-            "diff": 0.084,
-            "ci95": [
-              0.0523,
-              0.1178
-            ],
-            "n_cases": 357
-          }
-        }
-      },
-      "MX": {
-        "n": 484,
-        "correct_decision_rate": {
-          "baseline": {
-            "value": 0.876,
-            "ci95": [
-              0.8427,
-              0.9093
-            ]
-          },
-          "proposed": {
-            "value": 0.9401,
-            "ci95": [
-              0.9151,
-              0.9637
-            ]
-          },
-          "proposed_minus_baseline": {
-            "diff": 0.064,
-            "ci95": [
-              0.0335,
-              0.0957
-            ],
-            "n_cases": 484
-          }
-        },
-        "unsafe_rate": {
-          "baseline": {
-            "value": 0.0124,
-            "ci95": [
-              0.0041,
-              0.0228
-            ]
-          },
-          "proposed": {
-            "value": 0.0041,
-            "ci95": [
-              0.0,
-              0.0105
-            ]
-          },
-          "proposed_minus_baseline": {
-            "diff": -0.0083,
-            "ci95": [
-              -0.0167,
-              -0.002
-            ],
-            "n_cases": 484
-          }
-        },
-        "safe_automated_resolution_rate": {
-          "baseline": {
-            "value": 0.5021,
-            "ci95": [
-              0.4505,
-              0.5563
-            ]
-          },
-          "proposed": {
-            "value": 0.5723,
-            "ci95": [
-              0.5195,
-              0.624
-            ]
-          },
-          "proposed_minus_baseline": {
-            "diff": 0.0702,
-            "ci95": [
-              0.043,
-              0.0981
-            ],
-            "n_cases": 484
-          }
-        }
-      }
-    },
-    "gap_max_minus_min": {
-      "correct_decision_rate": {
-        "baseline": 0.0151,
-        "proposed": 0.0285
-      },
-      "unsafe_rate": {
-        "baseline": 0.0177,
-        "proposed": 0.0041
-      },
-      "safe_automated_resolution_rate": {
-        "baseline": 0.0136,
-        "proposed": 0.0637
-      }
-    }
-  },
   "paired_differences": {
     "learned_ranker_disposition_minus_rules_fixed": {
       "top1_accuracy": {
-        "diff": 0.0074,
+        "diff": 0.0029,
         "ci95": [
-          0.0015,
-          0.0145
+          -0.0072,
+          0.0117
         ],
         "n_cases": 1107
       },
@@ -2883,18 +2461,18 @@
         "n_cases": 684
       },
       "top1_accuracy_held_out": {
-        "diff": 0.0117,
+        "diff": 0.0,
         "ci95": [
-          0.0,
-          0.0276
+          -0.0228,
+          0.02
         ],
         "n_cases": 423
       },
       "mrr": {
-        "diff": 0.0037,
+        "diff": 0.0012,
         "ci95": [
-          0.0007,
-          0.0072
+          -0.0038,
+          0.0058
         ],
         "n_cases": 1107
       },
@@ -2907,68 +2485,68 @@
         "n_cases": 684
       },
       "mrr_held_out": {
-        "diff": 0.0058,
+        "diff": -0.0006,
         "ci95": [
-          0.0,
-          0.0138
+          -0.0125,
+          0.0096
         ],
         "n_cases": 423
       },
       "correct_decision_rate": {
-        "diff": 0.2195,
+        "diff": 0.2276,
         "ci95": [
-          0.1886,
-          0.2523
+          0.1993,
+          0.2584
         ],
         "n_cases": 1107
       },
       "correct_decision_rate_seen": {
-        "diff": 0.2456,
+        "diff": 0.2558,
         "ci95": [
-          0.2023,
-          0.288
+          0.2154,
+          0.2961
         ],
         "n_cases": 684
       },
       "correct_decision_rate_held_out": {
-        "diff": 0.1773,
+        "diff": 0.182,
         "ci95": [
-          0.1283,
-          0.2312
+          0.1383,
+          0.2299
         ],
         "n_cases": 423
       },
       "unsafe_rate": {
-        "diff": -0.0379,
+        "diff": -0.0235,
         "ci95": [
-          -0.0501,
-          -0.0264
+          -0.0353,
+          -0.0118
         ],
         "n_cases": 1107
       },
       "unsafe_rate_seen": {
-        "diff": -0.0278,
+        "diff": -0.0234,
         "ci95": [
-          -0.042,
-          -0.0148
+          -0.0384,
+          -0.0089
         ],
         "n_cases": 684
       },
       "unsafe_rate_held_out": {
-        "diff": -0.0544,
+        "diff": -0.0236,
         "ci95": [
-          -0.0788,
-          -0.0335
+          -0.0447,
+          -0.0049
         ],
         "n_cases": 423
       }
     },
     "learned_ranker_disposition_minus_rules_tuned": {
       "top1_accuracy": {
-        "diff": 0.0074,
+        "diff": 0.0029,
         "ci95": [
-          0.0015,
-          0.0145
+          -0.0072,
+          0.0117
         ],
         "n_cases": 1107
       },
@@ -2981,18 +2559,18 @@
         "n_cases": 684
       },
       "top1_accuracy_held_out": {
-        "diff": 0.0117,
+        "diff": 0.0,
         "ci95": [
-          0.0,
-          0.0276
+          -0.0228,
+          0.02
         ],
         "n_cases": 423
       },
       "mrr": {
-        "diff": 0.0037,
+        "diff": 0.0012,
         "ci95": [
-          0.0007,
-          0.0072
+          -0.0038,
+          0.0058
         ],
         "n_cases": 1107
       },
@@ -3005,58 +2583,58 @@
         "n_cases": 684
       },
       "mrr_held_out": {
-        "diff": 0.0058,
+        "diff": -0.0006,
         "ci95": [
-          0.0,
-          0.0138
+          -0.0125,
+          0.0096
         ],
         "n_cases": 423
       },
       "correct_decision_rate": {
-        "diff": 0.0705,
+        "diff": 0.1003,
         "ci95": [
-          0.0489,
-          0.0934
+          0.079,
+          0.1223
         ],
         "n_cases": 1107
       },
       "correct_decision_rate_seen": {
-        "diff": 0.0819,
+        "diff": 0.1053,
         "ci95": [
-          0.0549,
-          0.1097
+          0.077,
+          0.1311
         ],
         "n_cases": 684
       },
       "correct_decision_rate_held_out": {
-        "diff": 0.052,
+        "diff": 0.0922,
         "ci95": [
-          0.0138,
-          0.0926
+          0.0538,
+          0.1318
         ],
         "n_cases": 423
       },
       "unsafe_rate": {
-        "diff": -0.0163,
+        "diff": -0.0063,
         "ci95": [
-          -0.0249,
-          -0.009
+          -0.0145,
+          0.0009
         ],
         "n_cases": 1107
       },
       "unsafe_rate_seen": {
-        "diff": -0.0132,
+        "diff": -0.0088,
         "ci95": [
-          -0.0236,
-          -0.0043
+          -0.0195,
+          0.0028
         ],
         "n_cases": 684
       },
       "unsafe_rate_held_out": {
-        "diff": -0.0213,
+        "diff": -0.0024,
         "ci95": [
-          -0.0381,
-          -0.0072
+          -0.0145,
+          0.0098
         ],
         "n_cases": 423
       }
@@ -3077,7 +2655,7 @@
           "recall_error": null,
           "report_date": "2026-01-03",
           "decision": "act",
-          "confidence": 0.82611,
+          "confidence": 0.839236,
           "outcome": "unsafe",
           "top3": [
             {
@@ -3088,7 +2666,7 @@
               "merchant_name": null,
               "channel": "App",
               "is_target": false,
-              "score": 0.8261
+              "score": 0.8392
             },
             {
               "transaction_date": null,
@@ -3242,49 +2820,6 @@
           ]
         },
         {
-          "case_id": "test-00072-es",
-          "description": "[redacted before publication: generated over organizer transactions]",
-          "label": "ambiguous",
-          "family": "F6",
-          "recall_error": null,
-          "report_date": "2026-01-11",
-          "decision": "act",
-          "confidence": 0.91954,
-          "outcome": "unsafe",
-          "top3": [
-            {
-              "transaction_date": null,
-              "amount": null,
-              "currency": "ARS",
-              "transaction_type": "Purchase",
-              "merchant_name": null,
-              "channel": "App",
-              "is_target": true,
-              "score": 0.9195
-            },
-            {
-              "transaction_date": null,
-              "amount": null,
-              "currency": "ARS",
-              "transaction_type": "Purchase",
-              "merchant_name": null,
-              "channel": "ATM",
-              "is_target": false,
-              "score": 0.4778
-            },
-            {
-              "transaction_date": null,
-              "amount": null,
-              "currency": "ARS",
-              "transaction_type": "Purchase",
-              "merchant_name": null,
-              "channel": "POS",
-              "is_target": false,
-              "score": 0.0
-            }
-          ]
-        },
-        {
           "case_id": "test-00122-es",
           "description": "[redacted before publication: generated over organizer transactions]",
           "label": "ambiguous",
@@ -3324,6 +2859,49 @@
               "channel": "Web",
               "is_target": false,
               "score": 0.4292
+            }
+          ]
+        },
+        {
+          "case_id": "test-00124-es",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "no_match",
+          "family": "F2",
+          "recall_error": null,
+          "report_date": "2026-01-19",
+          "decision": "act",
+          "confidence": 0.844567,
+          "outcome": "unsafe",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.8446
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.0
             }
           ]
         }
@@ -3369,6 +2947,49 @@
               "channel": "POS",
               "is_target": false,
               "score": 0.7143
+            }
+          ]
+        },
+        {
+          "case_id": "test-00099-es",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "match",
+          "family": "F6",
+          "recall_error": null,
+          "report_date": "2026-01-16",
+          "decision": "clarify",
+          "confidence": 1.0,
+          "outcome": "safe_other",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "App",
+              "is_target": false,
+              "score": 1.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "Web",
+              "is_target": true,
+              "score": 1.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Payment",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.0
             }
           ]
         },
@@ -3457,54 +3078,54 @@
               "score": 0.5082
             }
           ]
-        },
+        }
+      ]
+    },
+    "rules_tuned": {
+      "unsafe": [
         {
-          "case_id": "test-00369-es",
+          "case_id": "test-00011-es",
           "description": "[redacted before publication: generated over organizer transactions]",
-          "label": "match",
-          "family": "F4",
+          "label": "ambiguous",
+          "family": "F2",
           "recall_error": null,
-          "report_date": "2026-03-12",
-          "decision": "clarify",
-          "confidence": 0.0,
-          "outcome": "safe_other",
+          "report_date": "2026-01-03",
+          "decision": "act",
+          "confidence": 0.61349,
+          "outcome": "unsafe",
           "top3": [
             {
               "transaction_date": null,
               "amount": null,
-              "currency": "COP",
-              "transaction_type": "Deposit",
+              "currency": "USD",
+              "transaction_type": "Purchase",
               "merchant_name": null,
-              "channel": "POS",
+              "channel": "App",
               "is_target": false,
-              "score": 0.0
+              "score": 0.8392
             },
             {
               "transaction_date": null,
               "amount": null,
-              "currency": "COP",
-              "transaction_type": "Withdrawal",
+              "currency": "USD",
+              "transaction_type": "Purchase",
               "merchant_name": null,
               "channel": "ATM",
               "is_target": true,
-              "score": 0.0
+              "score": 0.5077
             },
             {
               "transaction_date": null,
               "amount": null,
               "currency": "COP",
-              "transaction_type": "Deposit",
+              "transaction_type": "Transfer",
               "merchant_name": null,
               "channel": "ATM",
               "is_target": false,
               "score": 0.0
             }
           ]
-        }
-      ]
-    },
-    "rules_tuned": {
-      "unsafe": [
+        },
         {
           "case_id": "test-00023-es",
           "description": "[redacted before publication: generated over organizer transactions]",
@@ -3513,7 +3134,7 @@
           "recall_error": null,
           "report_date": "2026-01-04",
           "decision": "act",
-          "confidence": 0.99885,
+          "confidence": 0.997768,
           "outcome": "unsafe",
           "top3": [
             {
@@ -3549,41 +3170,84 @@
           ]
         },
         {
-          "case_id": "test-00072-es",
+          "case_id": "test-00124-es",
           "description": "[redacted before publication: generated over organizer transactions]",
-          "label": "ambiguous",
-          "family": "F6",
+          "label": "no_match",
+          "family": "F2",
           "recall_error": null,
-          "report_date": "2026-01-11",
+          "report_date": "2026-01-19",
           "decision": "act",
-          "confidence": 0.843532,
+          "confidence": 0.986566,
           "outcome": "unsafe",
           "top3": [
             {
               "transaction_date": null,
               "amount": null,
-              "currency": "ARS",
-              "transaction_type": "Purchase",
-              "merchant_name": null,
-              "channel": "App",
-              "is_target": true,
-              "score": 0.9195
-            },
-            {
-              "transaction_date": null,
-              "amount": null,
-              "currency": "ARS",
+              "currency": "COP",
               "transaction_type": "Purchase",
               "merchant_name": null,
               "channel": "ATM",
               "is_target": false,
-              "score": 0.4778
+              "score": 0.8446
             },
             {
               "transaction_date": null,
               "amount": null,
-              "currency": "ARS",
+              "currency": "COP",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "case_id": "test-00124-pt",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "no_match",
+          "family": "F2",
+          "recall_error": null,
+          "report_date": "2026-01-19",
+          "decision": "act",
+          "confidence": 0.986566,
+          "outcome": "unsafe",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
               "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.8446
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Withdrawal",
               "merchant_name": null,
               "channel": "POS",
               "is_target": false,
@@ -3599,7 +3263,7 @@
           "recall_error": null,
           "report_date": "2026-01-25",
           "decision": "act",
-          "confidence": 0.802876,
+          "confidence": 0.770922,
           "outcome": "unsafe",
           "top3": [
             {
@@ -3642,7 +3306,7 @@
           "recall_error": null,
           "report_date": "2026-02-10",
           "decision": "act",
-          "confidence": 0.773453,
+          "confidence": 0.743494,
           "outcome": "unsafe",
           "top3": [
             {
@@ -3676,92 +3340,6 @@
               "score": 0.0
             }
           ]
-        },
-        {
-          "case_id": "test-00259-es",
-          "description": "[redacted before publication: generated over organizer transactions]",
-          "label": "no_match",
-          "family": "F6",
-          "recall_error": null,
-          "report_date": "2026-02-18",
-          "decision": "act",
-          "confidence": 0.673952,
-          "outcome": "unsafe",
-          "top3": [
-            {
-              "transaction_date": null,
-              "amount": null,
-              "currency": "COP",
-              "transaction_type": "Withdrawal",
-              "merchant_name": null,
-              "channel": "POS",
-              "is_target": false,
-              "score": 1.0
-            },
-            {
-              "transaction_date": null,
-              "amount": null,
-              "currency": "COP",
-              "transaction_type": "Transfer",
-              "merchant_name": null,
-              "channel": "Branch",
-              "is_target": false,
-              "score": 0.7143
-            },
-            {
-              "transaction_date": null,
-              "amount": null,
-              "currency": "COP",
-              "transaction_type": "Transfer",
-              "merchant_name": null,
-              "channel": "App",
-              "is_target": false,
-              "score": 0.7143
-            }
-          ]
-        },
-        {
-          "case_id": "test-00263-es",
-          "description": "[redacted before publication: generated over organizer transactions]",
-          "label": "ambiguous",
-          "family": "F1",
-          "recall_error": null,
-          "report_date": "2026-02-19",
-          "decision": "act",
-          "confidence": 0.706876,
-          "outcome": "unsafe",
-          "top3": [
-            {
-              "transaction_date": null,
-              "amount": null,
-              "currency": "USD",
-              "transaction_type": "Withdrawal",
-              "merchant_name": null,
-              "channel": "ATM",
-              "is_target": true,
-              "score": 1.0
-            },
-            {
-              "transaction_date": null,
-              "amount": null,
-              "currency": "USD",
-              "transaction_type": "Withdrawal",
-              "merchant_name": null,
-              "channel": "POS",
-              "is_target": false,
-              "score": 0.7143
-            },
-            {
-              "transaction_date": null,
-              "amount": null,
-              "currency": "USD",
-              "transaction_type": "Payment",
-              "merchant_name": null,
-              "channel": "POS",
-              "is_target": false,
-              "score": 0.7143
-            }
-          ]
         }
       ],
       "wrong_top1_on_match": [
@@ -3773,7 +3351,7 @@
           "recall_error": null,
           "report_date": "2026-01-13",
           "decision": "clarify",
-          "confidence": 0.11568,
+          "confidence": 0.126747,
           "outcome": "safe_other",
           "top3": [
             {
@@ -3809,6 +3387,49 @@
           ]
         },
         {
+          "case_id": "test-00099-es",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "match",
+          "family": "F6",
+          "recall_error": null,
+          "report_date": "2026-01-16",
+          "decision": "clarify",
+          "confidence": 0.100185,
+          "outcome": "safe_other",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "App",
+              "is_target": false,
+              "score": 1.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "Web",
+              "is_target": true,
+              "score": 1.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Payment",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        },
+        {
           "case_id": "test-00185-es",
           "description": "[redacted before publication: generated over organizer transactions]",
           "label": "match",
@@ -3816,7 +3437,7 @@
           "recall_error": null,
           "report_date": "2026-01-30",
           "decision": "clarify",
-          "confidence": 0.127627,
+          "confidence": 0.139023,
           "outcome": "safe_other",
           "top3": [
             {
@@ -3859,7 +3480,7 @@
           "recall_error": null,
           "report_date": "2026-01-31",
           "decision": "clarify",
-          "confidence": 0.118864,
+          "confidence": 0.131424,
           "outcome": "safe_other",
           "top3": [
             {
@@ -3893,49 +3514,6 @@
               "score": 0.5082
             }
           ]
-        },
-        {
-          "case_id": "test-00369-es",
-          "description": "[redacted before publication: generated over organizer transactions]",
-          "label": "match",
-          "family": "F4",
-          "recall_error": null,
-          "report_date": "2026-03-12",
-          "decision": "abstain",
-          "confidence": 0.005474,
-          "outcome": "safe_other",
-          "top3": [
-            {
-              "transaction_date": null,
-              "amount": null,
-              "currency": "COP",
-              "transaction_type": "Deposit",
-              "merchant_name": null,
-              "channel": "POS",
-              "is_target": false,
-              "score": 0.0
-            },
-            {
-              "transaction_date": null,
-              "amount": null,
-              "currency": "COP",
-              "transaction_type": "Withdrawal",
-              "merchant_name": null,
-              "channel": "ATM",
-              "is_target": true,
-              "score": 0.0
-            },
-            {
-              "transaction_date": null,
-              "amount": null,
-              "currency": "COP",
-              "transaction_type": "Deposit",
-              "merchant_name": null,
-              "channel": "ATM",
-              "is_target": false,
-              "score": 0.0
-            }
-          ]
         }
       ]
     },
@@ -3949,7 +3527,7 @@
           "recall_error": null,
           "report_date": "2026-01-19",
           "decision": "act",
-          "confidence": 0.927576,
+          "confidence": 0.918929,
           "outcome": "unsafe",
           "top3": [
             {
@@ -3960,7 +3538,7 @@
               "merchant_name": null,
               "channel": "App",
               "is_target": true,
-              "score": 0.999
+              "score": 0.9987
             },
             {
               "transaction_date": null,
@@ -3970,7 +3548,7 @@
               "merchant_name": null,
               "channel": "ATM",
               "is_target": false,
-              "score": 0.0018
+              "score": 0.0053
             },
             {
               "transaction_date": null,
@@ -3985,92 +3563,6 @@
           ]
         },
         {
-          "case_id": "test-00405-es",
-          "description": "[redacted before publication: generated over organizer transactions]",
-          "label": "ambiguous",
-          "family": "F5",
-          "recall_error": null,
-          "report_date": "2026-03-18",
-          "decision": "act",
-          "confidence": 0.921042,
-          "outcome": "unsafe",
-          "top3": [
-            {
-              "transaction_date": null,
-              "amount": null,
-              "currency": "USD",
-              "transaction_type": "Purchase",
-              "merchant_name": null,
-              "channel": "App",
-              "is_target": true,
-              "score": 0.9978
-            },
-            {
-              "transaction_date": null,
-              "amount": null,
-              "currency": "USD",
-              "transaction_type": "Purchase",
-              "merchant_name": null,
-              "channel": "ATM",
-              "is_target": false,
-              "score": 0.0059
-            },
-            {
-              "transaction_date": null,
-              "amount": null,
-              "currency": "USD",
-              "transaction_type": "Withdrawal",
-              "merchant_name": null,
-              "channel": "ATM",
-              "is_target": false,
-              "score": 0.0
-            }
-          ]
-        },
-        {
-          "case_id": "test-00405-pt",
-          "description": "[redacted before publication: generated over organizer transactions]",
-          "label": "ambiguous",
-          "family": "F5",
-          "recall_error": null,
-          "report_date": "2026-03-18",
-          "decision": "act",
-          "confidence": 0.919219,
-          "outcome": "unsafe",
-          "top3": [
-            {
-              "transaction_date": null,
-              "amount": null,
-              "currency": "USD",
-              "transaction_type": "Purchase",
-              "merchant_name": null,
-              "channel": "App",
-              "is_target": true,
-              "score": 0.996
-            },
-            {
-              "transaction_date": null,
-              "amount": null,
-              "currency": "USD",
-              "transaction_type": "Purchase",
-              "merchant_name": null,
-              "channel": "ATM",
-              "is_target": false,
-              "score": 0.0078
-            },
-            {
-              "transaction_date": null,
-              "amount": null,
-              "currency": "USD",
-              "transaction_type": "Purchase",
-              "merchant_name": null,
-              "channel": "Web",
-              "is_target": false,
-              "score": 0.0
-            }
-          ]
-        },
-        {
           "case_id": "test-00442-es",
           "description": "[redacted before publication: generated over organizer transactions]",
           "label": "ambiguous",
@@ -4078,7 +3570,7 @@
           "recall_error": null,
           "report_date": "2026-03-26",
           "decision": "act",
-          "confidence": 0.92658,
+          "confidence": 0.919065,
           "outcome": "unsafe",
           "top3": [
             {
@@ -4099,7 +3591,7 @@
               "merchant_name": null,
               "channel": "POS",
               "is_target": false,
-              "score": 0.0001
+              "score": 0.0002
             },
             {
               "transaction_date": null,
@@ -4114,180 +3606,88 @@
           ]
         },
         {
-          "case_id": "test-00452-es",
+          "case_id": "test-00474-es",
           "description": "[redacted before publication: generated over organizer transactions]",
           "label": "ambiguous",
-          "family": "F3",
+          "family": "F1",
           "recall_error": null,
-          "report_date": "2026-03-29",
+          "report_date": "2026-04-04",
           "decision": "act",
-          "confidence": 0.916679,
+          "confidence": 0.91905,
           "outcome": "unsafe",
           "top3": [
             {
               "transaction_date": null,
               "amount": null,
-              "currency": "COP",
-              "transaction_type": "Transfer",
+              "currency": "USD",
+              "transaction_type": "Withdrawal",
               "merchant_name": null,
               "channel": "ATM",
               "is_target": true,
-              "score": 0.9892
+              "score": 1.0
             },
             {
               "transaction_date": null,
               "amount": null,
-              "currency": "COP",
-              "transaction_type": "Transfer",
+              "currency": "USD",
+              "transaction_type": "Withdrawal",
               "merchant_name": null,
               "channel": "ATM",
               "is_target": false,
-              "score": 0.0151
+              "score": 0.0002
             },
             {
               "transaction_date": null,
               "amount": null,
-              "currency": "COP",
-              "transaction_type": "Transfer",
+              "currency": "ARS",
+              "transaction_type": "Deposit",
               "merchant_name": null,
-              "channel": "POS",
+              "channel": "ATM",
               "is_target": false,
               "score": 0.0
             }
           ]
         },
         {
-          "case_id": "test-00462-es",
+          "case_id": "test-00474-pt",
           "description": "[redacted before publication: generated over organizer transactions]",
           "label": "ambiguous",
-          "family": "F6",
+          "family": "F1",
           "recall_error": null,
-          "report_date": "2026-04-01",
+          "report_date": "2026-04-04",
           "decision": "act",
-          "confidence": 0.927628,
+          "confidence": 0.91905,
           "outcome": "unsafe",
           "top3": [
             {
               "transaction_date": null,
               "amount": null,
-              "currency": "COP",
-              "transaction_type": "Payment",
-              "merchant_name": null,
-              "channel": "Transfer",
-              "is_target": true,
-              "score": 0.9986
-            },
-            {
-              "transaction_date": null,
-              "amount": null,
-              "currency": "COP",
-              "transaction_type": "Adjustment",
-              "merchant_name": null,
-              "channel": "App",
-              "is_target": false,
-              "score": 0.0014
-            },
-            {
-              "transaction_date": null,
-              "amount": null,
-              "currency": "COP",
-              "transaction_type": "Withdrawal",
-              "merchant_name": null,
-              "channel": "ATM",
-              "is_target": false,
-              "score": 0.0
-            }
-          ]
-        }
-      ],
-      "wrong_top1_on_match": [
-        {
-          "case_id": "test-00185-es",
-          "description": "[redacted before publication: generated over organizer transactions]",
-          "label": "match",
-          "family": "F5",
-          "recall_error": null,
-          "report_date": "2026-01-30",
-          "decision": "clarify",
-          "confidence": 0.027242,
-          "outcome": "safe_other",
-          "top3": [
-            {
-              "transaction_date": null,
-              "amount": null,
-              "currency": "ARS",
-              "transaction_type": "Withdrawal",
-              "merchant_name": null,
-              "channel": "ATM",
-              "is_target": false,
-              "score": 0.9995
-            },
-            {
-              "transaction_date": null,
-              "amount": null,
-              "currency": "ARS",
+              "currency": "USD",
               "transaction_type": "Withdrawal",
               "merchant_name": null,
               "channel": "ATM",
               "is_target": true,
-              "score": 0.9152
+              "score": 1.0
             },
             {
               "transaction_date": null,
               "amount": null,
-              "currency": "ARS",
+              "currency": "USD",
               "transaction_type": "Withdrawal",
               "merchant_name": null,
               "channel": "ATM",
               "is_target": false,
+              "score": 0.0002
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Deposit",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
               "score": 0.0
-            }
-          ]
-        }
-      ]
-    },
-    "learned_ranker_disposition": {
-      "unsafe": [
-        {
-          "case_id": "test-00023-es",
-          "description": "[redacted before publication: generated over organizer transactions]",
-          "label": "no_match",
-          "family": "F6",
-          "recall_error": null,
-          "report_date": "2026-01-04",
-          "decision": "act",
-          "confidence": 0.991769,
-          "outcome": "unsafe",
-          "top3": [
-            {
-              "transaction_date": null,
-              "amount": null,
-              "currency": "ARS",
-              "transaction_type": "Purchase",
-              "merchant_name": null,
-              "channel": "POS",
-              "is_target": false,
-              "score": 0.9245
-            },
-            {
-              "transaction_date": null,
-              "amount": null,
-              "currency": "ARS",
-              "transaction_type": "Payment",
-              "merchant_name": null,
-              "channel": "POS",
-              "is_target": false,
-              "score": 0.0003
-            },
-            {
-              "transaction_date": null,
-              "amount": null,
-              "currency": "ARS",
-              "transaction_type": "Withdrawal",
-              "merchant_name": null,
-              "channel": "App",
-              "is_target": false,
-              "score": 0.0001
             }
           ]
         },
@@ -4299,7 +3699,7 @@
           "recall_error": null,
           "report_date": "2026-04-08",
           "decision": "act",
-          "confidence": 0.990366,
+          "confidence": 0.923563,
           "outcome": "unsafe",
           "top3": [
             {
@@ -4310,7 +3710,7 @@
               "merchant_name": null,
               "channel": "ATM",
               "is_target": true,
-              "score": 0.9988
+              "score": 0.9967
             },
             {
               "transaction_date": null,
@@ -4320,7 +3720,7 @@
               "merchant_name": null,
               "channel": "ATM",
               "is_target": false,
-              "score": 0.0054
+              "score": 0.0013
             },
             {
               "transaction_date": null,
@@ -4342,7 +3742,7 @@
           "recall_error": null,
           "report_date": "2026-05-20",
           "decision": "act",
-          "confidence": 0.973491,
+          "confidence": 0.922857,
           "outcome": "unsafe",
           "top3": [
             {
@@ -4353,7 +3753,7 @@
               "merchant_name": null,
               "channel": "POS",
               "is_target": false,
-              "score": 0.997
+              "score": 0.9938
             },
             {
               "transaction_date": null,
@@ -4363,7 +3763,7 @@
               "merchant_name": null,
               "channel": "POS",
               "is_target": false,
-              "score": 0.0
+              "score": 0.0001
             },
             {
               "transaction_date": null,
@@ -4380,6 +3780,49 @@
       ],
       "wrong_top1_on_match": [
         {
+          "case_id": "test-00099-es",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "match",
+          "family": "F6",
+          "recall_error": null,
+          "report_date": "2026-01-16",
+          "decision": "clarify",
+          "confidence": 0.020379,
+          "outcome": "safe_other",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "App",
+              "is_target": false,
+              "score": 0.9972
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "Web",
+              "is_target": true,
+              "score": 0.9966
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Payment",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.0002
+            }
+          ]
+        },
+        {
           "case_id": "test-00185-es",
           "description": "[redacted before publication: generated over organizer transactions]",
           "label": "match",
@@ -4387,7 +3830,7 @@
           "recall_error": null,
           "report_date": "2026-01-30",
           "decision": "clarify",
-          "confidence": 0.005488,
+          "confidence": 0.026372,
           "outcome": "safe_other",
           "top3": [
             {
@@ -4398,7 +3841,7 @@
               "merchant_name": null,
               "channel": "ATM",
               "is_target": false,
-              "score": 0.9995
+              "score": 0.9998
             },
             {
               "transaction_date": null,
@@ -4408,7 +3851,7 @@
               "merchant_name": null,
               "channel": "ATM",
               "is_target": true,
-              "score": 0.9152
+              "score": 0.9438
             },
             {
               "transaction_date": null,
@@ -4421,6 +3864,528 @@
               "score": 0.0
             }
           ]
+        },
+        {
+          "case_id": "test-00242-es",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "match",
+          "family": "F6",
+          "recall_error": null,
+          "report_date": "2026-02-14",
+          "decision": "abstain",
+          "confidence": 0.024357,
+          "outcome": "safe_other",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Payment",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.0012
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Payment",
+              "merchant_name": null,
+              "channel": "Web",
+              "is_target": true,
+              "score": 0.0002
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "case_id": "test-00561-es",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "match",
+          "family": "F5",
+          "recall_error": null,
+          "report_date": "2026-04-23",
+          "decision": "clarify",
+          "confidence": 0.036328,
+          "outcome": "safe_other",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Payment",
+              "merchant_name": null,
+              "channel": "Web",
+              "is_target": false,
+              "score": 0.3766
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Payment",
+              "merchant_name": null,
+              "channel": "Web",
+              "is_target": true,
+              "score": 0.2815
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.2142
+            }
+          ]
+        }
+      ]
+    },
+    "learned_ranker_disposition": {
+      "unsafe": [
+        {
+          "case_id": "test-00011-es",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "ambiguous",
+          "family": "F2",
+          "recall_error": null,
+          "report_date": "2026-01-03",
+          "decision": "act",
+          "confidence": 0.960895,
+          "outcome": "unsafe",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "App",
+              "is_target": false,
+              "score": 0.8902
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": true,
+              "score": 0.5605
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Transfer",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "case_id": "test-00023-es",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "no_match",
+          "family": "F6",
+          "recall_error": null,
+          "report_date": "2026-01-04",
+          "decision": "act",
+          "confidence": 0.888967,
+          "outcome": "unsafe",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.7977
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Payment",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.0002
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "App",
+              "is_target": false,
+              "score": 0.0001
+            }
+          ]
+        },
+        {
+          "case_id": "test-00064-es",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "no_match",
+          "family": "F5",
+          "recall_error": null,
+          "report_date": "2026-01-10",
+          "decision": "act",
+          "confidence": 0.345984,
+          "outcome": "unsafe",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.2924
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Transfer",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "Web",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "case_id": "test-00068-es",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "no_match",
+          "family": "F2",
+          "recall_error": null,
+          "report_date": "2026-01-11",
+          "decision": "act",
+          "confidence": 0.358315,
+          "outcome": "unsafe",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Transfer",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.0047
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Deposit",
+              "merchant_name": null,
+              "channel": "App",
+              "is_target": false,
+              "score": 0.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Deposit",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "case_id": "test-00098-es",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "no_match",
+          "family": "F6",
+          "recall_error": null,
+          "report_date": "2026-01-16",
+          "decision": "act",
+          "confidence": 0.499753,
+          "outcome": "unsafe",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Transfer",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.5708
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Payment",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.0004
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.0004
+            }
+          ]
+        },
+        {
+          "case_id": "test-00124-es",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "no_match",
+          "family": "F2",
+          "recall_error": null,
+          "report_date": "2026-01-19",
+          "decision": "act",
+          "confidence": 0.375129,
+          "outcome": "unsafe",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.8513
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        }
+      ],
+      "wrong_top1_on_match": [
+        {
+          "case_id": "test-00099-es",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "match",
+          "family": "F6",
+          "recall_error": null,
+          "report_date": "2026-01-16",
+          "decision": "clarify",
+          "confidence": 0.000178,
+          "outcome": "safe_other",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "App",
+              "is_target": false,
+              "score": 0.9972
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "Web",
+              "is_target": true,
+              "score": 0.9966
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Payment",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.0002
+            }
+          ]
+        },
+        {
+          "case_id": "test-00185-es",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "match",
+          "family": "F5",
+          "recall_error": null,
+          "report_date": "2026-01-30",
+          "decision": "clarify",
+          "confidence": 0.00622,
+          "outcome": "safe_other",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.9998
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": true,
+              "score": 0.9438
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "case_id": "test-00242-es",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "match",
+          "family": "F6",
+          "recall_error": null,
+          "report_date": "2026-02-14",
+          "decision": "abstain",
+          "confidence": 0.000695,
+          "outcome": "safe_other",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Payment",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.0012
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Payment",
+              "merchant_name": null,
+              "channel": "Web",
+              "is_target": true,
+              "score": 0.0002
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "case_id": "test-00561-es",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "match",
+          "family": "F5",
+          "recall_error": null,
+          "report_date": "2026-04-23",
+          "decision": "clarify",
+          "confidence": 0.002907,
+          "outcome": "safe_other",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Payment",
+              "merchant_name": null,
+              "channel": "Web",
+              "is_target": false,
+              "score": 0.3766
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Payment",
+              "merchant_name": null,
+              "channel": "Web",
+              "is_target": true,
+              "score": 0.2815
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.2142
+            }
+          ]
         }
       ]
     }
@@ -4428,7 +4393,7 @@
   "parser_cue_recovery": {
     "es/held_out": {
       "amount_given": 230,
-      "amount_read": 209,
+      "amount_read": 152,
       "date_given": 211,
       "date_read": 113
     },

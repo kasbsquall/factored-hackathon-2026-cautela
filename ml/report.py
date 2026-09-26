@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 
+from ml import report_changes
 from ml.data import CASES_DIR, REPORTS_DIR
 
 SYSTEM_NOTES = {
@@ -117,6 +118,19 @@ def examples_block(res: dict, name: str, limit: int = 6) -> str:
     return "\n".join(out)
 
 
+def _floor_note(res: dict) -> str:
+    abl = res.get("act_floor_ablation", {})
+    binding = [n for n, d in abl.items() if d["val_t_act"] < d["act_floor"]]
+    note = ("The floor binds for: " + ", ".join(f"`{n}`" for n in binding) + "." if binding else
+            "In this run every val-tuned act threshold is already above the floor, so the floor does not bind "
+            "and costs nothing on test; it guards against a refit that lands on a lower threshold.")
+    prev = report_changes.previous_thresholds_below(min((d["act_floor"] for d in abl.values()), default=0.0))
+    if prev:
+        note += (" In the previous run the val search chose " + ", ".join(f"t_act = {t} for `{n}`" for n, t in prev)
+                 + ", below the floor; the floor would have bound there.")
+    return note
+
+
 def render() -> str:
     res = json.loads((REPORTS_DIR / "results.json").read_text(encoding="utf-8"))
     fit = json.loads((REPORTS_DIR / "fitted.json").read_text(encoding="utf-8"))
@@ -158,6 +172,15 @@ def render() -> str:
         "## Decisions by label\n", label_table(res) + "\n",
         "## Escalation\n", escalation_table(res) + "\n",
         "## Paired differences (proposed minus baseline, same cases)\n", diff_table(res) + "\n",
+        "## Business floor on acting\n",
+        f"Acting requires the calibrated confidence to reach max(val threshold, floor). The floor ({fit['act_floor']}) "
+        "is a business rule set before any test result and not fitted (see `ml/decision.py`, "
+        "`DEFAULT_ACT_FLOOR`). The ablation re-runs each floored system on test with the floor removed.\n",
+        report_changes.floor_ablation(res) + "\n",
+        _floor_note(res) + "\n",
+        "## Country disparity (proposed vs tuned baseline)\n",
+        "Group bootstrap 95% CIs per country; the paired difference uses the same cases for both systems.\n",
+        report_changes.country_disparity(res) + "\n",
         "## Breakdowns (proposed vs tuned baseline)\n",
     ]
     for key in ("language", "family_split", "family", "country", "country_x_family_split", "segment", "pool_bucket",
@@ -181,6 +204,17 @@ def render() -> str:
         "Taken automatically from results.json: the first unsafe cases and the first match cases whose top-1 "
         "was wrong.\n",
         examples_block(res, proposed) + "\n",
+        "## Previous run\n",
+        "Before the number-word and slang parser, the merchant mismatch and generic-word features, and the act "
+        "floor. The merchant changes were prompted by error analysis of the previous test run, so part of the "
+        "improvement on these test cases is not an independent estimate.\n",
+        report_changes.previous_run(res) + "\n",
+        "### Parser read-back before and after the number-word and slang change\n",
+        "Produced by `ml/parser_readback.py`. Read-back on val was checked after the change; test was measured "
+        "once afterwards and not used to choose mappings. F6 amount vocabulary is no longer unseen by the "
+        "parser (it now covers slang the generator uses), so the F6 amount gain is not evidence of "
+        "generalization.\n",
+        report_changes.parser_readback() + "\n",
     ]
     return "\n".join(parts)
 

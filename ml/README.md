@@ -8,16 +8,30 @@ The problem statement asks us to "evaluate at least one learned component agains
 
 ```bash
 uv sync
-uv run python -m ml.scenarios.build       # real transactions in data/raw -> eval/cases/disputes/*.jsonl (about 25 s)
+uv run python -m ml.scenarios.build --verify   # rebuild eval/cases/disputes/*.jsonl and check the committed manifest
 uv run python -m ml.scenarios.datasheet   # -> ml/DATASHEET.md
-uv run python -m ml.train                 # ranker, calibrators, disposition model, thresholds (about 35 s)
+uv run python -m ml.train                 # ranker, calibrators, disposition model, thresholds (about 50 s)
 uv run python -m ml.evaluate              # test split only -> ml/reports/results.json, MLflow runs
+uv run python -m ml.parser_readback       # amount and date read-back on val and test -> ml/reports/parser_readback.json
 uv run python -m ml.report                # -> ml/reports/results.md
 uv run pytest tests/ml_tests
 uv run mlflow ui --backend-store-uri sqlite:///mlruns/mlflow.db   # browse runs (mlruns/ is git-ignored)
 ```
 
 The builder is seeded and does not depend on the order of its inputs. Two runs on the same files give byte-identical case files; the manifest records a `data_version` hash, and `ml.evaluate` refuses fitted artifacts from another data version. MLflow 3 puts the plain `./mlruns` file store in maintenance mode, so runs go to a SQLite database inside `./mlruns`. Every run logs the data version, parameters, thresholds and metrics.
+
+### Rebuilding the case files
+
+The case files (`train.jsonl`, `val.jsonl`, `test.jsonl`, about 9 MB of organizer-derived rows) are git-ignored. Only `eval/cases/disputes/manifest.json` (sha256 of each file and the `data_version`) and `ml/DATASHEET.md` are committed. Rebuild them before training, evaluating or running `tests/ml_tests/test_committed_cases.py` (which skips when they are absent):
+
+```bash
+# from a local copy of the organizer files in data/raw
+uv run python -m ml.scenarios.build --verify
+# straight from the organizer bucket; credentials come from .env (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION)
+uv run python -m ml.scenarios.build --verify --source s3://<bucket>/data
+```
+
+Without `--source`, the builder reads `data/raw` when it exists and otherwise `LATAM_BANK_S3_URI` from `.env` plus `/data`. With `--verify` it rebuilds in memory, compares the three sha256 values and the `data_version` with the committed manifest, and writes the case files only when all of them match; on a mismatch it exits with status 1 and writes nothing. The manifest is never rewritten in that mode. We checked both routes: the local copy and the bucket both reproduce data version `0189e386ce7fe882`. A plain run without `--verify` rebuilds and rewrites the manifest, which is how a deliberate change to the generator is recorded. A `make cases` target would call the `--verify` command; the Makefile is outside this folder, so that line is left to whoever maintains it.
 
 ## Task framing
 
@@ -32,7 +46,7 @@ On this data, ranking turned out to be the easy half. With a parser that reads t
 
 The supplied text cannot label this task. The transcripts and complaint descriptions are templated: 546 distinct transcripts over 171k rows, 42 distinct customer utterances, unfilled placeholders, and topic labels that do not match the text. Complaints also have no link to a transaction. Any label taken from them would be noise.
 
-So the scenarios are built on **real organizer transactions** with **team-generated descriptions**, and the label is *valid by construction*. A description is rendered from structured hints about one transaction: approximate amount, relative date, merchant (exact, partial, misspelled or a noun), type, channel, city. The label is an explicit function of those hints and the candidate pool, with fixed tolerances. The rule is written in `ml/scenarios/hints.py` and `ml/DATASHEET.md`, and `tests/ml_tests/test_committed_cases.py` recomputes the label of every committed case from its stored hints. Relevance is judged by a rule anyone can audit, with no annotator in the loop.
+So the scenarios are built on **real organizer transactions** with **team-generated descriptions**, and the label is *valid by construction*. A description is rendered from structured hints about one transaction: approximate amount, relative date, merchant (exact, partial, misspelled or a noun), type, channel, city. The label is an explicit function of those hints and the candidate pool, with fixed tolerances. The rule is written in `ml/scenarios/hints.py` and `ml/DATASHEET.md`, and `tests/ml_tests/test_committed_cases.py` recomputes the label of every case from its stored hints. Relevance is judged by a rule anyone can audit, with no annotator in the loop.
 
 The labels cover three situations:
 
@@ -50,7 +64,7 @@ Portuguese (pt-BR) cases are **TEAM-GENERATED** renderings of the same hints. Br
 |---|---|---|
 | Group split by customer | Salted hash, 60/20/20; no customer or transaction in two splits | `test_group_split_has_no_customer_or_transaction_overlap` |
 | Time split | Report dates: train until 2025-06-30, val 2025-07 to 2025-12, test 2026-01 to 2026-06 | `test_time_split` |
-| Held-out template families | F5 (formal letter) and F6 (oral, regional slang, number words) exist only in test. The ranker lexicon and parser were written from F1 to F4 only and live in separate files from the generator vocabulary | `test_heldout_families_absent_from_train_and_val` |
+| Held-out template families | F5 (formal letter) and F6 (oral, regional slang, number words) exist only in test. The ranker lexicon and parser were written from F1 to F4 only and live in separate files from the generator vocabulary. Exception: the number-word and slang parser added later covers F6 amount vocabulary (see "Number words and amount slang") | `test_heldout_families_absent_from_train_and_val` |
 | Portuguese stays with its source | Same split, customer, pool and label; shared bootstrap group | `test_portuguese_cases_share_split_and_content_with_source` |
 | Rankers never see labels or hints | `ranker_input` exposes only text, report date and language | `test_ranker_input_hides_hints_and_labels` |
 | Thresholds and calibrators never touch test | `Calibrator.fit` accepts only train records, `search_policy` only val records; the evaluation path is run with every fit function replaced by one that raises | `test_thresholds_refuse_non_val_records`, `test_evaluation_path_never_fits` |
@@ -60,9 +74,29 @@ Customers are sampled stratified by country and segment, with a per-stratum floo
 
 ## Representations
 
-The description is parsed deterministically into cues (`ml/features/parse.py`): an amount with regional number formats and "mil" or "millones", a currency word, a date range from relative phrases, and type, channel and merchant-noun keywords. There is also a small typo corrector for cue words. Each candidate then gets 26 features comparing it with those cues: log amount ratio, days outside the date range, fuzzy token similarity to the merchant name, noun-to-merchant match, type and channel agreement, debit or credit, and rank of each proximity within the pool (`ml/features/pairwise.py`).
+The description is parsed deterministically into cues (`ml/features/parse.py`): an amount with regional number formats, Spanish and Portuguese number words and regional amount slang (next section), a currency word, a date range from relative phrases, and type, channel and merchant-noun keywords. There is also a small typo corrector for cue words; number and slang words are kept out of it. Each candidate then gets 29 features comparing it with those cues: log amount ratio, days outside the date range, fuzzy token similarity to the merchant name, an IDF-weighted merchant similarity, whether the description names a known merchant and whether this candidate contradicts it, noun-to-merchant match, type and channel agreement, debit or credit, and rank of each proximity within the pool (`ml/features/pairwise.py`).
 
-We did not use embeddings or TF-IDF. The decisive information is numbers, dates and short proper names, and an embedding represents "como 500" versus 467.08, or "la semana pasada" relative to a report date, poorly. A parser also fails visibly: `results.md` has a parser cue-recovery table per language and family. The trade-off is that the parser does not cover phrasing it has never seen. The held-out families measure exactly that. On test, the amount is read back in 152 of 230 Spanish held-out descriptions against 398 of 398 seen ones.
+Two merchant fixes came out of the previous error analysis. First, a token shared by several merchants counts less: similarity is weighted by 1 over the number of merchants in the organizer merchant list (`MERCHANT_DIRECTORY` in `lexicon.py`, 24 names) that contain the token, so "central" no longer ties "Laboratorio Central" with "Mercado Central". Second, when the description names a merchant from that list (IDF-weighted similarity of at least 0.85) and the candidate is a different merchant, the candidate gets `merch_mismatch = 1`: the rules ranker drops its merchant credit to zero, and the disposition model stops counting the merchant cue as satisfied. "Uber" against a "Taxi Seguro" charge is the motivating case.
+
+We did not use embeddings or TF-IDF over the text. The decisive information is numbers, dates and short proper names, and an embedding represents "como 500" versus 467.08, or "la semana pasada" relative to a report date, poorly. A parser also fails visibly: `results.md` has parser read-back tables per language and family. The trade-off is that the parser does not cover phrasing it has never seen, and the held-out families measure exactly that.
+
+### Number words and amount slang
+
+`ml/features/numbers.py` rewrites number words as digits before the amount regex runs ("mil quinientos" to 1500, "dos millones" to 2000000, "trezentos e cinquenta" to 350). A run of number words is converted only when its value is at least 100 or a money word follows, so "dos semanas" and "un cargo" are left alone, and a scale word right after digits keeps its meaning ("36 mil" stays 36000). Slang meanings and their provenance:
+
+| Word | Region | Reading | Provenance |
+|---|---|---|---|
+| luca, lucas | AR, CO | 1,000 pesos per unit ("20 lucas" = 20,000 pesos) | ASALE, *Diccionario de americanismos*, entry "luca" (https://www.asale.org/damer/luca). We located the entry by web search; its text could not be retrieved from this environment, so the gloss should be checked |
+| barra, barras | CO | 1,000 pesos per unit | team assumption |
+| palo, palos | CO, AR | 1,000,000 per unit; no currency implied, since AR usage can mean dollars | team assumption |
+| gamba, gambas | AR | 100 pesos per unit | team assumption |
+| varo, varos, baro, baros | MX | peso as the unit of money ("500 varos" = 500 pesos) | team assumption |
+| conto, contos | BR | one unit of money ("cinquenta conto" = 50); no currency implied | team assumption |
+| medio (before palo, luca or millón) | all | one half of the unit | team assumption |
+
+Each mapping has a unit test in `tests/ml_tests/test_numbers.py`, and a test checks that every slang entry carries a provenance string. "verdes", "pila" and "el finde" are deliberately not supported.
+
+Protocol: the change was checked on val, and test read-back was measured once afterwards with `ml/parser_readback.py`; no mapping was chosen or changed from test numbers. Val read-back was already complete and stayed so (Spanish amounts 419 of 419 before and after, Portuguese 105 of 105). On test, Spanish held-out amounts went from 152 of 230 to 209 of 230, all of it in F6 (65 of 149 to 122 of 149); F5 stayed at 144 of 144 and Portuguese held-out at 57 of 63. Dates did not change (F5 30 of 125, F6 110 of 138). **Caveat:** F6 is the slang and number-word family, and the parser now knows vocabulary the generator uses for it. F6 is therefore no longer held out for amount vocabulary, and the F6 amount gain is not evidence of generalization. The F5 and F6 date phrasings and the unsupported slang above remain unseen.
 
 ## Components compared (same test set, same cases)
 
@@ -74,7 +108,7 @@ We did not use embeddings or TF-IDF. The decisive information is numbers, dates 
 | `learned_ranker_disposition` (**proposed**) | learned pointwise ranker | learned disposition model: P(match), P(no_match) | ranker and disposition on train, model family and thresholds on val |
 
 * **Learned ranker**: a binary classifier over candidate features, trained on match cases (the target is positive) and no_match cases (all negative). Ambiguous cases are left out because their label does not say which candidate is right. Logistic regression and gradient boosting were compared. Selection was by val MRR, with val log loss as the tie-break, because every candidate reached a val MRR of 1.0. The selected model is recorded in `fitted.json`.
-* **Disposition model**: a three-class classifier over case-level features: the ranker's score profile, which cues were parsed, how many candidates satisfy every parsed cue, and how many fail exactly one. Gradient boosting (depth 3) narrowly beat multinomial logistic regression on val log loss (0.0757 against 0.0777). That gap is small enough that either would be a defensible choice.
+* **Disposition model**: a three-class classifier over case-level features: the ranker's score profile, which cues were parsed, how many candidates satisfy every parsed cue, and how many fail exactly one. In this run multinomial logistic regression beat gradient boosting (depth 3) on val log loss (0.0481 against 0.0541); in the previous run the order was reversed (0.0757 against 0.0777), so either is a defensible choice.
 * **LLM ranker** (`ml/rankers/llm.py`, prompt `ml/rankers/prompts/rank_v1.md`): optional. It is **not run** in the committed results because no `ANTHROPIC_API_KEY` was configured. When a key is present it runs on a stratified subset with its own train calibration and val thresholds, three repeated runs on test, and cost from API token counts. The default model is `claude-sonnet-5`, overridable with `CAUTELA_RANKER_MODEL`. Before any request, the description is masked with `agent.security.pii.mask_text` (the ranker refuses to run if that module is missing), and candidates are reduced to date, amount, currency, type, channel, merchant and city, with ids replaced by labels C1..Cn. The output is constrained by a JSON schema, and the prompt tells the model to treat the description as data.
 
 All rankers implement the `CandidateRanker` shape of `agent/tools/ranking.py`: `rank(features, candidates) -> [(transaction_id, score in [0, 1])]`, best first. `ml/rankers/protocol.py` also accepts the agent's `DescriptionFeatures` object, where structured values override the parser. A test checks compatibility against the agent's protocol when that module can be imported.
@@ -95,28 +129,40 @@ Every rate has a 95% bootstrap interval, with 1,000 resamples of Spanish source 
 
 ## Thresholds
 
-Both thresholds are chosen on val only. The search maximizes the correct decision rate subject to an unsafe rate of at most 1% on val. The cap is a policy choice: in dispute intake, acting on the wrong charge costs more than one extra question. The chosen values are recorded in `fitted.json`. The cap holds on val (0.80% unsafe for the proposed system) but not on test (17 of 1,107, 1.5%, 95% interval 0.8% to 2.4%). The test split contains held-out phrasing that val does not, and 1,107 cases cannot establish a rate that low. A threshold met on validation is not a guarantee.
+Both thresholds are chosen on val only. The search maximizes the correct decision rate subject to an unsafe rate of at most 1% on val. The cap is a policy choice: in dispute intake, acting on the wrong charge costs more than one extra question. The chosen values are recorded in `fitted.json`. A threshold met on validation is not a guarantee: in the previous run the cap held on val but not on test (17 of 1,107 unsafe). In this run the proposed system has 0.0% unsafe on val and 3 of 1,107 on test (0.3%, 95% interval 0.0% to 0.6%), but 1,107 cases still cannot pin down a rate that low.
 
-The act threshold chosen for the disposition model is low (P(match) >= 0.28). On val, P(match) is almost always near 0 or near 1, so the threshold barely matters there. On test, held-out phrasing produces middle probabilities, and four of the unsafe acts listed in `results.md` have confidence between 0.34 and 0.50. A policy floor on the act threshold (for example 0.8), set by the business rather than by the search, would be a sensible guard before deployment.
+**Business floor on acting.** On top of the val-tuned act threshold there is a minimum confidence for acting, `DEFAULT_ACT_FLOOR = 0.60` in `ml/decision.py`. The system acts only when its confidence reaches max(val threshold, floor). The floor is a policy set by the business and was not fitted: 0.60 is the same bar the agent's fixed rule already uses for the top score (`agent/tools/ranking.py`), and it was fixed before any result of this run was seen. It can be changed with `CAUTELA_ACT_FLOOR` or `ml.train --act-floor`. The reason for it is the previous run, where the val search put the disposition model's act threshold at P(match) >= 0.28 and four unsafe test acts had confidence between 0.34 and 0.50. In this run the val search chose 0.635 (rules baseline), 0.91 (calibrated learned ranker) and 0.79 (disposition model), all above the floor, so the floor does not bind: unsafe outcomes are 21, 20 and 3 of 1,107 with and without it, and safe automated resolution is unchanged (paired difference 0.0 points for every system). Its cost is zero here, and it caps the damage if a refit lands on a low threshold again. `results.md` has the ablation table.
 
 ## Results (offline, test split, data version in results.json)
 
-The proposed system gets **92.2%** correct decisions [90.4%, 93.9%], against **82.2%** [79.7%, 84.7%] for the tuned rules baseline. The paired difference is +10.0 points [+7.9, +12.2]. On held-out families alone it is +9.2 points [+5.4, +13.2], so the gain does not come only from phrasing the parser was written for. Unsafe outcomes are 17 of 1,107 for the proposed system and 24 of 1,107 for the baseline, a difference of -0.6 points [-1.5, +0.1]. The interval includes zero, so this is **not a demonstrated safety improvement**. The fixed agent rule has 43 of 1,107 unsafe. Top-1 on match cases is 99.0% against 98.7%, so the learned ranker adds nothing to ranking. The ablation (learned ranker with a calibrated threshold) is the most cautious system, with 9 of 1,107 unsafe, but it gets only 75.0% of decisions right because it clarifies or hands off many clear matches. The gain in correct decisions comes from the disposition model.
+This run includes the number-word and slang parser, the merchant fixes and the act floor. The previous run's numbers are kept in `ml/reports/previous/` and in the "Previous run" section of `results.md`. **Read this run with one caveat:** the merchant fixes and the slang mappings were prompted by error analysis of the previous run on this same test split, so part of the improvement on these cases is not an independent estimate. There is no fresh test split to measure it on.
 
-Safe automated resolution is 56.6% of all cases for the proposed system against 47.3% for the baseline. Unnecessary transfers fall from 122 to 40 of 883 in-scope cases, and missed transfers rise from 21 to 25 of 224 no-match cases. Of those 25, 14 were acted on (unsafe) and 11 were answered with a clarifying question.
+| System (test, 1,107 cases) | Correct decisions | Unsafe | Safe automated resolution | Top-1 on match |
+|---|---|---|---|---|
+| `rules_fixed` | 71.9% [68.9, 74.9] | 45 (4.1%) | 56.0% | 99.1% |
+| `rules_tuned` (baseline) | 86.8% [84.6, 89.0] | 21 (1.9%) | 50.3% | 99.1% |
+| `learned_ranker_calibrated` | 79.4% [76.7, 81.9] | 20 (1.8%) | 49.6% | 99.9% |
+| `learned_ranker_disposition` (proposed) | **93.9%** [92.0, 95.5] | **3 (0.3%)** [0.0, 0.6] | 56.9% [53.8, 60.2] | 99.9% |
 
-Val versus test: the proposed system scores 98.0% correct on val, 92.2% on test, and 97.4% on test's seen families, so most of the drop comes from unseen phrasing. By family, F6 (slang and number words) is the weakest at 76.3%. By country, Argentina and Colombia trail Mexico only on held-out families (80.7%, 78.9% and 89.0%). On seen families all three are between 97.0% and 98.1%. The disparity follows regional slang and large peso amounts written in slang ("lucas", "palos", "barras") rather than the customer's country as such. Segments range from 91.4% (Basic) to 94.7% (Premium), with sample sizes of 111 to 592.
+Paired against the tuned baseline on the same cases, the proposed system gains +7.0 points of correct decisions [+4.9, +9.3], +5.2 [+1.4, +9.3] on held-out families alone. Unsafe outcomes fall by 1.6 points [-2.5, -0.9]; in the previous run that difference was -0.6 [-1.5, +0.1] and included zero, so it is now a measured safety improvement on this split, with the caveat above. The baseline also improved (82.2% to 86.8%), because it shares the parser and merchant features, which is why the correct-decision gap narrowed from +10.0 to +7.0 points. Top-1 is 99.9% against 99.1% (+0.7 points [+0.1, +1.5]); ranking remains nearly saturated. The calibrated learned ranker (ablation) got worse on safety, from 9 to 20 unsafe of 1,107; we have not diagnosed why.
+
+Safe automated resolution is 56.9% of all cases for the proposed system against 50.3% for the baseline. Unnecessary transfers are 49 against 80 of 883 in-scope cases, and missed transfers 3 against 11 of 224 no-match cases (2 acted on, 1 answered with a clarifying question).
+
+Val versus test: the proposed system scores 98.0% correct on val, 93.9% on test, 96.2% on test's seen families and 90.1% on held-out ones. By family, F5 (formal letter) is now the weakest at 88.9% and F6 (slang and number words) is at 91.1%, up from 76.3%; the F6 gain partly reflects the parser now knowing F6 amount vocabulary. On held-out families Argentina and Mexico trail Colombia (88.1%, 88.5% and 94.3%); on seen families all three are between 94.9% and 97.6%. Segments range from 90.8% (Premium, 131 cases) to 94.8% (Basic, 592).
+
+**Country disparity.** Against the baseline, the proposed system improves correct decisions in every country (AR +6.0 points [+0.8, +11.5], CO +8.7 [+4.9, +12.7], MX +6.4 [+3.4, +9.6]) and lowers unsafe outcomes in every country (AR -2.6 [-5.4, -0.7], CO -2.0 [-3.5, -0.6], MX -0.8 [-1.7, -0.2]). The gain in safe automated resolution is uneven: +8.4 points in Colombia and +7.0 in Mexico, but +3.4 [-0.8, +7.9] in Argentina, where the interval includes zero. The spread across countries in safe automated resolution therefore grows from 1.4 points for the baseline to 6.4 for the proposed system (Argentina 53.0%, Colombia 59.4%, Mexico 57.2%), while the spread in unsafe rate shrinks from 1.8 to 0.4 points. Argentina gets the safety gain but less of the automation gain; the full table with intervals is in `results.md`.
 
 ## Error analysis
 
-These cases come from `results.json` (proposed system). `results.md` lists them with their top three candidates.
+The cases below were found in the previous run's `results.json` (proposed system); the status after this run's changes was checked by re-running the proposed system on each case.
 
-* **An unread cue is silently dropped** (`test-00023-es`, F6: "me cayó un cargo el mes pasado en la tlapalería"; `test-00098-es`, F6: "como cuatrocientos verdes"). The parser does not know the slang noun or the number word, so the description shrinks to the cues it did read. One transaction fits those, and the system acts on a no_match case. A fix: count content words the parser could not map, and refuse to act when a description carries unexplained cues.
-* **Shared merchant tokens** (`test-00099-es`: "Laboratorio Central" and "Mercado Central" score 0.9966 and 0.9972). The merchant feature takes the best single-token match. Whole-name similarity should carry more weight.
-* **Amount outweighs merchant** (`test-00124-es`: "casi 880 mil pesos en Uber" acted on a Taxi Seguro charge of 937,244 COP). The learned ranker learned that amounts are reliable. When a stated merchant does not match, the score should drop harder.
-* **Acting at middle confidence** (`test-00064-es`, `test-00068-es`: no_match cases acted on at P(match) of 0.346 and 0.358). This comes from the low act threshold discussed above.
-* **Held-out date and amount formats** (`test-00185-es`: "el pasado 15 de diciembre de 2025"; `test-00242-es`: "8 palos"). The parser misses them. The system clarified or handed off, which is the safe failure.
-* **Label tolerance** (`test-00011-es`: "alrededor de 250 dólares" with purchases of 221.84 and 243.09). The rule labels this ambiguous because both are within a factor of 1.25. The system acted on the 221.84 purchase, which is also the farther amount. The rule's verdict (ask) is right here, but the tolerance is a team choice, and moving it would move cases between labels.
+* **An unread cue is silently dropped** (`test-00023-es`, F6: "me cayó un cargo el mes pasado en la tlapalería"; `test-00098-es`, F6: "como cuatrocientos verdes"). The parser does not know the slang noun, so the description shrinks to the cues it did read, one transaction fits those, and the system acts on a no_match case. `test-00098-es` now abstains correctly (the number word is read). `test-00023-es` is still acted on at P(match) 0.992 and is one of the 3 unsafe outcomes. The fix we would try next: count content words the parser could not map, and refuse to act when a description carries unexplained cues.
+* **Shared merchant tokens** (`test-00099-es`: "Laboratorio Central" and "Mercado Central" scored 0.9966 and 0.9972). With the IDF-weighted similarity the system no longer acts on it; it now asks the customer to choose (P(match) 0.172), which is safe but not the correct decision for a match case.
+* **Amount outweighs merchant** (`test-00124-es`: "casi 880 mil pesos en Uber" was acted on a Taxi Seguro charge of 937,244 COP). With the mismatch feature it now abstains correctly.
+* **Acting at middle confidence** (`test-00064-es`, `test-00068-es`: no_match cases acted on at P(match) 0.346 and 0.358). Both now abstain correctly; the act threshold is 0.79 in this run, and the 0.60 floor would stop this even with a low threshold.
+* **Held-out date and amount formats** (`test-00185-es`: "el pasado 15 de diciembre de 2025"; `test-00242-es`: "8 palos"). "8 palos" is now read and acted on correctly. The full date with a year is still missed and the case is clarified, which is the safe failure.
+* **Remaining unsafe outcomes** in this run: `test-00023-es` above; an ambiguous F2 case ("vi un cargo en un cajero") acted on at 0.990; and a formal F5 no_match letter ("USD 353 realizado el pasado 23 de abril de 2026") acted on at 0.973. The last one is another full-date phrasing the parser does not read.
+* **Label tolerance** (`test-00011-es`: "alrededor de 250 dólares" with purchases of 221.84 and 243.09). The rule labels this ambiguous because both are within a factor of 1.25. It was acted on in the previous run and is now clarified. The tolerance is a team choice, and moving it would move cases between labels.
 
 ## Limitations
 
@@ -125,7 +171,8 @@ These cases come from `results.json` (proposed system). `results.md` lists them 
 * Portuguese is a template rendering, not reviewed by native speakers, and Brazil is absent from the data.
 * The organizer data combines type, channel and merchant at random (for example withdrawals "por la app"), and Mexican customers transact mostly in USD, so some descriptions read oddly.
 * The LLM ranker was not run. Its latency, cost, variability and quality are unknown. Masking with the agent's PII module also masks large peso amounts written like an Argentine DNI ("16.371.485"): privacy wins over amount information there, and that trade-off should be measured when the LLM runs.
-* Case files include organizer-derived transaction fields (ids, amounts, merchants, dates) with pseudonymized customer references, about 9 MB in total. They are committed so that results can be reproduced without the raw data.
+* Case files include organizer-derived transaction fields (ids, amounts, merchants, dates) with pseudonymized customer references, about 9 MB in total. They are not committed; `ml.scenarios.build --verify` rebuilds them from the organizer files and checks them against the committed manifest (see "Rebuilding the case files").
+* Changes made after reading test errors (merchant features, slang mappings) make this run's test numbers optimistic to an unknown degree. A new time window of organizer transactions, rendered with the same seed, would give a clean re-test.
 
 ## Files
 
@@ -133,10 +180,12 @@ These cases come from `results.json` (proposed system). `results.md` lists them 
 |---|---|
 | `scenarios/build.py`, `hints.py`, `render.py`, `vocab.py`, `source.py` | Scenario builder, label rule, templates, generator vocabulary, DuckDB reader |
 | `scenarios/datasheet.py` | Writes `DATASHEET.md` from the case files |
-| `features/parse.py`, `lexicon.py`, `pairwise.py` | Parser, ranker-side lexicon (seen families only), candidate features |
+| `features/parse.py`, `numbers.py`, `lexicon.py`, `pairwise.py` | Parser, number words and slang, ranker-side lexicon and merchant list, candidate features |
 | `rankers/protocol.py`, `rules.py`, `learned.py`, `llm.py`, `prompts/rank_v1.md` | Rankers and the shared interface |
-| `decision.py`, `disposition.py` | Deciders and threshold search |
-| `train.py`, `evaluate.py`, `analysis.py`, `metrics.py`, `report.py`, `tracking.py` | Fitting, test evaluation, aggregation, metric functions, report, MLflow |
-| `reports/fitted.json`, `results.json`, `results.md` | Committed outputs; every reported number comes from these |
-| `../eval/cases/disputes/` | Case files and manifest |
+| `decision.py`, `disposition.py` | Deciders, threshold search and the business act floor |
+| `train.py`, `evaluate.py`, `analysis.py`, `metrics.py`, `report.py`, `report_changes.py`, `tracking.py` | Fitting, test evaluation, aggregation, metric functions, report, MLflow |
+| `parser_readback.py` | Amount and date read-back on val and test |
+| `reports/fitted.json`, `results.json`, `results.md`, `parser_readback*.json` | Committed outputs; every reported number comes from these |
+| `reports/previous/` | Snapshot of the previous run's `results.json` and `fitted.json` |
+| `../eval/cases/disputes/` | Committed manifest; the git-ignored case files are rebuilt there |
 | `../tests/ml_tests/` | Tests |

@@ -17,7 +17,8 @@ import random
 import time
 
 from ml import tracking
-from ml.analysis import breakdowns, pool_bucket, correct_rate, curve, mrr, paired_difference, summarize, top1, unsafe_rate
+from ml.analysis import (breakdowns, correct_rate, country_disparity, curve, mrr, paired_difference, pool_bucket,
+                         safe_auto_rate, summarize, top1, unsafe_rate)
 from ml.data import MODELS_DIR, REPORTS_DIR, data_version, group_of, load_cases, ranker_input, record
 from ml.decision import CalibratedDecider, act_correct
 from ml.metrics import hit_at_k, outcome, reciprocal_rank
@@ -81,6 +82,29 @@ def examples(cases: list[dict], rows_by_ranker: dict[str, list[dict]], per_kind:
         missed = [r for r in rows if r["label"] == "match" and r["hit1"] == 0][:per_kind]
         out[name] = {"unsafe": [describe(by_case[r["case_id"]], r) for r in unsafe],
                      "wrong_top1_on_match": [describe(by_case[r["case_id"]], r) for r in missed]}
+    return out
+
+
+def floor_ablation(systems: dict, rankers: dict, rows_by: dict, test: list[dict]) -> dict:
+    """Same systems with the business act floor removed: what the floor buys in safety and costs in automation."""
+    out = {}
+    for name, (rk, decider) in systems.items():
+        floor = getattr(getattr(decider, "policy", None), "act_floor", None)
+        if not floor:
+            continue
+        without = run_system(rankers[rk], decider.with_floor(0.0), test)
+        with_rows = rows_by[name]
+        s_with, s_without = summarize(with_rows, with_ci=False), summarize(without, with_ci=False)
+        out[name] = {
+            "act_floor": floor, "val_t_act": decider.policy.t_act,
+            "with_floor": {k: s_with[k] for k in ("unsafe", "correct_decision_rate", "safe_automated_resolution_rate",
+                                                  "automation_attempted_share")},
+            "without_floor": {k: s_without[k] for k in ("unsafe", "correct_decision_rate",
+                                                        "safe_automated_resolution_rate", "automation_attempted_share")},
+            "with_minus_without": {"unsafe_rate": paired_difference(without, with_rows, unsafe_rate),
+                                   "safe_automated_resolution_rate": paired_difference(without, with_rows, safe_auto_rate),
+                                   "correct_decision_rate": paired_difference(without, with_rows, correct_rate)},
+        }
     return out
 
 
@@ -183,6 +207,8 @@ def main() -> None:
         results["systems"][name] = {"ranker": rankers[rk].name, "decider": decider.name,
                                     "decider_params": decider.params(), "summary": summarize(rows),
                                     "breakdowns": breakdowns(rows), "selective_curve": curve(rows)}
+    results["act_floor_ablation"] = floor_ablation(systems, rankers, rows_by, test)
+    results["country_disparity"] = country_disparity(rows_by["rules_tuned"], rows_by[PROPOSED])
     results["paired_differences"] = {}
     for base in ("rules_fixed", "rules_tuned"):
         diffs = {}

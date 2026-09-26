@@ -1,0 +1,105 @@
+{
+  "parser_commit": "c50c87c",
+  "val_by_language": {
+    "es": {
+      "amount_given": 419,
+      "amount_read": 419,
+      "date_given": 349,
+      "date_read": 348,
+      "amount_rate": 1.0,
+      "date_rate": 0.9971
+    },
+    "pt": {
+      "amount_given": 105,
+      "amount_read": 105,
+      "date_given": 90,
+      "date_read": 90,
+      "amount_rate": 1.0,
+      "date_rate": 1.0
+    }
+  },
+  "test_by_language_and_family_split": {
+    "es/held_out": {
+      "amount_given": 230,
+      "amount_read": 209,
+      "date_given": 211,
+      "date_read": 113,
+      "amount_rate": 0.9087,
+      "date_rate": 0.5355
+    },
+    "es/seen": {
+      "amount_given": 398,
+      "amount_read": 398,
+      "date_given": 309,
+      "date_read": 309,
+      "amount_rate": 1.0,
+      "date_rate": 1.0
+    },
+    "pt/held_out": {
+      "amount_given": 63,
+      "amount_read": 57,
+      "date_given": 52,
+      "date_read": 27,
+      "amount_rate": 0.9048,
+      "date_rate": 0.5192
+    },
+    "pt/seen": {
+      "amount_given": 99,
+      "amount_read": 99,
+      "date_given": 71,
+      "date_read": 71,
+      "amount_rate": 1.0,
+      "date_rate": 1.0
+    }
+  },
+  "test_by_family": {
+    "F1": {
+      "amount_given": 126,
+      "amount_read": 126,
+      "date_given": 100,
+      "date_read": 100,
+      "amount_rate": 1.0,
+      "date_rate": 1.0
+    },
+    "F2": {
+      "amount_given": 114,
+      "amount_read": 114,
+      "date_given": 88,
+      "date_read": 88,
+      "amount_rate": 1.0,
+      "date_rate": 1.0
+    },
+    "F3": {
+      "amount_given": 104,
+      "amount_read": 104,
+      "date_given": 80,
+      "date_read": 80,
+      "amount_rate": 1.0,
+      "date_rate": 1.0
+    },
+    "F4": {
+      "amount_given": 153,
+      "amount_read": 153,
+      "date_given": 112,
+      "date_read": 112,
+      "amount_rate": 1.0,
+      "date_rate": 1.0
+    },
+    "F5": {
+      "amount_given": 144,
+      "amount_read": 144,
+      "date_given": 125,
+      "date_read": 30,
+      "amount_rate": 1.0,
+      "date_rate": 0.24
+    },
+    "F6": {
+      "amount_given": 149,
+      "amount_read": 122,
+      "date_given": 138,
+      "date_read": 110,
+      "amount_rate": 0.8188,
+      "date_rate": 0.7971
+    }
+  }
+}

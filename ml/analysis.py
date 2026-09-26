@@ -128,3 +128,29 @@ def paired_difference(a: list[dict], b: list[dict], fn, n_boot: int = 1000, seed
 
 def curve(rows: list[dict]) -> list[dict]:
     return selective_curve([r["confidence"] for r in rows], [r["act_correct"] for r in rows])
+
+
+DISPARITY_METRICS = {"correct_decision_rate": correct_rate, "unsafe_rate": unsafe_rate,
+                     "safe_automated_resolution_rate": safe_auto_rate}
+
+
+def country_disparity(base: list[dict], proposed: list[dict], n_boot: int = 1000) -> dict:
+    """Per country: each system's rate with a group bootstrap CI, the paired difference, and the max-min gap."""
+    out: dict = {"by_country": {}, "gap_max_minus_min": {}}
+    for country in sorted({r["country"] for r in proposed}):
+        a = [r for r in base if r["country"] == country]
+        b = [r for r in proposed if r["country"] == country]
+        entry: dict = {"n": len(b)}
+        for metric, fn in DISPARITY_METRICS.items():
+            cell = {}
+            for label, rows in (("baseline", a), ("proposed", b)):
+                lo, hi = bootstrap_ci(rows, fn, n_boot=n_boot)
+                cell[label] = {"value": round(fn(rows), 4), "ci95": [round(lo, 4), round(hi, 4)]}
+            cell["proposed_minus_baseline"] = paired_difference(a, b, fn, n_boot=n_boot)
+            entry[metric] = cell
+        out["by_country"][country] = entry
+    for metric in DISPARITY_METRICS:
+        for label in ("baseline", "proposed"):
+            vals = [e[metric][label]["value"] for e in out["by_country"].values()]
+            out["gap_max_minus_min"].setdefault(metric, {})[label] = round(max(vals) - min(vals), 4)
+    return out
