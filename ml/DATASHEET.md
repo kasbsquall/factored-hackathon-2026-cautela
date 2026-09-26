@@ -153,6 +153,46 @@ Customers skipped because the requested label could not be built from their tran
 
 Spanish source cases per split: train 1800, val 600, test 900.
 
+## Fresh test split (test_fresh)
+
+Built by `ml/scenarios/fresh.py` with generation seed 20261001 from customers of the original test bucket that the original build never loaded (25945 eligible, 4040 loaded, 115791 transactions). Report dates 2026-01-01..2026-06-17: the organizer transactions end on 2026-06-18, so no later window exists. Family F7 (messaging-app register, `ml/scenarios/render_fresh.py`) exists only here. File sha256 `8c86c3495632906f` is frozen in the manifest.
+
+| label / language | test_fresh | total |
+|---|---|---|
+| ambiguous / es | 180 | 180 |
+| ambiguous / pt | 63 | 63 |
+| match / es | 541 | 541 |
+| match / pt | 208 | 208 |
+| no_match / es | 179 | 179 |
+| no_match / pt | 69 | 69 |
+
+| family | test_fresh | total |
+|---|---|---|
+| F1 | 151 | 151 |
+| F2 | 120 | 120 |
+| F3 | 109 | 109 |
+| F4 | 128 | 128 |
+| F5 | 146 | 146 |
+| F6 | 164 | 164 |
+| F7 | 422 | 422 |
+
+| country / segment | test_fresh | total |
+|---|---|---|
+| AR / Basic | 155 | 155 |
+| AR / Plus | 62 | 62 |
+| AR / Premium | 48 | 48 |
+| AR / Student | 41 | 41 |
+| CO / Basic | 223 | 223 |
+| CO / Plus | 89 | 89 |
+| CO / Premium | 40 | 40 |
+| CO / Student | 39 | 39 |
+| MX / Basic | 276 | 276 |
+| MX / Plus | 164 | 164 |
+| MX / Premium | 62 | 62 |
+| MX / Student | 41 | 41 |
+
+Pool size: min 3, median 4, p90 6, max 23. Customers skipped (Spanish sources): ambiguous 100, match 236, no_match 88.
+
 ## Splits and leakage controls
 
 * **Group split by customer**: a salted hash assigns each customer to train (60%), val (20%) or test (20%).
@@ -160,7 +200,10 @@ Spanish source cases per split: train 1800, val 600, test 900.
 * **Time split**: report dates fall in 2023-10-01..2025-06-30 (train), 2025-07-01..2025-12-31 (val) and
   2026-01-01..2026-06-17 (test).
 * **Held-out template families**: F5 (formal letter) and F6 (oral, regional slang, number words) appear only
-  in test. The ranker lexicon and parser were written from F1-F4 only.
+  in test. The ranker lexicon and parser were written from F1-F4 only (the number-word and slang parser
+  added later covers F6 amount vocabulary). F7 appears only in test_fresh and was written after training.
+* **Fresh test split**: test_fresh has no customer or transaction in common with train, val or test (tested),
+  another generation seed, and was evaluated once. The original test split was used for error analysis.
 * **Portuguese stays with its source**: a pt-BR case copies its Spanish source's split, customer, pool and
   label, and shares its bootstrap group.
 * Stratified sampling by country and segment with a per-stratum floor so small strata (Student, Premium,

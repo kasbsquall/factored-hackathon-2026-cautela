@@ -116,5 +116,55 @@
       "no_match": 54
     }
   },
-  "source_fingerprint": "1c49a4fc665085b8"
+  "source_fingerprint": "1c49a4fc665085b8",
+  "test_fresh": {
+    "config": {
+      "bucket_seed": 20260925,
+      "fresh_family_share": 0.35,
+      "heldout_share": 0.25,
+      "label_mix": {
+        "ambiguous": 0.2,
+        "match": 0.6,
+        "no_match": 0.2
+      },
+      "min_per_stratum": 30,
+      "n_es": 900,
+      "period": [
+        "2026-01-01",
+        "2026-06-17"
+      ],
+      "pt_share": 0.35,
+      "seed": 20261001
+    },
+    "count": 1240,
+    "customers_eligible": 25945,
+    "customers_loaded": 4040,
+    "file_sha256": "8c86c3495632906f168986e8266916972632211752c0f258b0cc5fa0720aa900",
+    "fresh_version": "8c86c3495632906f",
+    "load_stats": {
+      "raw_rows_for_selected_customers": 115791,
+      "rows_dropped_uncastable_or_duplicate": 0,
+      "rows_kept": 115791
+    },
+    "note": "Frozen before any model was evaluated on it; see ml/scenarios/fresh.py. Not part of data_version, so the fitted artifacts stay valid.",
+    "quotas": {
+      "AR-Basic": 111,
+      "AR-Plus": 45,
+      "AR-Premium": 30,
+      "AR-Student": 30,
+      "CO-Basic": 164,
+      "CO-Plus": 67,
+      "CO-Premium": 30,
+      "CO-Student": 30,
+      "MX-Basic": 203,
+      "MX-Plus": 115,
+      "MX-Premium": 45,
+      "MX-Student": 30
+    },
+    "skipped_customers": {
+      "ambiguous": 100,
+      "match": 236,
+      "no_match": 88
+    }
+  }
 }

@@ -6,6 +6,8 @@ Usage::
     uv run python -m ml.scenarios.build            # rebuild and rewrite the manifest
     uv run python -m ml.scenarios.build --verify --source s3://<bucket>/data
 
+Both modes also build the fresh test split (ml/scenarios/fresh.py), hashed under ``test_fresh`` in the manifest.
+
 Every random choice comes from an RNG seeded by (seed, customer, purpose), so the
 output does not depend on iteration order and two runs with the same seed and
 the same input files produce byte-identical files.
@@ -330,6 +332,7 @@ def verify_against(manifest_path: Path, cases: dict) -> list[str]:
 
 
 def main() -> None:
+    from ml.scenarios import fresh
     from ml.scenarios.source import (default_source, load_customers, load_transactions, open_source,
                                      source_fingerprint)
 
@@ -349,17 +352,22 @@ def main() -> None:
     wanted_ids = customers_to_load(customers, cfg)
     tx, load_stats = load_transactions(con, loc, wanted_ids)
     cases, stats = build(customers, tx, cfg)
+    fresh_cases, fresh_section = fresh.build_from_source(con, loc, customers)
     extra = {"source_fingerprint": source_fingerprint(con, loc), "load_stats": load_stats,
-             "customers_loaded": len(wanted_ids)}
+             "customers_loaded": len(wanted_ids), fresh.SPLIT: fresh_section}
     if args.verify:
-        problems = verify_against(args.out / "manifest.json", cases)
+        committed = json.loads((args.out / "manifest.json").read_text(encoding="utf-8"))
+        problems = verify_against(args.out / "manifest.json", cases) + fresh.verify_problems(committed, fresh_cases)
         if problems:
             print("NOT REPRODUCED:\n  " + "\n  ".join(problems))
             raise SystemExit(1)
         write_outputs(cases, stats, cfg, args.out, extra, write_manifest=False)
-        print(f"reproduced: case files match the committed manifest ({payloads(cases)[2]})")
+        fresh.write_file(args.out, fresh_cases)
+        print(f"reproduced: case files match the committed manifest ({payloads(cases)[2]}, "
+              f"{fresh.SPLIT} {fresh_section['fresh_version']})")
         return
     manifest = write_outputs(cases, stats, cfg, args.out, extra)
+    fresh.write_file(args.out, fresh_cases)
     print(json.dumps({"data_version": manifest["data_version"], "counts": manifest["counts"],
                       "skipped": stats["skipped_customers"]}, indent=2))
 

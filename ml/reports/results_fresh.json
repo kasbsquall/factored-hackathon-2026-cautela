@@ -1,0 +1,5582 @@
+{
+  "generated_by": "ml/evaluate.py",
+  "data_version": "0189e386ce7fe882",
+  "split": "test_fresh",
+  "proposed_system": "learned_ranker_disposition",
+  "systems": {
+    "rules_fixed": {
+      "ranker": "rules_v1",
+      "decider": "fixed_top0.60_margin0.15",
+      "decider_params": {
+        "min_top": 0.6,
+        "min_margin": 0.15,
+        "fitted": false
+      },
+      "summary": {
+        "n_cases": 1240,
+        "n_by_label": {
+          "ambiguous": 243,
+          "match": 749,
+          "no_match": 248
+        },
+        "n_groups": 900,
+        "top1_accuracy": {
+          "value": 0.9653,
+          "ci95": [
+            0.9477,
+            0.9799
+          ]
+        },
+        "top3_recall": {
+          "value": 1.0,
+          "ci95": [
+            1.0,
+            1.0
+          ]
+        },
+        "top3_recall_pool_ge4": {
+          "value": 1.0,
+          "ci95": [
+            1.0,
+            1.0
+          ]
+        },
+        "mrr": {
+          "value": 0.9822,
+          "ci95": [
+            0.9732,
+            0.9897
+          ]
+        },
+        "ece": {
+          "value": 0.2002,
+          "ci95": [
+            0.1746,
+            0.2303
+          ]
+        },
+        "correct_decision_rate": {
+          "value": 0.696,
+          "ci95": [
+            0.6624,
+            0.7294
+          ]
+        },
+        "unsafe_rate": {
+          "value": 0.0444,
+          "ci95": [
+            0.0309,
+            0.0588
+          ]
+        },
+        "safe_automated_resolution_rate": {
+          "value": 0.525,
+          "ci95": [
+            0.4908,
+            0.559
+          ]
+        },
+        "decisions": {
+          "act": 706,
+          "clarify": 534
+        },
+        "automation_attempted_share": 0.5694,
+        "unsafe": {
+          "count": 55,
+          "denominator": 1240,
+          "acted_denominator": 706
+        },
+        "per_label": {
+          "ambiguous": {
+            "n": 243,
+            "decisions": {
+              "act": 31,
+              "clarify": 212
+            },
+            "outcomes": {
+              "correct": 212,
+              "unsafe": 31
+            }
+          },
+          "match": {
+            "n": 749,
+            "decisions": {
+              "act": 655,
+              "clarify": 94
+            },
+            "outcomes": {
+              "correct": 651,
+              "safe_other": 94,
+              "unsafe": 4
+            }
+          },
+          "no_match": {
+            "n": 248,
+            "decisions": {
+              "act": 20,
+              "clarify": 228
+            },
+            "outcomes": {
+              "safe_other": 228,
+              "unsafe": 20
+            }
+          }
+        },
+        "clarify_correct_on_ambiguous": {
+          "count": 212,
+          "denominator": 243
+        },
+        "abstain_correct_on_no_match": {
+          "count": 0,
+          "denominator": 248
+        },
+        "asked_on_no_match": {
+          "count": 228,
+          "denominator": 248
+        },
+        "containment_rate": 1.0,
+        "missed_transfers": {
+          "count": 248,
+          "denominator": 248
+        },
+        "unnecessary_transfers": {
+          "count": 0,
+          "denominator": 992
+        },
+        "recall_error_match": {
+          "n": 113,
+          "top1_accuracy": 0.9735,
+          "acted_correctly": 60
+        },
+        "latency_ms": {
+          "p50": 3.424,
+          "p95": 8.806
+        }
+      },
+      "breakdowns": {
+        "language": {
+          "es": {
+            "n": 900,
+            "n_match": 541,
+            "top1_accuracy": 0.9704,
+            "mrr": 0.9849,
+            "correct_decision_rate": 0.7,
+            "unsafe": {
+              "count": 37,
+              "denominator": 900
+            }
+          },
+          "pt": {
+            "n": 340,
+            "n_match": 208,
+            "top1_accuracy": 0.9519,
+            "mrr": 0.9752,
+            "correct_decision_rate": 0.6853,
+            "unsafe": {
+              "count": 18,
+              "denominator": 340
+            }
+          }
+        },
+        "country": {
+          "AR": {
+            "n": 306,
+            "n_match": 182,
+            "top1_accuracy": 0.9725,
+            "mrr": 0.9863,
+            "correct_decision_rate": 0.7026,
+            "unsafe": {
+              "count": 4,
+              "denominator": 306
+            }
+          },
+          "CO": {
+            "n": 391,
+            "n_match": 240,
+            "top1_accuracy": 0.9583,
+            "mrr": 0.9792,
+            "correct_decision_rate": 0.6957,
+            "unsafe": {
+              "count": 26,
+              "denominator": 391
+            }
+          },
+          "MX": {
+            "n": 543,
+            "n_match": 327,
+            "top1_accuracy": 0.9664,
+            "mrr": 0.9822,
+            "correct_decision_rate": 0.6924,
+            "unsafe": {
+              "count": 25,
+              "denominator": 543
+            }
+          }
+        },
+        "segment": {
+          "Basic": {
+            "n": 654,
+            "n_match": 396,
+            "top1_accuracy": 0.9545,
+            "mrr": 0.9769,
+            "correct_decision_rate": 0.7049,
+            "unsafe": {
+              "count": 20,
+              "denominator": 654
+            }
+          },
+          "Plus": {
+            "n": 315,
+            "n_match": 192,
+            "top1_accuracy": 0.9635,
+            "mrr": 0.9809,
+            "correct_decision_rate": 0.6857,
+            "unsafe": {
+              "count": 18,
+              "denominator": 315
+            }
+          },
+          "Premium": {
+            "n": 150,
+            "n_match": 90,
+            "top1_accuracy": 0.9889,
+            "mrr": 0.9944,
+            "correct_decision_rate": 0.6733,
+            "unsafe": {
+              "count": 8,
+              "denominator": 150
+            }
+          },
+          "Student": {
+            "n": 121,
+            "n_match": 71,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.7025,
+            "unsafe": {
+              "count": 9,
+              "denominator": 121
+            }
+          }
+        },
+        "family_split": {
+          "held_out": {
+            "n": 732,
+            "n_match": 444,
+            "top1_accuracy": 0.9414,
+            "mrr": 0.97,
+            "correct_decision_rate": 0.6667,
+            "unsafe": {
+              "count": 33,
+              "denominator": 732
+            }
+          },
+          "seen": {
+            "n": 508,
+            "n_match": 305,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.7382,
+            "unsafe": {
+              "count": 22,
+              "denominator": 508
+            }
+          }
+        },
+        "family": {
+          "F1": {
+            "n": 151,
+            "n_match": 94,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.7152,
+            "unsafe": {
+              "count": 7,
+              "denominator": 151
+            }
+          },
+          "F2": {
+            "n": 120,
+            "n_match": 62,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.7333,
+            "unsafe": {
+              "count": 5,
+              "denominator": 120
+            }
+          },
+          "F3": {
+            "n": 109,
+            "n_match": 62,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.7156,
+            "unsafe": {
+              "count": 4,
+              "denominator": 109
+            }
+          },
+          "F4": {
+            "n": 128,
+            "n_match": 87,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.7891,
+            "unsafe": {
+              "count": 6,
+              "denominator": 128
+            }
+          },
+          "F5": {
+            "n": 146,
+            "n_match": 90,
+            "top1_accuracy": 0.9333,
+            "mrr": 0.9667,
+            "correct_decision_rate": 0.6164,
+            "unsafe": {
+              "count": 6,
+              "denominator": 146
+            }
+          },
+          "F6": {
+            "n": 164,
+            "n_match": 102,
+            "top1_accuracy": 0.9804,
+            "mrr": 0.9902,
+            "correct_decision_rate": 0.75,
+            "unsafe": {
+              "count": 3,
+              "denominator": 164
+            }
+          },
+          "F7": {
+            "n": 422,
+            "n_match": 252,
+            "top1_accuracy": 0.9286,
+            "mrr": 0.963,
+            "correct_decision_rate": 0.6517,
+            "unsafe": {
+              "count": 24,
+              "denominator": 422
+            }
+          }
+        },
+        "label": {
+          "ambiguous": {
+            "n": 243,
+            "n_match": 0,
+            "top1_accuracy": null,
+            "mrr": null,
+            "correct_decision_rate": 0.8724,
+            "unsafe": {
+              "count": 31,
+              "denominator": 243
+            }
+          },
+          "match": {
+            "n": 749,
+            "n_match": 749,
+            "top1_accuracy": 0.9653,
+            "mrr": 0.9822,
+            "correct_decision_rate": 0.8692,
+            "unsafe": {
+              "count": 4,
+              "denominator": 749
+            }
+          },
+          "no_match": {
+            "n": 248,
+            "n_match": 0,
+            "top1_accuracy": null,
+            "mrr": null,
+            "correct_decision_rate": 0.0,
+            "unsafe": {
+              "count": 20,
+              "denominator": 248
+            }
+          }
+        },
+        "info_level": {
+          "medium": {
+            "n": 459,
+            "n_match": 287,
+            "top1_accuracy": 0.9617,
+            "mrr": 0.9808,
+            "correct_decision_rate": 0.6362,
+            "unsafe": {
+              "count": 18,
+              "denominator": 459
+            }
+          },
+          "rich": {
+            "n": 471,
+            "n_match": 359,
+            "top1_accuracy": 0.9861,
+            "mrr": 0.9926,
+            "correct_decision_rate": 0.6539,
+            "unsafe": {
+              "count": 9,
+              "denominator": 471
+            }
+          },
+          "sparse": {
+            "n": 310,
+            "n_match": 103,
+            "top1_accuracy": 0.9029,
+            "mrr": 0.9498,
+            "correct_decision_rate": 0.8484,
+            "unsafe": {
+              "count": 28,
+              "denominator": 310
+            }
+          }
+        },
+        "pool_bucket": {
+          "3": {
+            "n": 515,
+            "n_match": 324,
+            "top1_accuracy": 0.9599,
+            "mrr": 0.9794,
+            "correct_decision_rate": 0.6835,
+            "unsafe": {
+              "count": 14,
+              "denominator": 515
+            }
+          },
+          "4-5": {
+            "n": 518,
+            "n_match": 309,
+            "top1_accuracy": 0.9773,
+            "mrr": 0.9887,
+            "correct_decision_rate": 0.7104,
+            "unsafe": {
+              "count": 24,
+              "denominator": 518
+            }
+          },
+          "6+": {
+            "n": 207,
+            "n_match": 116,
+            "top1_accuracy": 0.9483,
+            "mrr": 0.9727,
+            "correct_decision_rate": 0.6908,
+            "unsafe": {
+              "count": 17,
+              "denominator": 207
+            }
+          }
+        },
+        "country_x_family_split": {
+          "AR/held_out": {
+            "n": 190,
+            "n_match": 109,
+            "top1_accuracy": 0.9541,
+            "mrr": 0.9771,
+            "correct_decision_rate": 0.6737,
+            "unsafe": {
+              "count": 2,
+              "denominator": 190
+            }
+          },
+          "AR/seen": {
+            "n": 116,
+            "n_match": 73,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.75,
+            "unsafe": {
+              "count": 2,
+              "denominator": 116
+            }
+          },
+          "CO/held_out": {
+            "n": 221,
+            "n_match": 131,
+            "top1_accuracy": 0.9237,
+            "mrr": 0.9618,
+            "correct_decision_rate": 0.6425,
+            "unsafe": {
+              "count": 16,
+              "denominator": 221
+            }
+          },
+          "CO/seen": {
+            "n": 170,
+            "n_match": 109,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.7647,
+            "unsafe": {
+              "count": 10,
+              "denominator": 170
+            }
+          },
+          "MX/held_out": {
+            "n": 321,
+            "n_match": 204,
+            "top1_accuracy": 0.9461,
+            "mrr": 0.9714,
+            "correct_decision_rate": 0.6791,
+            "unsafe": {
+              "count": 15,
+              "denominator": 321
+            }
+          },
+          "MX/seen": {
+            "n": 222,
+            "n_match": 123,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.7117,
+            "unsafe": {
+              "count": 10,
+              "denominator": 222
+            }
+          }
+        }
+      },
+      "selective_curve": [
+        {
+          "threshold": 0.0,
+          "coverage": 1.0,
+          "selective_accuracy": 0.5831,
+          "n_acted": 1240
+        },
+        {
+          "threshold": 0.1333,
+          "coverage": 0.9,
+          "selective_accuracy": 0.6353,
+          "n_acted": 1116
+        },
+        {
+          "threshold": 0.3805,
+          "coverage": 0.8,
+          "selective_accuracy": 0.7036,
+          "n_acted": 992
+        },
+        {
+          "threshold": 0.6943,
+          "coverage": 0.7,
+          "selective_accuracy": 0.727,
+          "n_acted": 868
+        },
+        {
+          "threshold": 0.8639,
+          "coverage": 0.6,
+          "selective_accuracy": 0.7137,
+          "n_acted": 744
+        },
+        {
+          "threshold": 0.9211,
+          "coverage": 0.5008,
+          "selective_accuracy": 0.6795,
+          "n_acted": 621
+        },
+        {
+          "threshold": 0.9571,
+          "coverage": 0.4008,
+          "selective_accuracy": 0.6217,
+          "n_acted": 497
+        },
+        {
+          "threshold": 0.9906,
+          "coverage": 0.3,
+          "selective_accuracy": 0.5349,
+          "n_acted": 372
+        },
+        {
+          "threshold": 1.0,
+          "coverage": 0.2726,
+          "selective_accuracy": 0.497,
+          "n_acted": 338
+        },
+        {
+          "threshold": 1.0,
+          "coverage": 0.2726,
+          "selective_accuracy": 0.497,
+          "n_acted": 338
+        },
+        {
+          "threshold": 1.0,
+          "coverage": 0.2726,
+          "selective_accuracy": 0.497,
+          "n_acted": 338
+        }
+      ]
+    },
+    "rules_tuned": {
+      "ranker": "rules_v1",
+      "decider": "calibrated_thresholds",
+      "decider_params": {
+        "calibrator": {
+          "coef": [
+            2.855,
+            8.9381,
+            0.6134
+          ],
+          "intercept": -5.8761,
+          "features": [
+            "top_score",
+            "margin",
+            "log_pool_size"
+          ]
+        },
+        "policy": {
+          "t_act": 0.635,
+          "t_abstain": 0.2857,
+          "k": 3,
+          "max_unsafe_rate": 0.01,
+          "fitted_on": "val",
+          "act_floor": 0.6
+        },
+        "abstain_score": "1 - top_score"
+      },
+      "summary": {
+        "n_cases": 1240,
+        "n_by_label": {
+          "ambiguous": 243,
+          "match": 749,
+          "no_match": 248
+        },
+        "n_groups": 900,
+        "top1_accuracy": {
+          "value": 0.9653,
+          "ci95": [
+            0.9477,
+            0.9799
+          ]
+        },
+        "top3_recall": {
+          "value": 1.0,
+          "ci95": [
+            1.0,
+            1.0
+          ]
+        },
+        "top3_recall_pool_ge4": {
+          "value": 1.0,
+          "ci95": [
+            1.0,
+            1.0
+          ]
+        },
+        "mrr": {
+          "value": 0.9822,
+          "ci95": [
+            0.9732,
+            0.9897
+          ]
+        },
+        "ece": {
+          "value": 0.039,
+          "ci95": [
+            0.0307,
+            0.0609
+          ]
+        },
+        "correct_decision_rate": {
+          "value": 0.8218,
+          "ci95": [
+            0.795,
+            0.8478
+          ]
+        },
+        "unsafe_rate": {
+          "value": 0.0194,
+          "ci95": [
+            0.0113,
+            0.0287
+          ]
+        },
+        "safe_automated_resolution_rate": {
+          "value": 0.4782,
+          "ci95": [
+            0.4446,
+            0.5135
+          ]
+        },
+        "decisions": {
+          "abstain": 382,
+          "act": 617,
+          "clarify": 241
+        },
+        "automation_attempted_share": 0.4976,
+        "unsafe": {
+          "count": 24,
+          "denominator": 1240,
+          "acted_denominator": 617
+        },
+        "per_label": {
+          "ambiguous": {
+            "n": 243,
+            "decisions": {
+              "abstain": 38,
+              "act": 15,
+              "clarify": 190
+            },
+            "outcomes": {
+              "correct": 190,
+              "safe_other": 38,
+              "unsafe": 15
+            }
+          },
+          "match": {
+            "n": 749,
+            "decisions": {
+              "abstain": 108,
+              "act": 595,
+              "clarify": 46
+            },
+            "outcomes": {
+              "correct": 593,
+              "safe_other": 154,
+              "unsafe": 2
+            }
+          },
+          "no_match": {
+            "n": 248,
+            "decisions": {
+              "abstain": 236,
+              "act": 7,
+              "clarify": 5
+            },
+            "outcomes": {
+              "correct": 236,
+              "safe_other": 5,
+              "unsafe": 7
+            }
+          }
+        },
+        "clarify_correct_on_ambiguous": {
+          "count": 190,
+          "denominator": 243
+        },
+        "abstain_correct_on_no_match": {
+          "count": 236,
+          "denominator": 248
+        },
+        "asked_on_no_match": {
+          "count": 5,
+          "denominator": 248
+        },
+        "containment_rate": 0.6919,
+        "missed_transfers": {
+          "count": 12,
+          "denominator": 248
+        },
+        "unnecessary_transfers": {
+          "count": 146,
+          "denominator": 992
+        },
+        "recall_error_match": {
+          "n": 113,
+          "top1_accuracy": 0.9735,
+          "acted_correctly": 31
+        },
+        "latency_ms": {
+          "p50": 0.648,
+          "p95": 1.424
+        }
+      },
+      "breakdowns": {
+        "language": {
+          "es": {
+            "n": 900,
+            "n_match": 541,
+            "top1_accuracy": 0.9704,
+            "mrr": 0.9849,
+            "correct_decision_rate": 0.8289,
+            "unsafe": {
+              "count": 16,
+              "denominator": 900
+            }
+          },
+          "pt": {
+            "n": 340,
+            "n_match": 208,
+            "top1_accuracy": 0.9519,
+            "mrr": 0.9752,
+            "correct_decision_rate": 0.8029,
+            "unsafe": {
+              "count": 8,
+              "denominator": 340
+            }
+          }
+        },
+        "country": {
+          "AR": {
+            "n": 306,
+            "n_match": 182,
+            "top1_accuracy": 0.9725,
+            "mrr": 0.9863,
+            "correct_decision_rate": 0.8203,
+            "unsafe": {
+              "count": 3,
+              "denominator": 306
+            }
+          },
+          "CO": {
+            "n": 391,
+            "n_match": 240,
+            "top1_accuracy": 0.9583,
+            "mrr": 0.9792,
+            "correct_decision_rate": 0.8414,
+            "unsafe": {
+              "count": 9,
+              "denominator": 391
+            }
+          },
+          "MX": {
+            "n": 543,
+            "n_match": 327,
+            "top1_accuracy": 0.9664,
+            "mrr": 0.9822,
+            "correct_decision_rate": 0.8085,
+            "unsafe": {
+              "count": 12,
+              "denominator": 543
+            }
+          }
+        },
+        "segment": {
+          "Basic": {
+            "n": 654,
+            "n_match": 396,
+            "top1_accuracy": 0.9545,
+            "mrr": 0.9769,
+            "correct_decision_rate": 0.818,
+            "unsafe": {
+              "count": 11,
+              "denominator": 654
+            }
+          },
+          "Plus": {
+            "n": 315,
+            "n_match": 192,
+            "top1_accuracy": 0.9635,
+            "mrr": 0.9809,
+            "correct_decision_rate": 0.8127,
+            "unsafe": {
+              "count": 7,
+              "denominator": 315
+            }
+          },
+          "Premium": {
+            "n": 150,
+            "n_match": 90,
+            "top1_accuracy": 0.9889,
+            "mrr": 0.9944,
+            "correct_decision_rate": 0.7933,
+            "unsafe": {
+              "count": 3,
+              "denominator": 150
+            }
+          },
+          "Student": {
+            "n": 121,
+            "n_match": 71,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.9008,
+            "unsafe": {
+              "count": 3,
+              "denominator": 121
+            }
+          }
+        },
+        "family_split": {
+          "held_out": {
+            "n": 732,
+            "n_match": 444,
+            "top1_accuracy": 0.9414,
+            "mrr": 0.97,
+            "correct_decision_rate": 0.7814,
+            "unsafe": {
+              "count": 17,
+              "denominator": 732
+            }
+          },
+          "seen": {
+            "n": 508,
+            "n_match": 305,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.8799,
+            "unsafe": {
+              "count": 7,
+              "denominator": 508
+            }
+          }
+        },
+        "family": {
+          "F1": {
+            "n": 151,
+            "n_match": 94,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.8742,
+            "unsafe": {
+              "count": 3,
+              "denominator": 151
+            }
+          },
+          "F2": {
+            "n": 120,
+            "n_match": 62,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.875,
+            "unsafe": {
+              "count": 1,
+              "denominator": 120
+            }
+          },
+          "F3": {
+            "n": 109,
+            "n_match": 62,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.8716,
+            "unsafe": {
+              "count": 1,
+              "denominator": 109
+            }
+          },
+          "F4": {
+            "n": 128,
+            "n_match": 87,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.8984,
+            "unsafe": {
+              "count": 2,
+              "denominator": 128
+            }
+          },
+          "F5": {
+            "n": 146,
+            "n_match": 90,
+            "top1_accuracy": 0.9333,
+            "mrr": 0.9667,
+            "correct_decision_rate": 0.7945,
+            "unsafe": {
+              "count": 4,
+              "denominator": 146
+            }
+          },
+          "F6": {
+            "n": 164,
+            "n_match": 102,
+            "top1_accuracy": 0.9804,
+            "mrr": 0.9902,
+            "correct_decision_rate": 0.8598,
+            "unsafe": {
+              "count": 3,
+              "denominator": 164
+            }
+          },
+          "F7": {
+            "n": 422,
+            "n_match": 252,
+            "top1_accuracy": 0.9286,
+            "mrr": 0.963,
+            "correct_decision_rate": 0.7464,
+            "unsafe": {
+              "count": 10,
+              "denominator": 422
+            }
+          }
+        },
+        "label": {
+          "ambiguous": {
+            "n": 243,
+            "n_match": 0,
+            "top1_accuracy": null,
+            "mrr": null,
+            "correct_decision_rate": 0.7819,
+            "unsafe": {
+              "count": 15,
+              "denominator": 243
+            }
+          },
+          "match": {
+            "n": 749,
+            "n_match": 749,
+            "top1_accuracy": 0.9653,
+            "mrr": 0.9822,
+            "correct_decision_rate": 0.7917,
+            "unsafe": {
+              "count": 2,
+              "denominator": 749
+            }
+          },
+          "no_match": {
+            "n": 248,
+            "n_match": 0,
+            "top1_accuracy": null,
+            "mrr": null,
+            "correct_decision_rate": 0.9516,
+            "unsafe": {
+              "count": 7,
+              "denominator": 248
+            }
+          }
+        },
+        "info_level": {
+          "medium": {
+            "n": 459,
+            "n_match": 287,
+            "top1_accuracy": 0.9617,
+            "mrr": 0.9808,
+            "correct_decision_rate": 0.8736,
+            "unsafe": {
+              "count": 7,
+              "denominator": 459
+            }
+          },
+          "rich": {
+            "n": 471,
+            "n_match": 359,
+            "top1_accuracy": 0.9861,
+            "mrr": 0.9926,
+            "correct_decision_rate": 0.8068,
+            "unsafe": {
+              "count": 1,
+              "denominator": 471
+            }
+          },
+          "sparse": {
+            "n": 310,
+            "n_match": 103,
+            "top1_accuracy": 0.9029,
+            "mrr": 0.9498,
+            "correct_decision_rate": 0.7677,
+            "unsafe": {
+              "count": 16,
+              "denominator": 310
+            }
+          }
+        },
+        "pool_bucket": {
+          "3": {
+            "n": 515,
+            "n_match": 324,
+            "top1_accuracy": 0.9599,
+            "mrr": 0.9794,
+            "correct_decision_rate": 0.7903,
+            "unsafe": {
+              "count": 6,
+              "denominator": 515
+            }
+          },
+          "4-5": {
+            "n": 518,
+            "n_match": 309,
+            "top1_accuracy": 0.9773,
+            "mrr": 0.9887,
+            "correct_decision_rate": 0.8417,
+            "unsafe": {
+              "count": 10,
+              "denominator": 518
+            }
+          },
+          "6+": {
+            "n": 207,
+            "n_match": 116,
+            "top1_accuracy": 0.9483,
+            "mrr": 0.9727,
+            "correct_decision_rate": 0.8502,
+            "unsafe": {
+              "count": 8,
+              "denominator": 207
+            }
+          }
+        },
+        "country_x_family_split": {
+          "AR/held_out": {
+            "n": 190,
+            "n_match": 109,
+            "top1_accuracy": 0.9541,
+            "mrr": 0.9771,
+            "correct_decision_rate": 0.8158,
+            "unsafe": {
+              "count": 1,
+              "denominator": 190
+            }
+          },
+          "AR/seen": {
+            "n": 116,
+            "n_match": 73,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.8276,
+            "unsafe": {
+              "count": 2,
+              "denominator": 116
+            }
+          },
+          "CO/held_out": {
+            "n": 221,
+            "n_match": 131,
+            "top1_accuracy": 0.9237,
+            "mrr": 0.9618,
+            "correct_decision_rate": 0.7828,
+            "unsafe": {
+              "count": 8,
+              "denominator": 221
+            }
+          },
+          "CO/seen": {
+            "n": 170,
+            "n_match": 109,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.9176,
+            "unsafe": {
+              "count": 1,
+              "denominator": 170
+            }
+          },
+          "MX/held_out": {
+            "n": 321,
+            "n_match": 204,
+            "top1_accuracy": 0.9461,
+            "mrr": 0.9714,
+            "correct_decision_rate": 0.7601,
+            "unsafe": {
+              "count": 8,
+              "denominator": 321
+            }
+          },
+          "MX/seen": {
+            "n": 222,
+            "n_match": 123,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.8784,
+            "unsafe": {
+              "count": 4,
+              "denominator": 222
+            }
+          }
+        }
+      },
+      "selective_curve": [
+        {
+          "threshold": 0.0055,
+          "coverage": 1.0,
+          "selective_accuracy": 0.5831,
+          "n_acted": 1240
+        },
+        {
+          "threshold": 0.0132,
+          "coverage": 0.9,
+          "selective_accuracy": 0.6344,
+          "n_acted": 1116
+        },
+        {
+          "threshold": 0.0907,
+          "coverage": 0.8,
+          "selective_accuracy": 0.7087,
+          "n_acted": 992
+        },
+        {
+          "threshold": 0.1175,
+          "coverage": 0.7008,
+          "selective_accuracy": 0.7963,
+          "n_acted": 869
+        },
+        {
+          "threshold": 0.366,
+          "coverage": 0.6,
+          "selective_accuracy": 0.9086,
+          "n_acted": 744
+        },
+        {
+          "threshold": 0.743,
+          "coverage": 0.5008,
+          "selective_accuracy": 0.9597,
+          "n_acted": 621
+        },
+        {
+          "threshold": 0.9236,
+          "coverage": 0.4,
+          "selective_accuracy": 0.9778,
+          "n_acted": 496
+        },
+        {
+          "threshold": 0.9791,
+          "coverage": 0.3,
+          "selective_accuracy": 0.9812,
+          "n_acted": 372
+        },
+        {
+          "threshold": 0.9933,
+          "coverage": 0.2,
+          "selective_accuracy": 0.9718,
+          "n_acted": 248
+        },
+        {
+          "threshold": 0.9982,
+          "coverage": 0.1,
+          "selective_accuracy": 0.9516,
+          "n_acted": 124
+        },
+        {
+          "threshold": 0.9992,
+          "coverage": 0.0016,
+          "selective_accuracy": 1.0,
+          "n_acted": 2
+        }
+      ]
+    },
+    "learned_ranker_calibrated": {
+      "ranker": "learned_hgb_d6_lr0.1",
+      "decider": "calibrated_thresholds",
+      "decider_params": {
+        "calibrator": {
+          "coef": [
+            -0.1533,
+            6.6742,
+            -0.1452
+          ],
+          "intercept": -3.7508,
+          "features": [
+            "top_score",
+            "margin",
+            "log_pool_size"
+          ]
+        },
+        "policy": {
+          "t_act": 0.91,
+          "t_abstain": 0.0147,
+          "k": 3,
+          "max_unsafe_rate": 0.01,
+          "fitted_on": "val",
+          "act_floor": 0.6
+        },
+        "abstain_score": "1 - top_score"
+      },
+      "summary": {
+        "n_cases": 1240,
+        "n_by_label": {
+          "ambiguous": 243,
+          "match": 749,
+          "no_match": 248
+        },
+        "n_groups": 900,
+        "top1_accuracy": {
+          "value": 0.9826,
+          "ci95": [
+            0.9715,
+            0.992
+          ]
+        },
+        "top3_recall": {
+          "value": 0.9987,
+          "ci95": [
+            0.9958,
+            1.0
+          ]
+        },
+        "top3_recall_pool_ge4": {
+          "value": 0.9976,
+          "ci95": [
+            0.9924,
+            1.0
+          ]
+        },
+        "mrr": {
+          "value": 0.9905,
+          "ci95": [
+            0.9843,
+            0.9956
+          ]
+        },
+        "ece": {
+          "value": 0.0695,
+          "ci95": [
+            0.0554,
+            0.0907
+          ]
+        },
+        "correct_decision_rate": {
+          "value": 0.7653,
+          "ci95": [
+            0.7387,
+            0.7921
+          ]
+        },
+        "unsafe_rate": {
+          "value": 0.0153,
+          "ci95": [
+            0.008,
+            0.0242
+          ]
+        },
+        "safe_automated_resolution_rate": {
+          "value": 0.4685,
+          "ci95": [
+            0.4363,
+            0.5028
+          ]
+        },
+        "decisions": {
+          "abstain": 483,
+          "act": 600,
+          "clarify": 157
+        },
+        "automation_attempted_share": 0.4839,
+        "unsafe": {
+          "count": 19,
+          "denominator": 1240,
+          "acted_denominator": 600
+        },
+        "per_label": {
+          "ambiguous": {
+            "n": 243,
+            "decisions": {
+              "abstain": 102,
+              "act": 18,
+              "clarify": 123
+            },
+            "outcomes": {
+              "correct": 122,
+              "safe_other": 103,
+              "unsafe": 18
+            }
+          },
+          "match": {
+            "n": 749,
+            "decisions": {
+              "abstain": 135,
+              "act": 581,
+              "clarify": 33
+            },
+            "outcomes": {
+              "correct": 581,
+              "safe_other": 168
+            }
+          },
+          "no_match": {
+            "n": 248,
+            "decisions": {
+              "abstain": 246,
+              "act": 1,
+              "clarify": 1
+            },
+            "outcomes": {
+              "correct": 246,
+              "safe_other": 1,
+              "unsafe": 1
+            }
+          }
+        },
+        "clarify_correct_on_ambiguous": {
+          "count": 122,
+          "denominator": 243
+        },
+        "abstain_correct_on_no_match": {
+          "count": 246,
+          "denominator": 248
+        },
+        "asked_on_no_match": {
+          "count": 1,
+          "denominator": 248
+        },
+        "containment_rate": 0.6105,
+        "missed_transfers": {
+          "count": 2,
+          "denominator": 248
+        },
+        "unnecessary_transfers": {
+          "count": 237,
+          "denominator": 992
+        },
+        "recall_error_match": {
+          "n": 113,
+          "top1_accuracy": 1.0,
+          "acted_correctly": 48
+        },
+        "latency_ms": {
+          "p50": 3.859,
+          "p95": 5.622
+        }
+      },
+      "breakdowns": {
+        "language": {
+          "es": {
+            "n": 900,
+            "n_match": 541,
+            "top1_accuracy": 0.9834,
+            "mrr": 0.9908,
+            "correct_decision_rate": 0.7656,
+            "unsafe": {
+              "count": 13,
+              "denominator": 900
+            }
+          },
+          "pt": {
+            "n": 340,
+            "n_match": 208,
+            "top1_accuracy": 0.9808,
+            "mrr": 0.9896,
+            "correct_decision_rate": 0.7647,
+            "unsafe": {
+              "count": 6,
+              "denominator": 340
+            }
+          }
+        },
+        "country": {
+          "AR": {
+            "n": 306,
+            "n_match": 182,
+            "top1_accuracy": 0.9835,
+            "mrr": 0.9901,
+            "correct_decision_rate": 0.7516,
+            "unsafe": {
+              "count": 1,
+              "denominator": 306
+            }
+          },
+          "CO": {
+            "n": 391,
+            "n_match": 240,
+            "top1_accuracy": 0.9792,
+            "mrr": 0.9896,
+            "correct_decision_rate": 0.7852,
+            "unsafe": {
+              "count": 13,
+              "denominator": 391
+            }
+          },
+          "MX": {
+            "n": 543,
+            "n_match": 327,
+            "top1_accuracy": 0.9847,
+            "mrr": 0.9913,
+            "correct_decision_rate": 0.7587,
+            "unsafe": {
+              "count": 5,
+              "denominator": 543
+            }
+          }
+        },
+        "segment": {
+          "Basic": {
+            "n": 654,
+            "n_match": 396,
+            "top1_accuracy": 0.9773,
+            "mrr": 0.987,
+            "correct_decision_rate": 0.7722,
+            "unsafe": {
+              "count": 6,
+              "denominator": 654
+            }
+          },
+          "Plus": {
+            "n": 315,
+            "n_match": 192,
+            "top1_accuracy": 0.9844,
+            "mrr": 0.9922,
+            "correct_decision_rate": 0.746,
+            "unsafe": {
+              "count": 7,
+              "denominator": 315
+            }
+          },
+          "Premium": {
+            "n": 150,
+            "n_match": 90,
+            "top1_accuracy": 0.9889,
+            "mrr": 0.9944,
+            "correct_decision_rate": 0.7533,
+            "unsafe": {
+              "count": 3,
+              "denominator": 150
+            }
+          },
+          "Student": {
+            "n": 121,
+            "n_match": 71,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.7934,
+            "unsafe": {
+              "count": 3,
+              "denominator": 121
+            }
+          }
+        },
+        "family_split": {
+          "held_out": {
+            "n": 732,
+            "n_match": 444,
+            "top1_accuracy": 0.9707,
+            "mrr": 0.9839,
+            "correct_decision_rate": 0.7336,
+            "unsafe": {
+              "count": 10,
+              "denominator": 732
+            }
+          },
+          "seen": {
+            "n": 508,
+            "n_match": 305,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.811,
+            "unsafe": {
+              "count": 9,
+              "denominator": 508
+            }
+          }
+        },
+        "family": {
+          "F1": {
+            "n": 151,
+            "n_match": 94,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.8543,
+            "unsafe": {
+              "count": 2,
+              "denominator": 151
+            }
+          },
+          "F2": {
+            "n": 120,
+            "n_match": 62,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.7417,
+            "unsafe": {
+              "count": 4,
+              "denominator": 120
+            }
+          },
+          "F3": {
+            "n": 109,
+            "n_match": 62,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.8073,
+            "unsafe": {
+              "count": 2,
+              "denominator": 109
+            }
+          },
+          "F4": {
+            "n": 128,
+            "n_match": 87,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.8281,
+            "unsafe": {
+              "count": 1,
+              "denominator": 128
+            }
+          },
+          "F5": {
+            "n": 146,
+            "n_match": 90,
+            "top1_accuracy": 0.9556,
+            "mrr": 0.9778,
+            "correct_decision_rate": 0.8356,
+            "unsafe": {
+              "count": 2,
+              "denominator": 146
+            }
+          },
+          "F6": {
+            "n": 164,
+            "n_match": 102,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.7866,
+            "unsafe": {
+              "count": 0,
+              "denominator": 164
+            }
+          },
+          "F7": {
+            "n": 422,
+            "n_match": 252,
+            "top1_accuracy": 0.9643,
+            "mrr": 0.9796,
+            "correct_decision_rate": 0.6777,
+            "unsafe": {
+              "count": 8,
+              "denominator": 422
+            }
+          }
+        },
+        "label": {
+          "ambiguous": {
+            "n": 243,
+            "n_match": 0,
+            "top1_accuracy": null,
+            "mrr": null,
+            "correct_decision_rate": 0.5021,
+            "unsafe": {
+              "count": 18,
+              "denominator": 243
+            }
+          },
+          "match": {
+            "n": 749,
+            "n_match": 749,
+            "top1_accuracy": 0.9826,
+            "mrr": 0.9905,
+            "correct_decision_rate": 0.7757,
+            "unsafe": {
+              "count": 0,
+              "denominator": 749
+            }
+          },
+          "no_match": {
+            "n": 248,
+            "n_match": 0,
+            "top1_accuracy": null,
+            "mrr": null,
+            "correct_decision_rate": 0.9919,
+            "unsafe": {
+              "count": 1,
+              "denominator": 248
+            }
+          }
+        },
+        "info_level": {
+          "medium": {
+            "n": 459,
+            "n_match": 287,
+            "top1_accuracy": 0.9861,
+            "mrr": 0.993,
+            "correct_decision_rate": 0.8584,
+            "unsafe": {
+              "count": 7,
+              "denominator": 459
+            }
+          },
+          "rich": {
+            "n": 471,
+            "n_match": 359,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.845,
+            "unsafe": {
+              "count": 0,
+              "denominator": 471
+            }
+          },
+          "sparse": {
+            "n": 310,
+            "n_match": 103,
+            "top1_accuracy": 0.9126,
+            "mrr": 0.9502,
+            "correct_decision_rate": 0.5065,
+            "unsafe": {
+              "count": 12,
+              "denominator": 310
+            }
+          }
+        },
+        "pool_bucket": {
+          "3": {
+            "n": 515,
+            "n_match": 324,
+            "top1_accuracy": 0.9815,
+            "mrr": 0.9907,
+            "correct_decision_rate": 0.7534,
+            "unsafe": {
+              "count": 5,
+              "denominator": 515
+            }
+          },
+          "4-5": {
+            "n": 518,
+            "n_match": 309,
+            "top1_accuracy": 0.9968,
+            "mrr": 0.9984,
+            "correct_decision_rate": 0.778,
+            "unsafe": {
+              "count": 8,
+              "denominator": 518
+            }
+          },
+          "6+": {
+            "n": 207,
+            "n_match": 116,
+            "top1_accuracy": 0.9483,
+            "mrr": 0.9687,
+            "correct_decision_rate": 0.7633,
+            "unsafe": {
+              "count": 6,
+              "denominator": 207
+            }
+          }
+        },
+        "country_x_family_split": {
+          "AR/held_out": {
+            "n": 190,
+            "n_match": 109,
+            "top1_accuracy": 0.9725,
+            "mrr": 0.9835,
+            "correct_decision_rate": 0.7421,
+            "unsafe": {
+              "count": 0,
+              "denominator": 190
+            }
+          },
+          "AR/seen": {
+            "n": 116,
+            "n_match": 73,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.7672,
+            "unsafe": {
+              "count": 1,
+              "denominator": 116
+            }
+          },
+          "CO/held_out": {
+            "n": 221,
+            "n_match": 131,
+            "top1_accuracy": 0.9618,
+            "mrr": 0.9809,
+            "correct_decision_rate": 0.7149,
+            "unsafe": {
+              "count": 9,
+              "denominator": 221
+            }
+          },
+          "CO/seen": {
+            "n": 170,
+            "n_match": 109,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.8765,
+            "unsafe": {
+              "count": 4,
+              "denominator": 170
+            }
+          },
+          "MX/held_out": {
+            "n": 321,
+            "n_match": 204,
+            "top1_accuracy": 0.9755,
+            "mrr": 0.9861,
+            "correct_decision_rate": 0.7414,
+            "unsafe": {
+              "count": 1,
+              "denominator": 321
+            }
+          },
+          "MX/seen": {
+            "n": 222,
+            "n_match": 123,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.7838,
+            "unsafe": {
+              "count": 4,
+              "denominator": 222
+            }
+          }
+        }
+      },
+      "selective_curve": [
+        {
+          "threshold": 0.0147,
+          "coverage": 1.0,
+          "selective_accuracy": 0.5935,
+          "n_acted": 1240
+        },
+        {
+          "threshold": 0.0183,
+          "coverage": 0.904,
+          "selective_accuracy": 0.6521,
+          "n_acted": 1121
+        },
+        {
+          "threshold": 0.0196,
+          "coverage": 0.8,
+          "selective_accuracy": 0.7319,
+          "n_acted": 992
+        },
+        {
+          "threshold": 0.0296,
+          "coverage": 0.7,
+          "selective_accuracy": 0.8214,
+          "n_acted": 868
+        },
+        {
+          "threshold": 0.478,
+          "coverage": 0.6,
+          "selective_accuracy": 0.9032,
+          "n_acted": 744
+        },
+        {
+          "threshold": 0.9146,
+          "coverage": 0.5,
+          "selective_accuracy": 0.9677,
+          "n_acted": 620
+        },
+        {
+          "threshold": 0.9245,
+          "coverage": 0.4,
+          "selective_accuracy": 0.9778,
+          "n_acted": 496
+        },
+        {
+          "threshold": 0.9268,
+          "coverage": 0.3008,
+          "selective_accuracy": 0.9839,
+          "n_acted": 373
+        },
+        {
+          "threshold": 0.9288,
+          "coverage": 0.2,
+          "selective_accuracy": 0.9798,
+          "n_acted": 248
+        },
+        {
+          "threshold": 0.9313,
+          "coverage": 0.1,
+          "selective_accuracy": 0.9919,
+          "n_acted": 124
+        },
+        {
+          "threshold": 0.9315,
+          "coverage": 0.0016,
+          "selective_accuracy": 1.0,
+          "n_acted": 2
+        }
+      ]
+    },
+    "learned_ranker_disposition": {
+      "ranker": "learned_hgb_d6_lr0.1",
+      "decider": "disposition_multinomial_logreg_C1",
+      "decider_params": {
+        "model": "multinomial_logreg_C1",
+        "features": [
+          "s1",
+          "s2",
+          "s3",
+          "margin",
+          "n_ge_050",
+          "n_ge_020",
+          "pool_size",
+          "amt_cue",
+          "date_cue",
+          "merch_cue",
+          "type_cue",
+          "chan_cue",
+          "n_cues",
+          "n_full",
+          "n_near",
+          "top1_full"
+        ],
+        "policy": {
+          "t_act": 0.79,
+          "t_abstain": 0.0464,
+          "k": 3,
+          "max_unsafe_rate": 0.01,
+          "fitted_on": "val",
+          "act_floor": 0.6
+        },
+        "act_score": "P(match)",
+        "abstain_score": "P(no_match)"
+      },
+      "summary": {
+        "n_cases": 1240,
+        "n_by_label": {
+          "ambiguous": 243,
+          "match": 749,
+          "no_match": 248
+        },
+        "n_groups": 900,
+        "top1_accuracy": {
+          "value": 0.9826,
+          "ci95": [
+            0.9715,
+            0.992
+          ]
+        },
+        "top3_recall": {
+          "value": 0.9987,
+          "ci95": [
+            0.9958,
+            1.0
+          ]
+        },
+        "top3_recall_pool_ge4": {
+          "value": 0.9976,
+          "ci95": [
+            0.9924,
+            1.0
+          ]
+        },
+        "mrr": {
+          "value": 0.9905,
+          "ci95": [
+            0.9843,
+            0.9956
+          ]
+        },
+        "ece": {
+          "value": 0.0372,
+          "ci95": [
+            0.0277,
+            0.0541
+          ]
+        },
+        "correct_decision_rate": {
+          "value": 0.8984,
+          "ci95": [
+            0.8787,
+            0.918
+          ]
+        },
+        "unsafe_rate": {
+          "value": 0.0032,
+          "ci95": [
+            0.0008,
+            0.0066
+          ]
+        },
+        "safe_automated_resolution_rate": {
+          "value": 0.5339,
+          "ci95": [
+            0.5016,
+            0.5675
+          ]
+        },
+        "decisions": {
+          "abstain": 327,
+          "act": 666,
+          "clarify": 247
+        },
+        "automation_attempted_share": 0.5371,
+        "unsafe": {
+          "count": 4,
+          "denominator": 1240,
+          "acted_denominator": 666
+        },
+        "per_label": {
+          "ambiguous": {
+            "n": 243,
+            "decisions": {
+              "abstain": 32,
+              "clarify": 211
+            },
+            "outcomes": {
+              "correct": 209,
+              "safe_other": 34
+            }
+          },
+          "match": {
+            "n": 749,
+            "decisions": {
+              "abstain": 52,
+              "act": 664,
+              "clarify": 33
+            },
+            "outcomes": {
+              "correct": 662,
+              "safe_other": 85,
+              "unsafe": 2
+            }
+          },
+          "no_match": {
+            "n": 248,
+            "decisions": {
+              "abstain": 243,
+              "act": 2,
+              "clarify": 3
+            },
+            "outcomes": {
+              "correct": 243,
+              "safe_other": 3,
+              "unsafe": 2
+            }
+          }
+        },
+        "clarify_correct_on_ambiguous": {
+          "count": 209,
+          "denominator": 243
+        },
+        "abstain_correct_on_no_match": {
+          "count": 243,
+          "denominator": 248
+        },
+        "asked_on_no_match": {
+          "count": 3,
+          "denominator": 248
+        },
+        "containment_rate": 0.7363,
+        "missed_transfers": {
+          "count": 5,
+          "denominator": 248
+        },
+        "unnecessary_transfers": {
+          "count": 84,
+          "denominator": 992
+        },
+        "recall_error_match": {
+          "n": 113,
+          "top1_accuracy": 1.0,
+          "acted_correctly": 78
+        },
+        "latency_ms": {
+          "p50": 5.278,
+          "p95": 7.709
+        }
+      },
+      "breakdowns": {
+        "language": {
+          "es": {
+            "n": 900,
+            "n_match": 541,
+            "top1_accuracy": 0.9834,
+            "mrr": 0.9908,
+            "correct_decision_rate": 0.9022,
+            "unsafe": {
+              "count": 1,
+              "denominator": 900
+            }
+          },
+          "pt": {
+            "n": 340,
+            "n_match": 208,
+            "top1_accuracy": 0.9808,
+            "mrr": 0.9896,
+            "correct_decision_rate": 0.8882,
+            "unsafe": {
+              "count": 3,
+              "denominator": 340
+            }
+          }
+        },
+        "country": {
+          "AR": {
+            "n": 306,
+            "n_match": 182,
+            "top1_accuracy": 0.9835,
+            "mrr": 0.9901,
+            "correct_decision_rate": 0.8922,
+            "unsafe": {
+              "count": 0,
+              "denominator": 306
+            }
+          },
+          "CO": {
+            "n": 391,
+            "n_match": 240,
+            "top1_accuracy": 0.9792,
+            "mrr": 0.9896,
+            "correct_decision_rate": 0.9003,
+            "unsafe": {
+              "count": 2,
+              "denominator": 391
+            }
+          },
+          "MX": {
+            "n": 543,
+            "n_match": 327,
+            "top1_accuracy": 0.9847,
+            "mrr": 0.9913,
+            "correct_decision_rate": 0.9006,
+            "unsafe": {
+              "count": 2,
+              "denominator": 543
+            }
+          }
+        },
+        "segment": {
+          "Basic": {
+            "n": 654,
+            "n_match": 396,
+            "top1_accuracy": 0.9773,
+            "mrr": 0.987,
+            "correct_decision_rate": 0.9006,
+            "unsafe": {
+              "count": 2,
+              "denominator": 654
+            }
+          },
+          "Plus": {
+            "n": 315,
+            "n_match": 192,
+            "top1_accuracy": 0.9844,
+            "mrr": 0.9922,
+            "correct_decision_rate": 0.8635,
+            "unsafe": {
+              "count": 1,
+              "denominator": 315
+            }
+          },
+          "Premium": {
+            "n": 150,
+            "n_match": 90,
+            "top1_accuracy": 0.9889,
+            "mrr": 0.9944,
+            "correct_decision_rate": 0.92,
+            "unsafe": {
+              "count": 1,
+              "denominator": 150
+            }
+          },
+          "Student": {
+            "n": 121,
+            "n_match": 71,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.9504,
+            "unsafe": {
+              "count": 0,
+              "denominator": 121
+            }
+          }
+        },
+        "family_split": {
+          "held_out": {
+            "n": 732,
+            "n_match": 444,
+            "top1_accuracy": 0.9707,
+            "mrr": 0.9839,
+            "correct_decision_rate": 0.8484,
+            "unsafe": {
+              "count": 4,
+              "denominator": 732
+            }
+          },
+          "seen": {
+            "n": 508,
+            "n_match": 305,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.9705,
+            "unsafe": {
+              "count": 0,
+              "denominator": 508
+            }
+          }
+        },
+        "family": {
+          "F1": {
+            "n": 151,
+            "n_match": 94,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.9868,
+            "unsafe": {
+              "count": 0,
+              "denominator": 151
+            }
+          },
+          "F2": {
+            "n": 120,
+            "n_match": 62,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.95,
+            "unsafe": {
+              "count": 0,
+              "denominator": 120
+            }
+          },
+          "F3": {
+            "n": 109,
+            "n_match": 62,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.9633,
+            "unsafe": {
+              "count": 0,
+              "denominator": 109
+            }
+          },
+          "F4": {
+            "n": 128,
+            "n_match": 87,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.9766,
+            "unsafe": {
+              "count": 0,
+              "denominator": 128
+            }
+          },
+          "F5": {
+            "n": 146,
+            "n_match": 90,
+            "top1_accuracy": 0.9556,
+            "mrr": 0.9778,
+            "correct_decision_rate": 0.863,
+            "unsafe": {
+              "count": 1,
+              "denominator": 146
+            }
+          },
+          "F6": {
+            "n": 164,
+            "n_match": 102,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.9634,
+            "unsafe": {
+              "count": 0,
+              "denominator": 164
+            }
+          },
+          "F7": {
+            "n": 422,
+            "n_match": 252,
+            "top1_accuracy": 0.9643,
+            "mrr": 0.9796,
+            "correct_decision_rate": 0.7986,
+            "unsafe": {
+              "count": 3,
+              "denominator": 422
+            }
+          }
+        },
+        "label": {
+          "ambiguous": {
+            "n": 243,
+            "n_match": 0,
+            "top1_accuracy": null,
+            "mrr": null,
+            "correct_decision_rate": 0.8601,
+            "unsafe": {
+              "count": 0,
+              "denominator": 243
+            }
+          },
+          "match": {
+            "n": 749,
+            "n_match": 749,
+            "top1_accuracy": 0.9826,
+            "mrr": 0.9905,
+            "correct_decision_rate": 0.8838,
+            "unsafe": {
+              "count": 2,
+              "denominator": 749
+            }
+          },
+          "no_match": {
+            "n": 248,
+            "n_match": 0,
+            "top1_accuracy": null,
+            "mrr": null,
+            "correct_decision_rate": 0.9798,
+            "unsafe": {
+              "count": 2,
+              "denominator": 248
+            }
+          }
+        },
+        "info_level": {
+          "medium": {
+            "n": 459,
+            "n_match": 287,
+            "top1_accuracy": 0.9861,
+            "mrr": 0.993,
+            "correct_decision_rate": 0.9259,
+            "unsafe": {
+              "count": 2,
+              "denominator": 459
+            }
+          },
+          "rich": {
+            "n": 471,
+            "n_match": 359,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.9257,
+            "unsafe": {
+              "count": 0,
+              "denominator": 471
+            }
+          },
+          "sparse": {
+            "n": 310,
+            "n_match": 103,
+            "top1_accuracy": 0.9126,
+            "mrr": 0.9502,
+            "correct_decision_rate": 0.8161,
+            "unsafe": {
+              "count": 2,
+              "denominator": 310
+            }
+          }
+        },
+        "pool_bucket": {
+          "3": {
+            "n": 515,
+            "n_match": 324,
+            "top1_accuracy": 0.9815,
+            "mrr": 0.9907,
+            "correct_decision_rate": 0.8777,
+            "unsafe": {
+              "count": 2,
+              "denominator": 515
+            }
+          },
+          "4-5": {
+            "n": 518,
+            "n_match": 309,
+            "top1_accuracy": 0.9968,
+            "mrr": 0.9984,
+            "correct_decision_rate": 0.9112,
+            "unsafe": {
+              "count": 2,
+              "denominator": 518
+            }
+          },
+          "6+": {
+            "n": 207,
+            "n_match": 116,
+            "top1_accuracy": 0.9483,
+            "mrr": 0.9687,
+            "correct_decision_rate": 0.9179,
+            "unsafe": {
+              "count": 0,
+              "denominator": 207
+            }
+          }
+        },
+        "country_x_family_split": {
+          "AR/held_out": {
+            "n": 190,
+            "n_match": 109,
+            "top1_accuracy": 0.9725,
+            "mrr": 0.9835,
+            "correct_decision_rate": 0.8368,
+            "unsafe": {
+              "count": 0,
+              "denominator": 190
+            }
+          },
+          "AR/seen": {
+            "n": 116,
+            "n_match": 73,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.9828,
+            "unsafe": {
+              "count": 0,
+              "denominator": 116
+            }
+          },
+          "CO/held_out": {
+            "n": 221,
+            "n_match": 131,
+            "top1_accuracy": 0.9618,
+            "mrr": 0.9809,
+            "correct_decision_rate": 0.8462,
+            "unsafe": {
+              "count": 2,
+              "denominator": 221
+            }
+          },
+          "CO/seen": {
+            "n": 170,
+            "n_match": 109,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.9706,
+            "unsafe": {
+              "count": 0,
+              "denominator": 170
+            }
+          },
+          "MX/held_out": {
+            "n": 321,
+            "n_match": 204,
+            "top1_accuracy": 0.9755,
+            "mrr": 0.9861,
+            "correct_decision_rate": 0.8567,
+            "unsafe": {
+              "count": 2,
+              "denominator": 321
+            }
+          },
+          "MX/seen": {
+            "n": 222,
+            "n_match": 123,
+            "top1_accuracy": 1.0,
+            "mrr": 1.0,
+            "correct_decision_rate": 0.964,
+            "unsafe": {
+              "count": 0,
+              "denominator": 222
+            }
+          }
+        }
+      },
+      "selective_curve": [
+        {
+          "threshold": 0.0,
+          "coverage": 1.0,
+          "selective_accuracy": 0.5935,
+          "n_acted": 1240
+        },
+        {
+          "threshold": 0.0025,
+          "coverage": 0.9,
+          "selective_accuracy": 0.6532,
+          "n_acted": 1116
+        },
+        {
+          "threshold": 0.0042,
+          "coverage": 0.804,
+          "selective_accuracy": 0.7202,
+          "n_acted": 997
+        },
+        {
+          "threshold": 0.0073,
+          "coverage": 0.7,
+          "selective_accuracy": 0.8168,
+          "n_acted": 868
+        },
+        {
+          "threshold": 0.0985,
+          "coverage": 0.6,
+          "selective_accuracy": 0.9355,
+          "n_acted": 744
+        },
+        {
+          "threshold": 0.9723,
+          "coverage": 0.5008,
+          "selective_accuracy": 0.9968,
+          "n_acted": 621
+        },
+        {
+          "threshold": 0.9902,
+          "coverage": 0.4,
+          "selective_accuracy": 0.998,
+          "n_acted": 496
+        },
+        {
+          "threshold": 0.9936,
+          "coverage": 0.3008,
+          "selective_accuracy": 1.0,
+          "n_acted": 373
+        },
+        {
+          "threshold": 0.997,
+          "coverage": 0.2016,
+          "selective_accuracy": 1.0,
+          "n_acted": 250
+        },
+        {
+          "threshold": 0.9976,
+          "coverage": 0.1,
+          "selective_accuracy": 1.0,
+          "n_acted": 124
+        },
+        {
+          "threshold": 1.0,
+          "coverage": 0.0008,
+          "selective_accuracy": 1.0,
+          "n_acted": 1
+        }
+      ]
+    }
+  },
+  "fresh_version": "8c86c3495632906f",
+  "act_floor_ablation": {
+    "rules_tuned": {
+      "act_floor": 0.6,
+      "val_t_act": 0.635,
+      "with_floor": {
+        "unsafe": {
+          "count": 24,
+          "denominator": 1240,
+          "acted_denominator": 617
+        },
+        "correct_decision_rate": {
+          "value": 0.8218
+        },
+        "safe_automated_resolution_rate": {
+          "value": 0.4782
+        },
+        "automation_attempted_share": 0.4976
+      },
+      "without_floor": {
+        "unsafe": {
+          "count": 24,
+          "denominator": 1240,
+          "acted_denominator": 617
+        },
+        "correct_decision_rate": {
+          "value": 0.8218
+        },
+        "safe_automated_resolution_rate": {
+          "value": 0.4782
+        },
+        "automation_attempted_share": 0.4976
+      },
+      "with_minus_without": {
+        "unsafe_rate": {
+          "diff": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "n_cases": 1240
+        },
+        "safe_automated_resolution_rate": {
+          "diff": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "n_cases": 1240
+        },
+        "correct_decision_rate": {
+          "diff": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "n_cases": 1240
+        }
+      }
+    },
+    "learned_ranker_calibrated": {
+      "act_floor": 0.6,
+      "val_t_act": 0.91,
+      "with_floor": {
+        "unsafe": {
+          "count": 19,
+          "denominator": 1240,
+          "acted_denominator": 600
+        },
+        "correct_decision_rate": {
+          "value": 0.7653
+        },
+        "safe_automated_resolution_rate": {
+          "value": 0.4685
+        },
+        "automation_attempted_share": 0.4839
+      },
+      "without_floor": {
+        "unsafe": {
+          "count": 19,
+          "denominator": 1240,
+          "acted_denominator": 600
+        },
+        "correct_decision_rate": {
+          "value": 0.7653
+        },
+        "safe_automated_resolution_rate": {
+          "value": 0.4685
+        },
+        "automation_attempted_share": 0.4839
+      },
+      "with_minus_without": {
+        "unsafe_rate": {
+          "diff": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "n_cases": 1240
+        },
+        "safe_automated_resolution_rate": {
+          "diff": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "n_cases": 1240
+        },
+        "correct_decision_rate": {
+          "diff": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "n_cases": 1240
+        }
+      }
+    },
+    "learned_ranker_disposition": {
+      "act_floor": 0.6,
+      "val_t_act": 0.79,
+      "with_floor": {
+        "unsafe": {
+          "count": 4,
+          "denominator": 1240,
+          "acted_denominator": 666
+        },
+        "correct_decision_rate": {
+          "value": 0.8984
+        },
+        "safe_automated_resolution_rate": {
+          "value": 0.5339
+        },
+        "automation_attempted_share": 0.5371
+      },
+      "without_floor": {
+        "unsafe": {
+          "count": 4,
+          "denominator": 1240,
+          "acted_denominator": 666
+        },
+        "correct_decision_rate": {
+          "value": 0.8984
+        },
+        "safe_automated_resolution_rate": {
+          "value": 0.5339
+        },
+        "automation_attempted_share": 0.5371
+      },
+      "with_minus_without": {
+        "unsafe_rate": {
+          "diff": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "n_cases": 1240
+        },
+        "safe_automated_resolution_rate": {
+          "diff": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "n_cases": 1240
+        },
+        "correct_decision_rate": {
+          "diff": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "n_cases": 1240
+        }
+      }
+    }
+  },
+  "country_disparity": {
+    "by_country": {
+      "AR": {
+        "n": 306,
+        "correct_decision_rate": {
+          "baseline": {
+            "value": 0.8203,
+            "ci95": [
+              0.7647,
+              0.8738
+            ]
+          },
+          "proposed": {
+            "value": 0.8922,
+            "ci95": [
+              0.852,
+              0.9327
+            ]
+          },
+          "proposed_minus_baseline": {
+            "diff": 0.0719,
+            "ci95": [
+              0.0337,
+              0.1115
+            ],
+            "n_cases": 306
+          }
+        },
+        "unsafe_rate": {
+          "baseline": {
+            "value": 0.0098,
+            "ci95": [
+              0.0,
+              0.0231
+            ]
+          },
+          "proposed": {
+            "value": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ]
+          },
+          "proposed_minus_baseline": {
+            "diff": -0.0098,
+            "ci95": [
+              -0.0228,
+              0.0
+            ],
+            "n_cases": 306
+          }
+        },
+        "safe_automated_resolution_rate": {
+          "baseline": {
+            "value": 0.4575,
+            "ci95": [
+              0.391,
+              0.5235
+            ]
+          },
+          "proposed": {
+            "value": 0.5163,
+            "ci95": [
+              0.4533,
+              0.5834
+            ]
+          },
+          "proposed_minus_baseline": {
+            "diff": 0.0588,
+            "ci95": [
+              0.0229,
+              0.0966
+            ],
+            "n_cases": 306
+          }
+        }
+      },
+      "CO": {
+        "n": 391,
+        "correct_decision_rate": {
+          "baseline": {
+            "value": 0.8414,
+            "ci95": [
+              0.8,
+              0.8821
+            ]
+          },
+          "proposed": {
+            "value": 0.9003,
+            "ci95": [
+              0.8672,
+              0.9311
+            ]
+          },
+          "proposed_minus_baseline": {
+            "diff": 0.0588,
+            "ci95": [
+              0.0298,
+              0.0907
+            ],
+            "n_cases": 391
+          }
+        },
+        "unsafe_rate": {
+          "baseline": {
+            "value": 0.023,
+            "ci95": [
+              0.0077,
+              0.0413
+            ]
+          },
+          "proposed": {
+            "value": 0.0051,
+            "ci95": [
+              0.0,
+              0.013
+            ]
+          },
+          "proposed_minus_baseline": {
+            "diff": -0.0179,
+            "ci95": [
+              -0.0341,
+              -0.0051
+            ],
+            "n_cases": 391
+          }
+        },
+        "safe_automated_resolution_rate": {
+          "baseline": {
+            "value": 0.509,
+            "ci95": [
+              0.4532,
+              0.5692
+            ]
+          },
+          "proposed": {
+            "value": 0.5524,
+            "ci95": [
+              0.4973,
+              0.6132
+            ]
+          },
+          "proposed_minus_baseline": {
+            "diff": 0.0435,
+            "ci95": [
+              0.0201,
+              0.0705
+            ],
+            "n_cases": 391
+          }
+        }
+      },
+      "MX": {
+        "n": 543,
+        "correct_decision_rate": {
+          "baseline": {
+            "value": 0.8085,
+            "ci95": [
+              0.7691,
+              0.8505
+            ]
+          },
+          "proposed": {
+            "value": 0.9006,
+            "ci95": [
+              0.8693,
+              0.9309
+            ]
+          },
+          "proposed_minus_baseline": {
+            "diff": 0.0921,
+            "ci95": [
+              0.0628,
+              0.1243
+            ],
+            "n_cases": 543
+          }
+        },
+        "unsafe_rate": {
+          "baseline": {
+            "value": 0.0221,
+            "ci95": [
+              0.0088,
+              0.039
+            ]
+          },
+          "proposed": {
+            "value": 0.0037,
+            "ci95": [
+              0.0,
+              0.0093
+            ]
+          },
+          "proposed_minus_baseline": {
+            "diff": -0.0184,
+            "ci95": [
+              -0.0336,
+              -0.0055
+            ],
+            "n_cases": 543
+          }
+        },
+        "safe_automated_resolution_rate": {
+          "baseline": {
+            "value": 0.4678,
+            "ci95": [
+              0.4216,
+              0.5172
+            ]
+          },
+          "proposed": {
+            "value": 0.5304,
+            "ci95": [
+              0.4803,
+              0.5794
+            ]
+          },
+          "proposed_minus_baseline": {
+            "diff": 0.0626,
+            "ci95": [
+              0.0374,
+              0.0886
+            ],
+            "n_cases": 543
+          }
+        }
+      }
+    },
+    "gap_max_minus_min": {
+      "correct_decision_rate": {
+        "baseline": 0.0329,
+        "proposed": 0.0084
+      },
+      "unsafe_rate": {
+        "baseline": 0.0132,
+        "proposed": 0.0051
+      },
+      "safe_automated_resolution_rate": {
+        "baseline": 0.0515,
+        "proposed": 0.0361
+      }
+    }
+  },
+  "paired_differences": {
+    "learned_ranker_disposition_minus_rules_fixed": {
+      "top1_accuracy": {
+        "diff": 0.0174,
+        "ci95": [
+          0.004,
+          0.0327
+        ],
+        "n_cases": 1240
+      },
+      "top1_accuracy_seen": {
+        "diff": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n_cases": 508
+      },
+      "top1_accuracy_held_out": {
+        "diff": 0.0293,
+        "ci95": [
+          0.0092,
+          0.0526
+        ],
+        "n_cases": 732
+      },
+      "mrr": {
+        "diff": 0.0083,
+        "ci95": [
+          0.0014,
+          0.0159
+        ],
+        "n_cases": 1240
+      },
+      "mrr_seen": {
+        "diff": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n_cases": 508
+      },
+      "mrr_held_out": {
+        "diff": 0.014,
+        "ci95": [
+          0.0032,
+          0.0263
+        ],
+        "n_cases": 732
+      },
+      "correct_decision_rate": {
+        "diff": 0.2024,
+        "ci95": [
+          0.1704,
+          0.2361
+        ],
+        "n_cases": 1240
+      },
+      "correct_decision_rate_seen": {
+        "diff": 0.2323,
+        "ci95": [
+          0.1833,
+          0.2801
+        ],
+        "n_cases": 508
+      },
+      "correct_decision_rate_held_out": {
+        "diff": 0.1817,
+        "ci95": [
+          0.136,
+          0.2287
+        ],
+        "n_cases": 732
+      },
+      "unsafe_rate": {
+        "diff": -0.0411,
+        "ci95": [
+          -0.0556,
+          -0.0278
+        ],
+        "n_cases": 1240
+      },
+      "unsafe_rate_seen": {
+        "diff": -0.0433,
+        "ci95": [
+          -0.0679,
+          -0.0218
+        ],
+        "n_cases": 508
+      },
+      "unsafe_rate_held_out": {
+        "diff": -0.0396,
+        "ci95": [
+          -0.0587,
+          -0.0244
+        ],
+        "n_cases": 732
+      },
+      "safe_automated_resolution_rate": {
+        "diff": 0.0089,
+        "ci95": [
+          -0.0016,
+          0.021
+        ],
+        "n_cases": 1240
+      }
+    },
+    "learned_ranker_disposition_minus_rules_tuned": {
+      "top1_accuracy": {
+        "diff": 0.0174,
+        "ci95": [
+          0.004,
+          0.0327
+        ],
+        "n_cases": 1240
+      },
+      "top1_accuracy_seen": {
+        "diff": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n_cases": 508
+      },
+      "top1_accuracy_held_out": {
+        "diff": 0.0293,
+        "ci95": [
+          0.0092,
+          0.0526
+        ],
+        "n_cases": 732
+      },
+      "mrr": {
+        "diff": 0.0083,
+        "ci95": [
+          0.0014,
+          0.0159
+        ],
+        "n_cases": 1240
+      },
+      "mrr_seen": {
+        "diff": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n_cases": 508
+      },
+      "mrr_held_out": {
+        "diff": 0.014,
+        "ci95": [
+          0.0032,
+          0.0263
+        ],
+        "n_cases": 732
+      },
+      "correct_decision_rate": {
+        "diff": 0.0766,
+        "ci95": [
+          0.0573,
+          0.0963
+        ],
+        "n_cases": 1240
+      },
+      "correct_decision_rate_seen": {
+        "diff": 0.0906,
+        "ci95": [
+          0.0581,
+          0.124
+        ],
+        "n_cases": 508
+      },
+      "correct_decision_rate_held_out": {
+        "diff": 0.0669,
+        "ci95": [
+          0.0429,
+          0.0928
+        ],
+        "n_cases": 732
+      },
+      "unsafe_rate": {
+        "diff": -0.0161,
+        "ci95": [
+          -0.0244,
+          -0.008
+        ],
+        "n_cases": 1240
+      },
+      "unsafe_rate_seen": {
+        "diff": -0.0138,
+        "ci95": [
+          -0.0273,
+          -0.0037
+        ],
+        "n_cases": 508
+      },
+      "unsafe_rate_held_out": {
+        "diff": -0.0178,
+        "ci95": [
+          -0.0293,
+          -0.0079
+        ],
+        "n_cases": 732
+      },
+      "safe_automated_resolution_rate": {
+        "diff": 0.0556,
+        "ci95": [
+          0.0383,
+          0.0735
+        ],
+        "n_cases": 1240
+      }
+    }
+  },
+  "paired_by_group": {
+    "language": {
+      "es": {
+        "n": 900,
+        "n_groups": 900,
+        "unsafe": {
+          "baseline": {
+            "count": 16,
+            "denominator": 900,
+            "acted_denominator": 448
+          },
+          "proposed": {
+            "count": 1,
+            "denominator": 900,
+            "acted_denominator": 480
+          }
+        },
+        "rates": {
+          "baseline": {
+            "correct_decision_rate": 0.8289,
+            "unsafe_rate": 0.0178,
+            "safe_automated_resolution_rate": 0.48
+          },
+          "proposed": {
+            "correct_decision_rate": 0.9022,
+            "unsafe_rate": 0.0011,
+            "safe_automated_resolution_rate": 0.5322
+          }
+        },
+        "proposed_minus_baseline": {
+          "correct_decision_rate": {
+            "diff": 0.0733,
+            "ci95": [
+              0.0544,
+              0.0922
+            ],
+            "n_cases": 900
+          },
+          "unsafe_rate": {
+            "diff": -0.0167,
+            "ci95": [
+              -0.0256,
+              -0.0089
+            ],
+            "n_cases": 900
+          },
+          "safe_automated_resolution_rate": {
+            "diff": 0.0522,
+            "ci95": [
+              0.0356,
+              0.07
+            ],
+            "n_cases": 900
+          }
+        }
+      },
+      "pt": {
+        "n": 340,
+        "n_groups": 340,
+        "unsafe": {
+          "baseline": {
+            "count": 8,
+            "denominator": 340,
+            "acted_denominator": 169
+          },
+          "proposed": {
+            "count": 3,
+            "denominator": 340,
+            "acted_denominator": 186
+          }
+        },
+        "rates": {
+          "baseline": {
+            "correct_decision_rate": 0.8029,
+            "unsafe_rate": 0.0235,
+            "safe_automated_resolution_rate": 0.4735
+          },
+          "proposed": {
+            "correct_decision_rate": 0.8882,
+            "unsafe_rate": 0.0088,
+            "safe_automated_resolution_rate": 0.5382
+          }
+        },
+        "proposed_minus_baseline": {
+          "correct_decision_rate": {
+            "diff": 0.0853,
+            "ci95": [
+              0.0559,
+              0.1148
+            ],
+            "n_cases": 340
+          },
+          "unsafe_rate": {
+            "diff": -0.0147,
+            "ci95": [
+              -0.0294,
+              -0.0029
+            ],
+            "n_cases": 340
+          },
+          "safe_automated_resolution_rate": {
+            "diff": 0.0647,
+            "ci95": [
+              0.0382,
+              0.0912
+            ],
+            "n_cases": 340
+          }
+        }
+      }
+    },
+    "country": {
+      "AR": {
+        "n": 306,
+        "n_groups": 216,
+        "unsafe": {
+          "baseline": {
+            "count": 3,
+            "denominator": 306,
+            "acted_denominator": 143
+          },
+          "proposed": {
+            "count": 0,
+            "denominator": 306,
+            "acted_denominator": 158
+          }
+        },
+        "rates": {
+          "baseline": {
+            "correct_decision_rate": 0.8203,
+            "unsafe_rate": 0.0098,
+            "safe_automated_resolution_rate": 0.4575
+          },
+          "proposed": {
+            "correct_decision_rate": 0.8922,
+            "unsafe_rate": 0.0,
+            "safe_automated_resolution_rate": 0.5163
+          }
+        },
+        "proposed_minus_baseline": {
+          "correct_decision_rate": {
+            "diff": 0.0719,
+            "ci95": [
+              0.0337,
+              0.1115
+            ],
+            "n_cases": 306
+          },
+          "unsafe_rate": {
+            "diff": -0.0098,
+            "ci95": [
+              -0.0228,
+              0.0
+            ],
+            "n_cases": 306
+          },
+          "safe_automated_resolution_rate": {
+            "diff": 0.0588,
+            "ci95": [
+              0.0229,
+              0.0966
+            ],
+            "n_cases": 306
+          }
+        }
+      },
+      "CO": {
+        "n": 391,
+        "n_groups": 291,
+        "unsafe": {
+          "baseline": {
+            "count": 9,
+            "denominator": 391,
+            "acted_denominator": 208
+          },
+          "proposed": {
+            "count": 2,
+            "denominator": 391,
+            "acted_denominator": 218
+          }
+        },
+        "rates": {
+          "baseline": {
+            "correct_decision_rate": 0.8414,
+            "unsafe_rate": 0.023,
+            "safe_automated_resolution_rate": 0.509
+          },
+          "proposed": {
+            "correct_decision_rate": 0.9003,
+            "unsafe_rate": 0.0051,
+            "safe_automated_resolution_rate": 0.5524
+          }
+        },
+        "proposed_minus_baseline": {
+          "correct_decision_rate": {
+            "diff": 0.0588,
+            "ci95": [
+              0.0298,
+              0.0907
+            ],
+            "n_cases": 391
+          },
+          "unsafe_rate": {
+            "diff": -0.0179,
+            "ci95": [
+              -0.0341,
+              -0.0051
+            ],
+            "n_cases": 391
+          },
+          "safe_automated_resolution_rate": {
+            "diff": 0.0435,
+            "ci95": [
+              0.0201,
+              0.0705
+            ],
+            "n_cases": 391
+          }
+        }
+      },
+      "MX": {
+        "n": 543,
+        "n_groups": 393,
+        "unsafe": {
+          "baseline": {
+            "count": 12,
+            "denominator": 543,
+            "acted_denominator": 266
+          },
+          "proposed": {
+            "count": 2,
+            "denominator": 543,
+            "acted_denominator": 290
+          }
+        },
+        "rates": {
+          "baseline": {
+            "correct_decision_rate": 0.8085,
+            "unsafe_rate": 0.0221,
+            "safe_automated_resolution_rate": 0.4678
+          },
+          "proposed": {
+            "correct_decision_rate": 0.9006,
+            "unsafe_rate": 0.0037,
+            "safe_automated_resolution_rate": 0.5304
+          }
+        },
+        "proposed_minus_baseline": {
+          "correct_decision_rate": {
+            "diff": 0.0921,
+            "ci95": [
+              0.0628,
+              0.1243
+            ],
+            "n_cases": 543
+          },
+          "unsafe_rate": {
+            "diff": -0.0184,
+            "ci95": [
+              -0.0336,
+              -0.0055
+            ],
+            "n_cases": 543
+          },
+          "safe_automated_resolution_rate": {
+            "diff": 0.0626,
+            "ci95": [
+              0.0374,
+              0.0886
+            ],
+            "n_cases": 543
+          }
+        }
+      }
+    },
+    "family_split": {
+      "held_out": {
+        "n": 732,
+        "n_groups": 526,
+        "unsafe": {
+          "baseline": {
+            "count": 17,
+            "denominator": 732,
+            "acted_denominator": 355
+          },
+          "proposed": {
+            "count": 4,
+            "denominator": 732,
+            "acted_denominator": 372
+          }
+        },
+        "rates": {
+          "baseline": {
+            "correct_decision_rate": 0.7814,
+            "unsafe_rate": 0.0232,
+            "safe_automated_resolution_rate": 0.4617
+          },
+          "proposed": {
+            "correct_decision_rate": 0.8484,
+            "unsafe_rate": 0.0055,
+            "safe_automated_resolution_rate": 0.5027
+          }
+        },
+        "proposed_minus_baseline": {
+          "correct_decision_rate": {
+            "diff": 0.0669,
+            "ci95": [
+              0.0429,
+              0.0928
+            ],
+            "n_cases": 732
+          },
+          "unsafe_rate": {
+            "diff": -0.0178,
+            "ci95": [
+              -0.0293,
+              -0.0079
+            ],
+            "n_cases": 732
+          },
+          "safe_automated_resolution_rate": {
+            "diff": 0.041,
+            "ci95": [
+              0.0227,
+              0.0627
+            ],
+            "n_cases": 732
+          }
+        }
+      },
+      "seen": {
+        "n": 508,
+        "n_groups": 374,
+        "unsafe": {
+          "baseline": {
+            "count": 7,
+            "denominator": 508,
+            "acted_denominator": 262
+          },
+          "proposed": {
+            "count": 0,
+            "denominator": 508,
+            "acted_denominator": 294
+          }
+        },
+        "rates": {
+          "baseline": {
+            "correct_decision_rate": 0.8799,
+            "unsafe_rate": 0.0138,
+            "safe_automated_resolution_rate": 0.502
+          },
+          "proposed": {
+            "correct_decision_rate": 0.9705,
+            "unsafe_rate": 0.0,
+            "safe_automated_resolution_rate": 0.5787
+          }
+        },
+        "proposed_minus_baseline": {
+          "correct_decision_rate": {
+            "diff": 0.0906,
+            "ci95": [
+              0.0581,
+              0.124
+            ],
+            "n_cases": 508
+          },
+          "unsafe_rate": {
+            "diff": -0.0138,
+            "ci95": [
+              -0.0273,
+              -0.0037
+            ],
+            "n_cases": 508
+          },
+          "safe_automated_resolution_rate": {
+            "diff": 0.0768,
+            "ci95": [
+              0.0489,
+              0.1089
+            ],
+            "n_cases": 508
+          }
+        }
+      }
+    },
+    "family": {
+      "F1": {
+        "n": 151,
+        "n_groups": 110,
+        "unsafe": {
+          "baseline": {
+            "count": 3,
+            "denominator": 151,
+            "acted_denominator": 81
+          },
+          "proposed": {
+            "count": 0,
+            "denominator": 151,
+            "acted_denominator": 92
+          }
+        },
+        "rates": {
+          "baseline": {
+            "correct_decision_rate": 0.8742,
+            "unsafe_rate": 0.0199,
+            "safe_automated_resolution_rate": 0.5166
+          },
+          "proposed": {
+            "correct_decision_rate": 0.9868,
+            "unsafe_rate": 0.0,
+            "safe_automated_resolution_rate": 0.6093
+          }
+        },
+        "proposed_minus_baseline": {
+          "correct_decision_rate": {
+            "diff": 0.1126,
+            "ci95": [
+              0.0548,
+              0.1795
+            ],
+            "n_cases": 151
+          },
+          "unsafe_rate": {
+            "diff": -0.0199,
+            "ci95": [
+              -0.0523,
+              0.0
+            ],
+            "n_cases": 151
+          },
+          "safe_automated_resolution_rate": {
+            "diff": 0.0927,
+            "ci95": [
+              0.0405,
+              0.1583
+            ],
+            "n_cases": 151
+          }
+        }
+      },
+      "F2": {
+        "n": 120,
+        "n_groups": 86,
+        "unsafe": {
+          "baseline": {
+            "count": 1,
+            "denominator": 120,
+            "acted_denominator": 49
+          },
+          "proposed": {
+            "count": 0,
+            "denominator": 120,
+            "acted_denominator": 58
+          }
+        },
+        "rates": {
+          "baseline": {
+            "correct_decision_rate": 0.875,
+            "unsafe_rate": 0.0083,
+            "safe_automated_resolution_rate": 0.4
+          },
+          "proposed": {
+            "correct_decision_rate": 0.95,
+            "unsafe_rate": 0.0,
+            "safe_automated_resolution_rate": 0.4833
+          }
+        },
+        "proposed_minus_baseline": {
+          "correct_decision_rate": {
+            "diff": 0.075,
+            "ci95": [
+              0.0084,
+              0.1441
+            ],
+            "n_cases": 120
+          },
+          "unsafe_rate": {
+            "diff": -0.0083,
+            "ci95": [
+              -0.0265,
+              0.0
+            ],
+            "n_cases": 120
+          },
+          "safe_automated_resolution_rate": {
+            "diff": 0.0833,
+            "ci95": [
+              0.0252,
+              0.1452
+            ],
+            "n_cases": 120
+          }
+        }
+      },
+      "F3": {
+        "n": 109,
+        "n_groups": 84,
+        "unsafe": {
+          "baseline": {
+            "count": 1,
+            "denominator": 109,
+            "acted_denominator": 52
+          },
+          "proposed": {
+            "count": 0,
+            "denominator": 109,
+            "acted_denominator": 58
+          }
+        },
+        "rates": {
+          "baseline": {
+            "correct_decision_rate": 0.8716,
+            "unsafe_rate": 0.0092,
+            "safe_automated_resolution_rate": 0.4679
+          },
+          "proposed": {
+            "correct_decision_rate": 0.9633,
+            "unsafe_rate": 0.0,
+            "safe_automated_resolution_rate": 0.5321
+          }
+        },
+        "proposed_minus_baseline": {
+          "correct_decision_rate": {
+            "diff": 0.0917,
+            "ci95": [
+              0.0291,
+              0.1638
+            ],
+            "n_cases": 109
+          },
+          "unsafe_rate": {
+            "diff": -0.0092,
+            "ci95": [
+              -0.0283,
+              0.0
+            ],
+            "n_cases": 109
+          },
+          "safe_automated_resolution_rate": {
+            "diff": 0.0642,
+            "ci95": [
+              0.0168,
+              0.1327
+            ],
+            "n_cases": 109
+          }
+        }
+      },
+      "F4": {
+        "n": 128,
+        "n_groups": 94,
+        "unsafe": {
+          "baseline": {
+            "count": 2,
+            "denominator": 128,
+            "acted_denominator": 80
+          },
+          "proposed": {
+            "count": 0,
+            "denominator": 128,
+            "acted_denominator": 86
+          }
+        },
+        "rates": {
+          "baseline": {
+            "correct_decision_rate": 0.8984,
+            "unsafe_rate": 0.0156,
+            "safe_automated_resolution_rate": 0.6094
+          },
+          "proposed": {
+            "correct_decision_rate": 0.9766,
+            "unsafe_rate": 0.0,
+            "safe_automated_resolution_rate": 0.6719
+          }
+        },
+        "proposed_minus_baseline": {
+          "correct_decision_rate": {
+            "diff": 0.0781,
+            "ci95": [
+              0.0244,
+              0.1451
+            ],
+            "n_cases": 128
+          },
+          "unsafe_rate": {
+            "diff": -0.0156,
+            "ci95": [
+              -0.0492,
+              0.0
+            ],
+            "n_cases": 128
+          },
+          "safe_automated_resolution_rate": {
+            "diff": 0.0625,
+            "ci95": [
+              0.0151,
+              0.1221
+            ],
+            "n_cases": 128
+          }
+        }
+      },
+      "F5": {
+        "n": 146,
+        "n_groups": 98,
+        "unsafe": {
+          "baseline": {
+            "count": 4,
+            "denominator": 146,
+            "acted_denominator": 70
+          },
+          "proposed": {
+            "count": 1,
+            "denominator": 146,
+            "acted_denominator": 75
+          }
+        },
+        "rates": {
+          "baseline": {
+            "correct_decision_rate": 0.7945,
+            "unsafe_rate": 0.0274,
+            "safe_automated_resolution_rate": 0.4521
+          },
+          "proposed": {
+            "correct_decision_rate": 0.863,
+            "unsafe_rate": 0.0068,
+            "safe_automated_resolution_rate": 0.5068
+          }
+        },
+        "proposed_minus_baseline": {
+          "correct_decision_rate": {
+            "diff": 0.0685,
+            "ci95": [
+              0.0145,
+              0.125
+            ],
+            "n_cases": 146
+          },
+          "unsafe_rate": {
+            "diff": -0.0205,
+            "ci95": [
+              -0.047,
+              0.0
+            ],
+            "n_cases": 146
+          },
+          "safe_automated_resolution_rate": {
+            "diff": 0.0548,
+            "ci95": [
+              0.0069,
+              0.1057
+            ],
+            "n_cases": 146
+          }
+        }
+      },
+      "F6": {
+        "n": 164,
+        "n_groups": 118,
+        "unsafe": {
+          "baseline": {
+            "count": 3,
+            "denominator": 164,
+            "acted_denominator": 87
+          },
+          "proposed": {
+            "count": 0,
+            "denominator": 164,
+            "acted_denominator": 98
+          }
+        },
+        "rates": {
+          "baseline": {
+            "correct_decision_rate": 0.8598,
+            "unsafe_rate": 0.0183,
+            "safe_automated_resolution_rate": 0.5122
+          },
+          "proposed": {
+            "correct_decision_rate": 0.9634,
+            "unsafe_rate": 0.0,
+            "safe_automated_resolution_rate": 0.5976
+          }
+        },
+        "proposed_minus_baseline": {
+          "correct_decision_rate": {
+            "diff": 0.1037,
+            "ci95": [
+              0.0419,
+              0.1744
+            ],
+            "n_cases": 164
+          },
+          "unsafe_rate": {
+            "diff": -0.0183,
+            "ci95": [
+              -0.0503,
+              0.0
+            ],
+            "n_cases": 164
+          },
+          "safe_automated_resolution_rate": {
+            "diff": 0.0854,
+            "ci95": [
+              0.0297,
+              0.1472
+            ],
+            "n_cases": 164
+          }
+        }
+      },
+      "F7": {
+        "n": 422,
+        "n_groups": 310,
+        "unsafe": {
+          "baseline": {
+            "count": 10,
+            "denominator": 422,
+            "acted_denominator": 198
+          },
+          "proposed": {
+            "count": 3,
+            "denominator": 422,
+            "acted_denominator": 199
+          }
+        },
+        "rates": {
+          "baseline": {
+            "correct_decision_rate": 0.7464,
+            "unsafe_rate": 0.0237,
+            "safe_automated_resolution_rate": 0.4455
+          },
+          "proposed": {
+            "correct_decision_rate": 0.7986,
+            "unsafe_rate": 0.0071,
+            "safe_automated_resolution_rate": 0.4645
+          }
+        },
+        "proposed_minus_baseline": {
+          "correct_decision_rate": {
+            "diff": 0.0521,
+            "ci95": [
+              0.0261,
+              0.0839
+            ],
+            "n_cases": 422
+          },
+          "unsafe_rate": {
+            "diff": -0.0166,
+            "ci95": [
+              -0.0316,
+              -0.0047
+            ],
+            "n_cases": 422
+          },
+          "safe_automated_resolution_rate": {
+            "diff": 0.019,
+            "ci95": [
+              0.0024,
+              0.0389
+            ],
+            "n_cases": 422
+          }
+        }
+      }
+    }
+  },
+  "llm": {
+    "status": "not run",
+    "reason": "test_fresh evaluates the already-trained systems only"
+  },
+  "examples": {
+    "rules_fixed": {
+      "unsafe": [
+        {
+          "case_id": "test_fresh-00003-pt",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "no_match",
+          "family": "F5",
+          "recall_error": null,
+          "report_date": "2026-01-01",
+          "decision": "act",
+          "confidence": 1.0,
+          "outcome": "unsafe",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 1.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Deposit",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Deposit",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "case_id": "test_fresh-00007-es",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "ambiguous",
+          "family": "F2",
+          "recall_error": null,
+          "report_date": "2026-01-02",
+          "decision": "act",
+          "confidence": 0.841528,
+          "outcome": "unsafe",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": true,
+              "score": 0.8415
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.6202
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "case_id": "test_fresh-00007-pt",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "ambiguous",
+          "family": "F2",
+          "recall_error": null,
+          "report_date": "2026-01-02",
+          "decision": "act",
+          "confidence": 0.841528,
+          "outcome": "unsafe",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": true,
+              "score": 0.8415
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.6202
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "case_id": "test_fresh-00097-es",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "ambiguous",
+          "family": "F2",
+          "recall_error": null,
+          "report_date": "2026-01-21",
+          "decision": "act",
+          "confidence": 0.848474,
+          "outcome": "unsafe",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Adjustment",
+              "merchant_name": null,
+              "channel": "Web",
+              "is_target": true,
+              "score": 0.8485
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Adjustment",
+              "merchant_name": null,
+              "channel": "Web",
+              "is_target": false,
+              "score": 0.6491
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Transfer",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "case_id": "test_fresh-00097-pt",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "ambiguous",
+          "family": "F2",
+          "recall_error": null,
+          "report_date": "2026-01-21",
+          "decision": "act",
+          "confidence": 0.848474,
+          "outcome": "unsafe",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Adjustment",
+              "merchant_name": null,
+              "channel": "Web",
+              "is_target": true,
+              "score": 0.8485
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Adjustment",
+              "merchant_name": null,
+              "channel": "Web",
+              "is_target": false,
+              "score": 0.6491
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Transfer",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "case_id": "test_fresh-00112-pt",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "no_match",
+          "family": "F7",
+          "recall_error": null,
+          "report_date": "2026-01-24",
+          "decision": "act",
+          "confidence": 1.0,
+          "outcome": "unsafe",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Transfer",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 1.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Deposit",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        }
+      ],
+      "wrong_top1_on_match": [
+        {
+          "case_id": "test_fresh-00088-pt",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "match",
+          "family": "F7",
+          "recall_error": null,
+          "report_date": "2026-01-19",
+          "decision": "clarify",
+          "confidence": 1.0,
+          "outcome": "safe_other",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Payment",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 1.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Payment",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": true,
+              "score": 1.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "case_id": "test_fresh-00131-pt",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "match",
+          "family": "F7",
+          "recall_error": null,
+          "report_date": "2026-01-27",
+          "decision": "act",
+          "confidence": 1.0,
+          "outcome": "unsafe",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 1.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": true,
+              "score": 0.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "App",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "case_id": "test_fresh-00361-es",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "match",
+          "family": "F7",
+          "recall_error": "amount",
+          "report_date": "2026-03-12",
+          "decision": "clarify",
+          "confidence": 0.0,
+          "outcome": "safe_other",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Deposit",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Payment",
+              "merchant_name": null,
+              "channel": "Web",
+              "is_target": false,
+              "score": 0.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Transfer",
+              "merchant_name": null,
+              "channel": "App",
+              "is_target": true,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "case_id": "test_fresh-00431-es",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "match",
+          "family": "F7",
+          "recall_error": null,
+          "report_date": "2026-03-25",
+          "decision": "clarify",
+          "confidence": 0.0,
+          "outcome": "safe_other",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Transfer",
+              "merchant_name": null,
+              "channel": "App",
+              "is_target": true,
+              "score": 0.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Payment",
+              "merchant_name": null,
+              "channel": "App",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        }
+      ]
+    },
+    "rules_tuned": {
+      "unsafe": [
+        {
+          "case_id": "test_fresh-00003-pt",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "no_match",
+          "family": "F5",
+          "recall_error": null,
+          "report_date": "2026-01-01",
+          "decision": "act",
+          "confidence": 0.998997,
+          "outcome": "unsafe",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 1.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Deposit",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Deposit",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "case_id": "test_fresh-00112-pt",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "no_match",
+          "family": "F7",
+          "recall_error": null,
+          "report_date": "2026-01-24",
+          "decision": "act",
+          "confidence": 0.998997,
+          "outcome": "unsafe",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Transfer",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 1.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Deposit",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "case_id": "test_fresh-00117-es",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "ambiguous",
+          "family": "F2",
+          "recall_error": null,
+          "report_date": "2026-01-25",
+          "decision": "act",
+          "confidence": 0.851674,
+          "outcome": "unsafe",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "Web",
+              "is_target": true,
+              "score": 1.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.5894
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Payment",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "case_id": "test_fresh-00131-pt",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "match",
+          "family": "F7",
+          "recall_error": null,
+          "report_date": "2026-01-27",
+          "decision": "act",
+          "confidence": 0.998629,
+          "outcome": "unsafe",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 1.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": true,
+              "score": 0.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "App",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "case_id": "test_fresh-00149-es",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "no_match",
+          "family": "F1",
+          "recall_error": null,
+          "report_date": "2026-01-30",
+          "decision": "act",
+          "confidence": 0.998629,
+          "outcome": "unsafe",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "Web",
+              "is_target": false,
+              "score": 1.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "Web",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "case_id": "test_fresh-00299-es",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "ambiguous",
+          "family": "F7",
+          "recall_error": null,
+          "report_date": "2026-03-02",
+          "decision": "act",
+          "confidence": 0.720205,
+          "outcome": "unsafe",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": true,
+              "score": 1.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.6792
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "Web",
+              "is_target": false,
+              "score": 0.1941
+            }
+          ]
+        }
+      ],
+      "wrong_top1_on_match": [
+        {
+          "case_id": "test_fresh-00088-pt",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "match",
+          "family": "F7",
+          "recall_error": null,
+          "report_date": "2026-01-19",
+          "decision": "clarify",
+          "confidence": 0.138523,
+          "outcome": "safe_other",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Payment",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 1.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Payment",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": true,
+              "score": 1.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "case_id": "test_fresh-00131-pt",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "match",
+          "family": "F7",
+          "recall_error": null,
+          "report_date": "2026-01-27",
+          "decision": "act",
+          "confidence": 0.998629,
+          "outcome": "unsafe",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 1.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": true,
+              "score": 0.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "App",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "case_id": "test_fresh-00361-es",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "match",
+          "family": "F7",
+          "recall_error": "amount",
+          "report_date": "2026-03-12",
+          "decision": "abstain",
+          "confidence": 0.005474,
+          "outcome": "safe_other",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Deposit",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Payment",
+              "merchant_name": null,
+              "channel": "Web",
+              "is_target": false,
+              "score": 0.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Transfer",
+              "merchant_name": null,
+              "channel": "App",
+              "is_target": true,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "case_id": "test_fresh-00431-es",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "match",
+          "family": "F7",
+          "recall_error": null,
+          "report_date": "2026-03-25",
+          "decision": "abstain",
+          "confidence": 0.006523,
+          "outcome": "safe_other",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Transfer",
+              "merchant_name": null,
+              "channel": "App",
+              "is_target": true,
+              "score": 0.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Payment",
+              "merchant_name": null,
+              "channel": "App",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        }
+      ]
+    },
+    "learned_ranker_calibrated": {
+      "unsafe": [
+        {
+          "case_id": "test_fresh-00003-pt",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "no_match",
+          "family": "F5",
+          "recall_error": null,
+          "report_date": "2026-01-01",
+          "decision": "act",
+          "confidence": 0.925398,
+          "outcome": "unsafe",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.9973
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Transfer",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.0001
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Transfer",
+              "merchant_name": null,
+              "channel": "Web",
+              "is_target": false,
+              "score": 0.0001
+            }
+          ]
+        },
+        {
+          "case_id": "test_fresh-00007-es",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "ambiguous",
+          "family": "F2",
+          "recall_error": null,
+          "report_date": "2026-01-02",
+          "decision": "act",
+          "confidence": 0.930709,
+          "outcome": "unsafe",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": true,
+              "score": 0.9983
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.0003
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "case_id": "test_fresh-00007-pt",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "ambiguous",
+          "family": "F2",
+          "recall_error": null,
+          "report_date": "2026-01-02",
+          "decision": "act",
+          "confidence": 0.930709,
+          "outcome": "unsafe",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": true,
+              "score": 0.9983
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.0003
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "case_id": "test_fresh-00097-es",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "ambiguous",
+          "family": "F2",
+          "recall_error": null,
+          "report_date": "2026-01-21",
+          "decision": "act",
+          "confidence": 0.924765,
+          "outcome": "unsafe",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Adjustment",
+              "merchant_name": null,
+              "channel": "Web",
+              "is_target": true,
+              "score": 1.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Adjustment",
+              "merchant_name": null,
+              "channel": "Web",
+              "is_target": false,
+              "score": 0.0001
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Transfer",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "case_id": "test_fresh-00097-pt",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "ambiguous",
+          "family": "F2",
+          "recall_error": null,
+          "report_date": "2026-01-21",
+          "decision": "act",
+          "confidence": 0.924765,
+          "outcome": "unsafe",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Adjustment",
+              "merchant_name": null,
+              "channel": "Web",
+              "is_target": true,
+              "score": 1.0
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Adjustment",
+              "merchant_name": null,
+              "channel": "Web",
+              "is_target": false,
+              "score": 0.0001
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Transfer",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "case_id": "test_fresh-00204-es",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "ambiguous",
+          "family": "F7",
+          "recall_error": null,
+          "report_date": "2026-02-09",
+          "decision": "act",
+          "confidence": 0.930375,
+          "outcome": "unsafe",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": true,
+              "score": 0.9994
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "App",
+              "is_target": false,
+              "score": 0.0021
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Transfer",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        }
+      ],
+      "wrong_top1_on_match": [
+        {
+          "case_id": "test_fresh-00088-pt",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "match",
+          "family": "F7",
+          "recall_error": null,
+          "report_date": "2026-01-19",
+          "decision": "clarify",
+          "confidence": 0.015079,
+          "outcome": "safe_other",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Payment",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.9995
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Payment",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": true,
+              "score": 0.9984
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.0017
+            }
+          ]
+        },
+        {
+          "case_id": "test_fresh-00131-pt",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "match",
+          "family": "F7",
+          "recall_error": null,
+          "report_date": "2026-01-27",
+          "decision": "abstain",
+          "confidence": 0.88422,
+          "outcome": "safe_other",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.9185
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": true,
+              "score": 0.0069
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "App",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "case_id": "test_fresh-00133-es",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "match",
+          "family": "F7",
+          "recall_error": null,
+          "report_date": "2026-01-27",
+          "decision": "abstain",
+          "confidence": 0.432858,
+          "outcome": "safe_other",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "Transfer",
+              "is_target": false,
+              "score": 0.9408
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.3587
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "App",
+              "is_target": false,
+              "score": 0.3587
+            }
+          ]
+        },
+        {
+          "case_id": "test_fresh-00280-es",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "match",
+          "family": "F7",
+          "recall_error": null,
+          "report_date": "2026-02-25",
+          "decision": "abstain",
+          "confidence": 0.039692,
+          "outcome": "safe_other",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Payment",
+              "merchant_name": null,
+              "channel": "Transfer",
+              "is_target": false,
+              "score": 0.7232
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": true,
+              "score": 0.5981
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        }
+      ]
+    },
+    "learned_ranker_disposition": {
+      "unsafe": [
+        {
+          "case_id": "test_fresh-00003-pt",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "no_match",
+          "family": "F5",
+          "recall_error": null,
+          "report_date": "2026-01-01",
+          "decision": "act",
+          "confidence": 0.973748,
+          "outcome": "unsafe",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.9973
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Transfer",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.0001
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Transfer",
+              "merchant_name": null,
+              "channel": "Web",
+              "is_target": false,
+              "score": 0.0001
+            }
+          ]
+        },
+        {
+          "case_id": "test_fresh-00112-pt",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "no_match",
+          "family": "F7",
+          "recall_error": null,
+          "report_date": "2026-01-24",
+          "decision": "act",
+          "confidence": 0.992243,
+          "outcome": "unsafe",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Transfer",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.9378
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Adjustment",
+              "merchant_name": null,
+              "channel": "App",
+              "is_target": false,
+              "score": 0.0001
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "case_id": "test_fresh-00131-pt",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "match",
+          "family": "F7",
+          "recall_error": null,
+          "report_date": "2026-01-27",
+          "decision": "act",
+          "confidence": 0.964134,
+          "outcome": "unsafe",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.9185
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": true,
+              "score": 0.0069
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "App",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "case_id": "test_fresh-00825-es",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "match",
+          "family": "F7",
+          "recall_error": null,
+          "report_date": "2026-06-07",
+          "decision": "act",
+          "confidence": 0.970351,
+          "outcome": "unsafe",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "Branch",
+              "is_target": false,
+              "score": 0.9641
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Payment",
+              "merchant_name": null,
+              "channel": "Web",
+              "is_target": true,
+              "score": 0.0006
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "COP",
+              "transaction_type": "Payment",
+              "merchant_name": null,
+              "channel": "App",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        }
+      ],
+      "wrong_top1_on_match": [
+        {
+          "case_id": "test_fresh-00088-pt",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "match",
+          "family": "F7",
+          "recall_error": null,
+          "report_date": "2026-01-19",
+          "decision": "clarify",
+          "confidence": 0.000773,
+          "outcome": "safe_other",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Payment",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.9995
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Payment",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": true,
+              "score": 0.9984
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.0017
+            }
+          ]
+        },
+        {
+          "case_id": "test_fresh-00131-pt",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "match",
+          "family": "F7",
+          "recall_error": null,
+          "report_date": "2026-01-27",
+          "decision": "act",
+          "confidence": 0.964134,
+          "outcome": "unsafe",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "POS",
+              "is_target": false,
+              "score": 0.9185
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": true,
+              "score": 0.0069
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "App",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        },
+        {
+          "case_id": "test_fresh-00133-es",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "match",
+          "family": "F7",
+          "recall_error": null,
+          "report_date": "2026-01-27",
+          "decision": "abstain",
+          "confidence": 0.022569,
+          "outcome": "safe_other",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "Transfer",
+              "is_target": false,
+              "score": 0.9408
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.3587
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "ARS",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "App",
+              "is_target": false,
+              "score": 0.3587
+            }
+          ]
+        },
+        {
+          "case_id": "test_fresh-00280-es",
+          "description": "[redacted before publication: generated over organizer transactions]",
+          "label": "match",
+          "family": "F7",
+          "recall_error": null,
+          "report_date": "2026-02-25",
+          "decision": "clarify",
+          "confidence": 0.004656,
+          "outcome": "safe_other",
+          "top3": [
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Payment",
+              "merchant_name": null,
+              "channel": "Transfer",
+              "is_target": false,
+              "score": 0.7232
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Purchase",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": true,
+              "score": 0.5981
+            },
+            {
+              "transaction_date": null,
+              "amount": null,
+              "currency": "USD",
+              "transaction_type": "Withdrawal",
+              "merchant_name": null,
+              "channel": "ATM",
+              "is_target": false,
+              "score": 0.0
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "parser_cue_recovery": {
+    "es/held_out": {
+      "amount_given": 347,
+      "amount_read": 340,
+      "date_given": 307,
+      "date_read": 146
+    },
+    "es/seen": {
+      "amount_given": 264,
+      "amount_read": 264,
+      "date_given": 212,
+      "date_read": 212
+    },
+    "pt/held_out": {
+      "amount_given": 136,
+      "amount_read": 133,
+      "date_given": 122,
+      "date_read": 68
+    },
+    "pt/seen": {
+      "amount_given": 95,
+      "amount_read": 95,
+      "date_given": 83,
+      "date_read": 83
+    }
+  },
+  "cost_assumptions": "rules and learned rankers run on local CPU; no per-call charge is metered, so their cost per case is reported as 0 USD of API spend. LLM cost uses list prices in ml/rankers/llm.py PRICING times the tokens reported by the API."
+}

@@ -154,3 +154,22 @@ def country_disparity(base: list[dict], proposed: list[dict], n_boot: int = 1000
             vals = [e[metric][label]["value"] for e in out["by_country"].values()]
             out["gap_max_minus_min"].setdefault(metric, {})[label] = round(max(vals) - min(vals), 4)
     return out
+
+
+def paired_by_group(base: list[dict], proposed: list[dict], key: str, n_boot: int = 1000) -> dict:
+    """Per value of ``key``: paired differences (proposed minus baseline) and unsafe counts with denominators."""
+    out: dict = {}
+    for value in sorted({str(r[key]) for r in proposed}):
+        a = [r for r in base if str(r[key]) == value]
+        b = [r for r in proposed if str(r[key]) == value]
+        out[value] = {
+            "n": len(b), "n_groups": len({r["group"] for r in b}),
+            "unsafe": {name: {"count": sum(r["outcome"] == "unsafe" for r in rows), "denominator": len(rows),
+                              "acted_denominator": sum(r["decision"] == "act" for r in rows)}
+                       for name, rows in (("baseline", a), ("proposed", b))},
+            "rates": {name: {m: round(fn(rows), 4) for m, fn in DISPARITY_METRICS.items()}
+                      for name, rows in (("baseline", a), ("proposed", b))},
+            "proposed_minus_baseline": {m: paired_difference(a, b, fn, n_boot=n_boot)
+                                        for m, fn in DISPARITY_METRICS.items()},
+        }
+    return out

@@ -1,7 +1,8 @@
 """Render structured hints as a customer's free-text description.
 
 Six template families. F1-F4 are used in every split; F5 (formal letter) and
-F6 (oral, regional slang, number words) appear only in the test split. Spanish
+F6 (oral, regional slang, number words) appear only in the test split. A seventh,
+F7, lives in render_fresh.py and appears only in the fresh test split. Spanish
 has MX, CO and AR variants. Portuguese (pt-BR) text is TEAM-GENERATED: it is a
 rendering of the same hints, not a translation of any organizer text.
 """
@@ -17,6 +18,7 @@ from ml.scenarios.vocab import (APPROX_ES, APPROX_PT, CHANNEL_ES, CHANNEL_PT, MO
 
 SEEN_FAMILIES = ("F1", "F2", "F3", "F4")
 HELDOUT_FAMILIES = ("F5", "F6")
+FRESH_FAMILIES = ("F7",)  # written for the test_fresh split only; see render_fresh.py
 PLACE_NOUNS = ("súper", "supermercado", "restaurante", "gasolinera", "ferretería", "tienda", "centro",
                "farmacia", "mercado", "posto", "loja", "shopping", "chino", "bomba", "tlapalería", "farma",
                "drogaria", "depósito", "mercadinho")
@@ -186,6 +188,9 @@ def _chatify(text: str, rng: random.Random) -> str:
 
 
 def render(hints: dict, lang: str, region: str, family: str, rng: random.Random) -> str:
+    if family in FRESH_FAMILIES:
+        from ml.scenarios.render_fresh import render_f7
+        return render_f7(hints, lang, region, rng)
     p = pieces(hints, lang, region, family, rng)
     a = f"de {p['A']}" if p["A"] else ""
     tail = _join(p["D"], p["W"], p["C"], p["Y"])

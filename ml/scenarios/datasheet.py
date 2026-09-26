@@ -15,6 +15,7 @@ from pathlib import Path
 from ml.data import CASES_DIR, load_cases
 
 SPLITS = ("train", "val", "test")
+FRESH = "test_fresh"
 OUT = Path("ml/DATASHEET.md")
 
 
@@ -75,7 +76,29 @@ def render() -> str:
                         ["match", "ambiguous", "no_match"], "split"))
     parts.append(f"\nSpanish source cases per split: "
                  + ", ".join(f"{s} {len(es_only[s])}" for s in SPLITS) + ".\n")
+    if (CASES_DIR / f"{FRESH}.jsonl").exists() and FRESH in manifest:
+        parts.append(fresh_section(load_cases(FRESH), manifest[FRESH]))
     parts.append(FOOTER)
+    return "".join(parts)
+
+
+def fresh_section(cases: list[dict], man: dict) -> str:
+    """Counts for the fresh test split, built after training and evaluated once (ml/scenarios/fresh.py)."""
+    cfg, only = man["config"], {FRESH: cases}
+    pools = sorted(len(c["candidates"]) for c in cases)
+    parts = [f"\n## Fresh test split ({FRESH})\n\n",
+             f"Built by `ml/scenarios/fresh.py` with generation seed {cfg['seed']} from customers of the original "
+             f"test bucket that the original build never loaded ({man['customers_eligible']} eligible, "
+             f"{man['customers_loaded']} loaded, {man['load_stats']['rows_kept']} transactions). Report dates "
+             f"{cfg['period'][0]}..{cfg['period'][1]}: the organizer transactions end on 2026-06-18, so no later "
+             "window exists. Family F7 (messaging-app register, `ml/scenarios/render_fresh.py`) exists only "
+             f"here. File sha256 `{man['file_sha256'][:16]}` is frozen in the manifest.\n\n",
+             _table(_by(only, lambda c: f"{c['label']} / {c['language']}"), [FRESH], "label / language"), "\n",
+             _table(_by(only, lambda c: c["family"]), [FRESH], "family"), "\n",
+             _table(_by(only, lambda c: f"{c['country']} / {c['segment']}"), [FRESH], "country / segment"),
+             f"\nPool size: min {pools[0]}, median {statistics.median(pools):g}, "
+             f"p90 {pools[int(0.9 * (len(pools) - 1))]}, max {pools[-1]}. Customers skipped (Spanish sources): "
+             + ", ".join(f"{k} {v}" for k, v in man["skipped_customers"].items()) + ".\n"]
     return "".join(parts)
 
 
@@ -133,7 +156,10 @@ FOOTER = """
 * **Time split**: report dates fall in 2023-10-01..2025-06-30 (train), 2025-07-01..2025-12-31 (val) and
   2026-01-01..2026-06-17 (test).
 * **Held-out template families**: F5 (formal letter) and F6 (oral, regional slang, number words) appear only
-  in test. The ranker lexicon and parser were written from F1-F4 only.
+  in test. The ranker lexicon and parser were written from F1-F4 only (the number-word and slang parser
+  added later covers F6 amount vocabulary). F7 appears only in test_fresh and was written after training.
+* **Fresh test split**: test_fresh has no customer or transaction in common with train, val or test (tested),
+  another generation seed, and was evaluated once. The original test split was used for error analysis.
 * **Portuguese stays with its source**: a pt-BR case copies its Spanish source's split, customer, pool and
   label, and shares its bootstrap group.
 * Stratified sampling by country and segment with a per-stratum floor so small strata (Student, Premium,

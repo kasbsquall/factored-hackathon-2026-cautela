@@ -71,3 +71,41 @@ def test_labels_follow_the_documented_rule(cases):
 def test_no_raw_customer_identifiers(cases):
     raw = [c for s in SPLITS for c in cases[s] if "customer_id" in c or not c["customer_ref"].startswith("cust_")]
     assert raw == []
+
+
+FRESH = "test_fresh"
+needs_fresh = pytest.mark.skipif(not (CASES_DIR / f"{FRESH}.jsonl").exists(),
+                                 reason="test_fresh.jsonl is rebuilt by: uv run python -m ml.scenarios.build --verify")
+
+
+@pytest.fixture(scope="module")
+def fresh_cases():
+    return load_cases(FRESH)
+
+
+@needs_fresh
+def test_fresh_file_matches_its_frozen_hash():
+    manifest = json.loads((CASES_DIR / "manifest.json").read_text(encoding="utf-8"))
+    payload = (CASES_DIR / f"{FRESH}.jsonl").read_bytes().replace(b"\r\n", b"\n")
+    assert hashlib.sha256(payload).hexdigest() == manifest[FRESH]["file_sha256"]
+
+
+@needs_fresh
+def test_fresh_shares_no_customer_or_transaction_with_any_split(cases, fresh_cases):
+    cust = {c["customer_ref"] for c in fresh_cases}
+    tx = {t["transaction_id"] for c in fresh_cases for t in c["candidates"]}
+    for s in SPLITS:
+        assert not cust & {c["customer_ref"] for c in cases[s]}, f"customers shared with {s}"
+        assert not tx & {t["transaction_id"] for c in cases[s] for t in c["candidates"]}, f"transactions shared with {s}"
+
+
+@needs_fresh
+def test_fresh_labels_window_and_families(cases, fresh_cases):
+    from ml.scenarios.render import FRESH_FAMILIES
+
+    assert [p for c in fresh_cases for p in audit(c)] == []
+    assert min(c["report_date"] for c in fresh_cases) > max(c["report_date"] for c in cases["val"])
+    assert {c["family"] for c in fresh_cases} >= set(FRESH_FAMILIES) | set(HELDOUT_FAMILIES)
+    assert not {c["family"] for s in SPLITS for c in cases[s]} & set(FRESH_FAMILIES)
+    by_id = {c["case_id"]: c for c in fresh_cases}
+    assert all(by_id[c["source_case_id"]]["candidates"] == c["candidates"] for c in fresh_cases if c["language"] == "pt")

@@ -2,24 +2,29 @@
 
     uv run python -m ml.evaluate            # rules + learned (+ LLM when a key is configured)
     uv run python -m ml.evaluate --no-llm
+    uv run python -m ml.evaluate --split test_fresh   # once: refuses to run again after results_fresh.json exists
 
 Reads the artifacts written by ml/train.py; thresholds and calibrators come from
-there and are never refitted on test. Writes ml/reports/results.json (every
-number in results.md comes from it) and one MLflow run per ranker.
+there and are never refitted on test. Writes ml/reports/results.json (or
+results_fresh.json for test_fresh; every number in results.md comes from them)
+and one MLflow run per ranker. test_fresh is checked against the sha256 frozen
+in the manifest before anything runs.
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import pickle
 import random
 import time
+from pathlib import Path
 
 from ml import tracking
-from ml.analysis import (breakdowns, correct_rate, country_disparity, curve, mrr, paired_difference, pool_bucket,
-                         safe_auto_rate, summarize, top1, unsafe_rate)
-from ml.data import MODELS_DIR, REPORTS_DIR, data_version, group_of, load_cases, ranker_input, record
+from ml.analysis import (breakdowns, correct_rate, country_disparity, curve, mrr, paired_by_group,
+                         paired_difference, pool_bucket, safe_auto_rate, summarize, top1, unsafe_rate)
+from ml.data import CASES_DIR, MODELS_DIR, REPORTS_DIR, data_version, group_of, load_cases, ranker_input, record
 from ml.decision import CalibratedDecider, act_correct
 from ml.metrics import hit_at_k, outcome, reciprocal_rank
 from ml.rankers.learned import LearnedRanker
@@ -29,6 +34,21 @@ from ml.train import MAX_UNSAFE_RATE
 PROPOSED = "learned_ranker_disposition"
 LLM_RUNS = 3
 LLM_SUBSET = {"train": 120, "val": 150, "test": 200}
+FRESH = "test_fresh"
+RESULTS = {"test": "results.json", FRESH: "results_fresh.json"}
+
+
+def check_fresh_frozen(out: Path) -> None:
+    """test_fresh runs once, on the exact file hashed in the manifest before any model saw it."""
+    if out.exists():
+        raise SystemExit(f"{out} exists: {FRESH} is evaluated once and never re-run after its results are read")
+    manifest = json.loads((CASES_DIR / "manifest.json").read_text(encoding="utf-8"))
+    path = CASES_DIR / f"{FRESH}.jsonl"
+    if not path.exists():
+        raise SystemExit(f"{path} not found: rebuild it with `uv run python -m ml.scenarios.build --verify`")
+    sha = hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+    if FRESH not in manifest or sha != manifest[FRESH]["file_sha256"]:
+        raise SystemExit(f"{path} does not match the sha256 frozen in manifest.json")
 
 
 def case_row(case: dict, ranked: list, conf: float, d: dict, ms: float) -> dict:
@@ -189,8 +209,13 @@ class _Guarded:
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--no-llm", action="store_true")
+    ap.add_argument("--split", choices=("test", FRESH), default="test",
+                    help=f"{FRESH} is evaluated once: the run refuses to overwrite an existing {RESULTS[FRESH]}")
     args = ap.parse_args()
-    test = load_cases("test")
+    out = REPORTS_DIR / RESULTS[args.split]
+    if args.split == FRESH:
+        check_fresh_frozen(out)
+    test = load_cases(args.split)
     version = data_version()
     fitted = json.loads((REPORTS_DIR / "fitted.json").read_text(encoding="utf-8"))
     if fitted["data_version"] != version:
@@ -199,8 +224,11 @@ def main() -> None:
         systems = pickle.load(fh)
     rankers = {"rules": RuleRanker(), "learned": LearnedRanker.load(MODELS_DIR / "learned.pkl")}
     rows_by: dict[str, list[dict]] = {}
-    results: dict = {"generated_by": "ml/evaluate.py", "data_version": version, "split": "test",
+    results: dict = {"generated_by": "ml/evaluate.py", "data_version": version, "split": args.split,
                      "proposed_system": PROPOSED, "systems": {}}
+    if args.split == FRESH:
+        results["fresh_version"] = json.loads((CASES_DIR / "manifest.json").read_text(encoding="utf-8"))[
+            FRESH]["fresh_version"]
     for name, (rk, decider) in systems.items():
         rows = run_system(rankers[rk], decider, test)
         rows_by[name] = rows
@@ -220,20 +248,26 @@ def main() -> None:
                 b = [r for r in rows_by[PROPOSED] if r["family_split"] == fam]
                 diffs[f"{metric}_{fam}"] = paired_difference(a, b, fn)
         results["paired_differences"][f"{PROPOSED}_minus_{base}"] = diffs
-    results["llm"] = {"status": "not run", "reason": "--no-llm"} if args.no_llm else run_llm(
-        load_cases("train"), load_cases("val"), test)
+        diffs["safe_automated_resolution_rate"] = paired_difference(rows_by[base], rows_by[PROPOSED], safe_auto_rate)
+    results["paired_by_group"] = {key: paired_by_group(rows_by["rules_tuned"], rows_by[PROPOSED], key)
+                                  for key in ("language", "country", "family_split", "family")}
+    if args.split == FRESH:
+        results["llm"] = {"status": "not run", "reason": "test_fresh evaluates the already-trained systems only"}
+    else:
+        results["llm"] = {"status": "not run", "reason": "--no-llm"} if args.no_llm else run_llm(
+            load_cases("train"), load_cases("val"), test)
     results["examples"] = examples(test, rows_by)
     results["parser_cue_recovery"] = parse_diagnostics(test)
     results["cost_assumptions"] = ("rules and learned rankers run on local CPU; no per-call charge is metered, so "
                                    "their cost per case is reported as 0 USD of API spend. LLM cost uses list "
                                    "prices in ml/rankers/llm.py PRICING times the tokens reported by the API.")
-    out = REPORTS_DIR / "results.json"
     for run in results["llm"].get("runs", []):
         run.pop("rows", None)
     out.write_text(json.dumps(results, indent=2, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n")
     for name, body in results["systems"].items():
-        with tracking.run(f"evaluate:{name}", {"system": name, "ranker": body["ranker"], "decider": body["decider"],
-                                               "data_version": version, "split": "test", "prompt_version": "n/a"}):
+        with tracking.run(f"evaluate:{args.split}:{name}", {
+                "system": name, "ranker": body["ranker"], "decider": body["decider"], "data_version": version,
+                "split": args.split, "prompt_version": "n/a"}):
             tracking.log_metrics({"summary": body["summary"]})
             tracking.log_artifact(out)
     if results["llm"]["status"] == "run":

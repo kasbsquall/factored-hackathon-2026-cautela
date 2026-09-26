@@ -12,6 +12,7 @@ uv run python -m ml.scenarios.build --verify   # rebuild eval/cases/disputes/*.j
 uv run python -m ml.scenarios.datasheet   # -> ml/DATASHEET.md
 uv run python -m ml.train                 # ranker, calibrators, disposition model, thresholds (about 50 s)
 uv run python -m ml.evaluate              # test split only -> ml/reports/results.json, MLflow runs
+uv run python -m ml.evaluate --split test_fresh   # once -> ml/reports/results_fresh.json (refuses a second run)
 uv run python -m ml.parser_readback       # amount and date read-back on val and test -> ml/reports/parser_readback.json
 uv run python -m ml.report                # -> ml/reports/results.md
 uv run pytest tests/ml_tests
@@ -22,7 +23,7 @@ The builder is seeded and does not depend on the order of its inputs. Two runs o
 
 ### Rebuilding the case files
 
-The case files (`train.jsonl`, `val.jsonl`, `test.jsonl`, about 9 MB of organizer-derived rows) are git-ignored. Only `eval/cases/disputes/manifest.json` (sha256 of each file and the `data_version`) and `ml/DATASHEET.md` are committed. Rebuild them before training, evaluating or running `tests/ml_tests/test_committed_cases.py` (which skips when they are absent):
+The case files (`train.jsonl`, `val.jsonl`, `test.jsonl`, `test_fresh.jsonl`, about 12 MB of organizer-derived rows) are git-ignored. Only `eval/cases/disputes/manifest.json` (sha256 of each file and the `data_version`) and `ml/DATASHEET.md` are committed. Rebuild them before training, evaluating or running `tests/ml_tests/test_committed_cases.py` (which skips when they are absent):
 
 ```bash
 # from a local copy of the organizer files in data/raw
@@ -31,7 +32,7 @@ uv run python -m ml.scenarios.build --verify
 uv run python -m ml.scenarios.build --verify --source s3://<bucket>/data
 ```
 
-Without `--source`, the builder reads `data/raw` when it exists and otherwise `LATAM_BANK_S3_URI` from `.env` plus `/data`. With `--verify` it rebuilds in memory, compares the three sha256 values and the `data_version` with the committed manifest, and writes the case files only when all of them match; on a mismatch it exits with status 1 and writes nothing. The manifest is never rewritten in that mode. We checked both routes: the local copy and the bucket both reproduce data version `0189e386ce7fe882`. A plain run without `--verify` rebuilds and rewrites the manifest, which is how a deliberate change to the generator is recorded. A `make cases` target would call the `--verify` command; the Makefile is outside this folder, so that line is left to whoever maintains it.
+Without `--source`, the builder reads `data/raw` when it exists and otherwise `LATAM_BANK_S3_URI` from `.env` plus `/data`. With `--verify` it rebuilds in memory, compares the three sha256 values, the `data_version` and the `test_fresh` sha256 with the committed manifest, and writes the case files only when all of them match; on a mismatch it exits with status 1 and writes nothing. The manifest is never rewritten in that mode. We checked both routes: the local copy and the bucket both reproduce data version `0189e386ce7fe882`. A plain run without `--verify` rebuilds and rewrites the manifest, which is how a deliberate change to the generator is recorded. A `make cases` target would call the `--verify` command; the Makefile is outside this folder, so that line is left to whoever maintains it.
 
 ## Task framing
 
@@ -64,6 +65,7 @@ Portuguese (pt-BR) cases are **TEAM-GENERATED** renderings of the same hints. Br
 |---|---|---|
 | Group split by customer | Salted hash, 60/20/20; no customer or transaction in two splits | `test_group_split_has_no_customer_or_transaction_overlap` |
 | Time split | Report dates: train until 2025-06-30, val 2025-07 to 2025-12, test 2026-01 to 2026-06 | `test_time_split` |
+| Fresh test split | `test_fresh`: another generation seed, customers of the test bucket that the original build never loaded, family F7 written after training; frozen by sha256 and evaluated once (next section) | `test_fresh_shares_no_customer_or_transaction_with_any_split`, `test_evaluation_of_test_fresh_is_one_shot_and_hash_checked` |
 | Held-out template families | F5 (formal letter) and F6 (oral, regional slang, number words) exist only in test. The ranker lexicon and parser were written from F1 to F4 only and live in separate files from the generator vocabulary. Exception: the number-word and slang parser added later covers F6 amount vocabulary (see "Number words and amount slang") | `test_heldout_families_absent_from_train_and_val` |
 | Portuguese stays with its source | Same split, customer, pool and label; shared bootstrap group | `test_portuguese_cases_share_split_and_content_with_source` |
 | Rankers never see labels or hints | `ranker_input` exposes only text, report date and language | `test_ranker_input_hides_hints_and_labels` |
@@ -133,9 +135,33 @@ Both thresholds are chosen on val only. The search maximizes the correct decisio
 
 **Business floor on acting.** On top of the val-tuned act threshold there is a minimum confidence for acting, `DEFAULT_ACT_FLOOR = 0.60` in `ml/decision.py`. The system acts only when its confidence reaches max(val threshold, floor). The floor is a policy set by the business and was not fitted: 0.60 is the same bar the agent's fixed rule already uses for the top score (`agent/tools/ranking.py`), and it was fixed before any result of this run was seen. It can be changed with `CAUTELA_ACT_FLOOR` or `ml.train --act-floor`. The reason for it is the previous run, where the val search put the disposition model's act threshold at P(match) >= 0.28 and four unsafe test acts had confidence between 0.34 and 0.50. In this run the val search chose 0.635 (rules baseline), 0.91 (calibrated learned ranker) and 0.79 (disposition model), all above the floor, so the floor does not bind: unsafe outcomes are 21, 20 and 3 of 1,107 with and without it, and safe automated resolution is unchanged (paired difference 0.0 points for every system). Its cost is zero here, and it caps the damage if a refit lands on a low threshold again. `results.md` has the ablation table.
 
-## Results (offline, test split, data version in results.json)
+## Headline results: fresh test split (evaluated once)
 
-This run includes the number-word and slang parser, the merchant fixes and the act floor. The previous run's numbers are kept in `ml/reports/previous/` and in the "Previous run" section of `results.md`. **Read this run with one caveat:** the merchant fixes and the slang mappings were prompted by error analysis of the previous run on this same test split, so part of the improvement on these cases is not an independent estimate. There is no fresh test split to measure it on.
+The original test split was used for error analysis, so its numbers are optimistic. `test_fresh` (`ml/scenarios/fresh.py`) is the clean estimate: 1,240 cases (900 Spanish sources, 340 Portuguese renderings), another generation seed (20261001), customers from the original test bucket that the original build never loaded (no customer or transaction shared with train, val or test, tested), and a new phrasing family F7 on 35% of the Spanish sources. F7 is a messaging-app register with Mexican, Colombian and Argentine variants and a pt-BR rendering, written after training and before any model ran on it (`ml/scenarios/render_fresh.py`). The report-date window is the same as test (2026-01-01 to 2026-06-17) because the organizer transactions end on 2026-06-18, so a later window does not exist. The file was frozen by sha256 in the manifest, and the already-trained systems were evaluated on it once: no refit, no threshold change, no fix afterwards. `ml.evaluate --split test_fresh` refuses to run a second time.
+
+| System (test_fresh, 1,240 cases) | Correct decisions | Unsafe (of 1,240; acted) | Safe automated resolution | Top-1 on match |
+|---|---|---|---|---|
+| `rules_fixed` | 69.6% [66.2, 72.9] | 55 (4.4%; 706 acted) | 52.5% | 96.5% |
+| `rules_tuned` (baseline) | 82.2% [79.5, 84.8] | 24 (1.9%; 617 acted) | 47.8% | 96.5% |
+| `learned_ranker_calibrated` | 76.5% [73.9, 79.2] | 19 (1.5%; 600 acted) | 46.9% | 98.3% |
+| `learned_ranker_disposition` (proposed) | **89.8%** [87.9, 91.8] | **4 (0.3%)** [0.1, 0.7]; 666 acted | 53.4% [50.2, 56.8] | 98.3% |
+
+Paired against the tuned baseline on the same cases, the proposed system gains +7.7 points of correct decisions [+5.7, +9.6], lowers unsafe outcomes by 1.6 points [-2.4, -0.8] and raises safe automated resolution by 5.6 points [+3.8, +7.3]. On held-out families (F5, F6, F7) the gain is +6.7 [+4.3, +9.3]; on seen families +9.1 [+5.8, +12.4].
+
+| Group (test_fresh) | Unsafe, baseline | Unsafe, proposed | Correct, baseline / proposed | Correct diff [95% CI] | Unsafe diff [95% CI] |
+|---|---|---|---|---|---|
+| Spanish | 16 / 900 | 1 / 900 | 82.9% / 90.2% | +7.3 [+5.4, +9.2] | -1.7 [-2.6, -0.9] |
+| Portuguese | 8 / 340 | 3 / 340 | 80.3% / 88.8% | +8.5 [+5.6, +11.5] | -1.5 [-2.9, -0.3] |
+| Argentina | 3 / 306 | 0 / 306 | 82.0% / 89.2% | +7.2 [+3.4, +11.2] | -1.0 [-2.3, +0.0] |
+| Colombia | 9 / 391 | 2 / 391 | 84.1% / 90.0% | +5.9 [+3.0, +9.1] | -1.8 [-3.4, -0.5] |
+| Mexico | 12 / 543 | 2 / 543 | 80.8% / 90.1% | +9.2 [+6.3, +12.4] | -1.8 [-3.4, -0.5] |
+| F7 (new family) | 10 / 422 | 3 / 422 | 74.6% / 79.9% | +5.2 [+2.6, +8.4] | -1.7 [-3.2, -0.5] |
+
+What the fresh split changes. Every system is worse than on the original test: the proposed system goes from 93.9% to 89.8% correct and from 56.9% to 53.4% safe automated resolution; unsafe stays low (3 of 1,107 before, 4 of 1,240 now). The baseline drops more (86.8% to 82.2%), so the paired gain is about the same (+7.0 before, +7.7 now). F7 is the weakest family by a wide margin: 79.9% correct against 84.8% on held-out families overall and 97.0% on seen ones, and the safe-automation gain there is only +1.9 points [+0.2, +3.9]. The parser reads back 340 of 347 held-out Spanish amounts but only 146 of 307 held-out Spanish dates (68 of 122 in Portuguese), so the new date wording is the likely weak point; that is a hypothesis from the read-back table, not a diagnosed cause, and nothing was changed after seeing it. Three of the four unsafe outcomes are Portuguese, and three of the four are F7 descriptions without an amount (for example "uma movimentação num terminal de autoatendimento"), acted on at P(match) 0.96 to 0.99; the fourth is an F5 letter with a full date. The Portuguese interval for unsafe outcomes is wide (340 cases). Full tables: the headline section of `results.md`.
+
+## Results on the original test split (used for error analysis)
+
+This run includes the number-word and slang parser, the merchant fixes and the act floor. The previous run's numbers are kept in `ml/reports/previous/` and in the "Previous run" section of `results.md`. **These numbers are optimistic:** the merchant fixes and the slang mappings were prompted by error analysis of the previous run on this same test split, so part of the improvement on these cases is not an independent estimate. The fresh split above is the independent one.
 
 | System (test, 1,107 cases) | Correct decisions | Unsafe | Safe automated resolution | Top-1 on match |
 |---|---|---|---|---|
@@ -172,20 +198,21 @@ The cases below were found in the previous run's `results.json` (proposed system
 * The organizer data combines type, channel and merchant at random (for example withdrawals "por la app"), and Mexican customers transact mostly in USD, so some descriptions read oddly.
 * The LLM ranker was not run. Its latency, cost, variability and quality are unknown. Masking with the agent's PII module also masks large peso amounts written like an Argentine DNI ("16.371.485"): privacy wins over amount information there, and that trade-off should be measured when the LLM runs.
 * Case files include organizer-derived transaction fields (ids, amounts, merchants, dates) with pseudonymized customer references, about 9 MB in total. They are not committed; `ml.scenarios.build --verify` rebuilds them from the organizer files and checks them against the committed manifest (see "Rebuilding the case files").
-* Changes made after reading test errors (merchant features, slang mappings) make this run's test numbers optimistic to an unknown degree. A new time window of organizer transactions, rendered with the same seed, would give a clean re-test.
+* Changes made after reading test errors (merchant features, slang mappings) make the original test numbers optimistic; `test_fresh` measures that (93.9% to 89.8% correct for the proposed system). The fresh split shares the test report-date window, because the organizer data has no later transactions, so it is fresh in customers, seed and phrasing but not in time. It is now spent as well: any change made after reading its results needs another fresh split to be measured.
 
 ## Files
 
 | Path | Purpose |
 |---|---|
 | `scenarios/build.py`, `hints.py`, `render.py`, `vocab.py`, `source.py` | Scenario builder, label rule, templates, generator vocabulary, DuckDB reader |
+| `scenarios/fresh.py`, `render_fresh.py` | Fresh test split builder and the F7 family written for it |
 | `scenarios/datasheet.py` | Writes `DATASHEET.md` from the case files |
 | `features/parse.py`, `numbers.py`, `lexicon.py`, `pairwise.py` | Parser, number words and slang, ranker-side lexicon and merchant list, candidate features |
 | `rankers/protocol.py`, `rules.py`, `learned.py`, `llm.py`, `prompts/rank_v1.md` | Rankers and the shared interface |
 | `decision.py`, `disposition.py` | Deciders, threshold search and the business act floor |
-| `train.py`, `evaluate.py`, `analysis.py`, `metrics.py`, `report.py`, `report_changes.py`, `tracking.py` | Fitting, test evaluation, aggregation, metric functions, report, MLflow |
+| `train.py`, `evaluate.py`, `analysis.py`, `metrics.py`, `report.py`, `report_changes.py`, `report_fresh.py`, `tracking.py` | Fitting, test evaluation, aggregation, metric functions, report, MLflow |
 | `parser_readback.py` | Amount and date read-back on val and test |
-| `reports/fitted.json`, `results.json`, `results.md`, `parser_readback*.json` | Committed outputs; every reported number comes from these |
+| `reports/fitted.json`, `results_fresh.json`, `results.json`, `results.md`, `parser_readback*.json` | Committed outputs; every reported number comes from these |
 | `reports/previous/` | Snapshot of the previous run's `results.json` and `fitted.json` |
 | `../eval/cases/disputes/` | Committed manifest; the git-ignored case files are rebuilt there |
 | `../tests/ml_tests/` | Tests |
