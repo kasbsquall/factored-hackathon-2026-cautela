@@ -18,7 +18,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any, Literal, Protocol
 
-from ml.decision import FixedRuleDecider
+from ml.decision import K_CLARIFY, FixedRuleDecider
 from ml.disposition import cue_fits
 from ml.rankers.learned import LearnedRanker
 from ml.rankers.rules import RuleRanker
@@ -37,6 +37,7 @@ class Disposition:
     top_k: list[str]
     model: str
     probabilities: dict[str, float] = field(default_factory=dict)
+    note: str | None = None
 
 
 class DispositionModel(Protocol):
@@ -72,8 +73,15 @@ class LearnedDisposition:
             return Disposition("escalate", 0.0, [], self.name)
         probabilities = {str(k): round(float(v), 4) for k, v in self.decider.proba(inp, candidates, ranked).items()}
         confidence, decided = self.decider.decide_case(inp, candidates, ranked)
+        note = None
+        if decided["decision"] == "abstain" and max(probabilities, key=probabilities.get) != "no_match":
+            # The fitted rule abstains once P(no_match) reaches t_abstain (0.046), even when the classifier puts
+            # most of its mass on match or ambiguous. The component metric scores abstain and clarify alike on
+            # those cases; in the service they differ: a clarify shows the charges, and only the customer's
+            # explicit pick (or "none of these") follows. So the service asks instead of transferring.
+            decided, note = {"decision": "clarify", "top_k": [t for t, _ in ranked[:K_CLARIFY]]}, "abstain_to_clarify"
         return Disposition(_MAP[decided["decision"]], round(float(confidence), 4), list(decided["top_k"]),
-                           self.name, probabilities)
+                           self.name, probabilities, note)
 
 
 class RuleDisposition:
