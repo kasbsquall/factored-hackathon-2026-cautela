@@ -1,40 +1,68 @@
 """Read customers and their transactions from the organizer files with DuckDB.
 
-The builder reads the raw CSV partitions directly (``data/raw``), applying the
-same primary-key rule as silver (one row per ``transaction_id``, latest
-``process_date``) and dropping rows whose amount or date cannot be cast. The
-counts of dropped rows are returned so the manifest can report them.
+The source is either a local copy (``data/raw``) or the organizer bucket
+(``s3://<bucket>/data``, credentials from the git-ignored ``.env`` through
+data_engineering/pipelines/source.py). Both hold the same CSV partitions, so
+either rebuilds the same case files. The reader applies the silver primary-key
+rule (one row per ``transaction_id``, latest ``process_date``) and drops rows
+whose amount or date cannot be cast; the counts go to the manifest.
 """
 
 from __future__ import annotations
 
 import hashlib
+import os
 from datetime import datetime
-from pathlib import Path
 
 import duckdb
+
+from data_engineering.pipelines.env import load_env_file
+from data_engineering.pipelines.source import SourceLocation, connect_source, parse_source
 
 COUNTRY_CODES = {"México": "MX", "Mexico": "MX", "Colombia": "CO", "Argentina": "AR"}
 TX_COLUMNS = ("transaction_id", "transaction_date", "process_date", "customer_id", "transaction_type", "amount",
               "currency", "channel", "merchant_name", "merchant_category", "transaction_city",
               "transaction_country", "transaction_status")
+S3_DATA_PREFIX = "data"  # organizer bucket layout: s3://<bucket>/data/<table>/...
 
 
-def source_fingerprint(raw_dir: Path) -> str:
-    """Hash of relative path and size of every input file (cheap, content-free)."""
-    files = sorted([raw_dir / "customers.csv"] + list((raw_dir / "transactions").rglob("*.csv")))
+def default_source() -> str:
+    """data/raw when a local copy exists, else the bucket named by LATAM_BANK_S3_URI plus /data."""
+    if os.path.isdir("data/raw/transactions"):
+        return "data/raw"
+    load_env_file(".env")
+    bucket = os.environ.get("LATAM_BANK_S3_URI")
+    if not bucket:
+        raise SystemExit("no data/raw copy and no LATAM_BANK_S3_URI in .env: pass --source")
+    return bucket.rstrip("/") + "/" + S3_DATA_PREFIX
+
+
+def open_source(uri: str) -> tuple[duckdb.DuckDBPyConnection, SourceLocation]:
+    load_env_file(".env")
+    loc = parse_source(uri)
+    con = duckdb.connect()
+    connect_source(con, loc)
+    return con, loc
+
+
+def _q(value: str) -> str:
+    return "'" + value.replace("'", "''") + "'"
+
+
+def source_fingerprint(con: duckdb.DuckDBPyConnection, loc: SourceLocation) -> str:
+    """Hash of the relative paths of every input file; identical for the local copy and the bucket."""
+    files = [f"{loc.root}/customers.csv"] + [r[0] for r in con.execute(
+        "SELECT file FROM glob(?)", [f"{loc.root}/transactions/**/*.csv"]).fetchall()]
     h = hashlib.sha256()
-    for f in files:
-        h.update(f"{f.relative_to(raw_dir).as_posix()}:{f.stat().st_size}\n".encode())
+    for rel in sorted(loc.relative(f) for f in files):
+        h.update(f"{rel}\n".encode())
     return h.hexdigest()[:16]
 
 
-def load_customers(raw_dir: Path) -> list[dict]:
-    con = duckdb.connect()
+def load_customers(con: duckdb.DuckDBPyConnection, loc: SourceLocation) -> list[dict]:
     rows = con.execute(
-        "SELECT customer_id, country, segment FROM read_csv(?, header=true, all_varchar=true)",
-        [str(raw_dir / "customers.csv")],
-    ).fetchall()
+        f"SELECT customer_id, country, segment FROM read_csv({_q(loc.root + '/customers.csv')}, header=true, "
+        "all_varchar=true)").fetchall()
     out = []
     for cid, country, segment in rows:
         code = COUNTRY_CODES.get(country or "")
@@ -43,15 +71,15 @@ def load_customers(raw_dir: Path) -> list[dict]:
     return out
 
 
-def load_transactions(raw_dir: Path, customer_ids: list[str]) -> tuple[dict[str, list[dict]], dict]:
+def load_transactions(con: duckdb.DuckDBPyConnection, loc: SourceLocation,
+                      customer_ids: list[str]) -> tuple[dict[str, list[dict]], dict]:
     """Transactions of the given customers, grouped by customer and sorted by time."""
-    con = duckdb.connect()
-    con.execute("CREATE TEMP TABLE sel AS SELECT unnest(?::VARCHAR[]) AS customer_id", [customer_ids])
-    glob = str(raw_dir / "transactions" / "**" / "*.csv").replace("\\", "/")
+    con.execute("CREATE OR REPLACE TEMP TABLE sel AS SELECT unnest(?::VARCHAR[]) AS customer_id", [customer_ids])
+    glob = _q(f"{loc.root}/transactions/**/*.csv")
     cols = ", ".join(f"t.{c}" for c in TX_COLUMNS)
     con.execute(f"""
-        CREATE TEMP TABLE raw AS
-        SELECT {cols} FROM read_csv('{glob}', header=true, union_by_name=true, all_varchar=true) t
+        CREATE OR REPLACE TEMP TABLE raw AS
+        SELECT {cols} FROM read_csv({glob}, header=true, union_by_name=true, all_varchar=true) t
         JOIN sel USING (customer_id)
     """)
     total = con.execute("SELECT count(*) FROM raw").fetchone()[0]

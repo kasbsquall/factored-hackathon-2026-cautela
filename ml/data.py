@@ -11,7 +11,10 @@ REPORTS_DIR = Path("ml/reports")
 
 
 def load_cases(split: str, cases_dir: Path = CASES_DIR) -> list[dict]:
-    with (cases_dir / f"{split}.jsonl").open(encoding="utf-8") as fh:
+    path = cases_dir / f"{split}.jsonl"
+    if not path.exists():  # case files are git-ignored; only manifest.json is committed
+        raise SystemExit(f"{path} not found: rebuild it with `uv run python -m ml.scenarios.build --verify`")
+    with path.open(encoding="utf-8") as fh:
         return [json.loads(line) for line in fh if line.strip()]
 
 

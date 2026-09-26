@@ -2,7 +2,9 @@
 
 Usage::
 
-    uv run python -m ml.scenarios.build --raw data/raw --out eval/cases/disputes
+    uv run python -m ml.scenarios.build --verify   # rebuild, check the committed manifest
+    uv run python -m ml.scenarios.build            # rebuild and rewrite the manifest
+    uv run python -m ml.scenarios.build --verify --source s3://<bucket>/data
 
 Every random choice comes from an RNG seeded by (seed, customer, purpose), so the
 output does not depend on iteration order and two runs with the same seed and
@@ -293,38 +295,70 @@ def build(customers: list[dict], tx_by_customer: dict[str, list[dict]], cfg: Bui
     return cases, stats
 
 
-def write_outputs(cases: dict, stats: dict, cfg: BuildConfig, out_dir: Path, extra: dict) -> dict:
+def payloads(cases: dict) -> tuple[dict[str, str], dict[str, str], str]:
+    """Serialized case files, their sha256 and the data version (hash of the three hashes)."""
+    texts = {split: "".join(json.dumps(r, ensure_ascii=False, sort_keys=True) + "\n" for r in rows)
+             for split, rows in cases.items()}
+    hashes = {split: hashlib.sha256(t.encode()).hexdigest() for split, t in texts.items()}
+    return texts, hashes, hashlib.sha256("".join(hashes[s] for s in SPLITS).encode()).hexdigest()[:16]
+
+
+def write_outputs(cases: dict, stats: dict, cfg: BuildConfig, out_dir: Path, extra: dict,
+                  write_manifest: bool = True) -> dict:
     out_dir.mkdir(parents=True, exist_ok=True)
-    hashes = {}
-    for split, rows in cases.items():
-        path = out_dir / f"{split}.jsonl"
-        payload = "".join(json.dumps(r, ensure_ascii=False, sort_keys=True) + "\n" for r in rows)
-        path.write_text(payload, encoding="utf-8", newline="\n")
-        hashes[split] = hashlib.sha256(payload.encode()).hexdigest()
-    data_version = hashlib.sha256("".join(hashes[s] for s in SPLITS).encode()).hexdigest()[:16]
+    texts, hashes, data_version = payloads(cases)
+    for split, text in texts.items():
+        (out_dir / f"{split}.jsonl").write_text(text, encoding="utf-8", newline="\n")
     manifest = {"data_version": data_version, "file_sha256": hashes, "config": asdict(cfg),
                 "counts": {s: len(r) for s, r in cases.items()}, **stats, **extra,
                 "label_note": "Labels are valid by construction: see ml/DATASHEET.md."}
-    (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8",
-                                           newline="\n")
+    if write_manifest:
+        (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n",
+                                               encoding="utf-8", newline="\n")
     return manifest
 
 
+def verify_against(manifest_path: Path, cases: dict) -> list[str]:
+    """Differences between freshly built cases and a committed manifest (empty list = reproduced)."""
+    committed = json.loads(manifest_path.read_text(encoding="utf-8"))
+    _, hashes, data_version = payloads(cases)
+    problems = [f"{s}.jsonl sha256 {hashes[s][:12]} != committed {committed['file_sha256'][s][:12]}"
+                for s in SPLITS if hashes[s] != committed["file_sha256"][s]]
+    if data_version != committed["data_version"]:
+        problems.append(f"data_version {data_version} != committed {committed['data_version']}")
+    return problems
+
+
 def main() -> None:
-    from ml.scenarios.source import load_customers, load_transactions, source_fingerprint
+    from ml.scenarios.source import (default_source, load_customers, load_transactions, open_source,
+                                     source_fingerprint)
 
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--raw", default="data/raw", type=Path)
+    ap.add_argument("--source", default=None, help="local folder or s3://<bucket>/data (default: data/raw if "
+                                                   "present, else LATAM_BANK_S3_URI/data from .env)")
     ap.add_argument("--out", default="eval/cases/disputes", type=Path)
     ap.add_argument("--seed", default=BuildConfig.seed, type=int)
+    ap.add_argument("--verify", action="store_true",
+                    help="rebuild, compare with the committed manifest.json, write the case files only if they "
+                         "match (the manifest is never rewritten); exit 1 otherwise")
     args = ap.parse_args()
     cfg = BuildConfig(seed=args.seed)
-    customers = load_customers(args.raw)
+    con, loc = open_source(args.source or default_source())
+    print(f"source: {loc.kind}")  # the bucket name is not printed
+    customers = load_customers(con, loc)
     wanted_ids = customers_to_load(customers, cfg)
-    tx, load_stats = load_transactions(args.raw, wanted_ids)
+    tx, load_stats = load_transactions(con, loc, wanted_ids)
     cases, stats = build(customers, tx, cfg)
-    extra = {"source_fingerprint": source_fingerprint(args.raw), "load_stats": load_stats,
+    extra = {"source_fingerprint": source_fingerprint(con, loc), "load_stats": load_stats,
              "customers_loaded": len(wanted_ids)}
+    if args.verify:
+        problems = verify_against(args.out / "manifest.json", cases)
+        if problems:
+            print("NOT REPRODUCED:\n  " + "\n  ".join(problems))
+            raise SystemExit(1)
+        write_outputs(cases, stats, cfg, args.out, extra, write_manifest=False)
+        print(f"reproduced: case files match the committed manifest ({payloads(cases)[2]})")
+        return
     manifest = write_outputs(cases, stats, cfg, args.out, extra)
     print(json.dumps({"data_version": manifest["data_version"], "counts": manifest["counts"],
                       "skipped": stats["skipped_customers"]}, indent=2))

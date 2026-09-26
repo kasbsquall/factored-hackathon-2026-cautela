@@ -1,4 +1,4 @@
-"""Leakage and label checks on the committed case files in eval/cases/disputes."""
+"""Leakage and label checks on the rebuilt case files in eval/cases/disputes."""
 
 from __future__ import annotations
 
@@ -13,7 +13,9 @@ from ml.scenarios.render import HELDOUT_FAMILIES
 from tests.ml_tests.label_audit import audit
 
 SPLITS = ("train", "val", "test")
-pytestmark = pytest.mark.skipif(not (CASES_DIR / "manifest.json").exists(), reason="case files not built")
+pytestmark = pytest.mark.skipif(
+    not all((CASES_DIR / f"{s}.jsonl").exists() for s in ("train", "val", "test")),
+    reason="case files are not committed; rebuild with: uv run python -m ml.scenarios.build --verify")
 
 
 @pytest.fixture(scope="module")

@@ -1,0 +1,2 @@
+# Rebuilt deterministically by `uv run python -m ml.scenarios.build --verify`; only manifest.json is committed.
+*.jsonl

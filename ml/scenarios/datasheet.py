@@ -1,4 +1,4 @@
-"""Write ml/DATASHEET.md from the committed case files and manifest.
+"""Write ml/DATASHEET.md from the rebuilt case files and the committed manifest.
 
     uv run python -m ml.scenarios.datasheet
 
