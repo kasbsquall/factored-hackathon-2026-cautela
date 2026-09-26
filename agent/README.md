@@ -29,6 +29,7 @@ Generate one with `python -c "import secrets; print(secrets.token_urlsafe(48))"`
 | `tools/faults.py` | Failure injection and bounded retries with backoff |
 | `service.py` | `ToolService`: the single entry point (guard, execute, verify, audit) |
 | `handoff.py` | Handoff builder validated against `docs/schemas/handoff.schema.json` |
+| `llm/` | Provider-agnostic LLM port: masking before any adapter, schema-checked extraction, usage and cost |
 
 ## Controls and the requirement each one answers
 
@@ -155,6 +156,40 @@ Every value below is a team choice where no approved bank policy was supplied. E
 | Confirmation for `open_dispute_case` and `block_card` | SYN-CONFIRM-001 | Both write on the customer's behalf |
 | Session 15 min, OTP 5 min and 3 attempts, confirmation 5 min | `session.py`, `permissions.py` | Common practice, not a regulation |
 | Audit retention 3650 days | `audit.py` | Mirrors BCRA PUSF 3.1.3 |
+
+## LLM port (`agent/llm/`)
+
+The service reaches a language model only through `LanguageModel`, implemented by `MaskedLLM`:
+
+- `extract(message, schema)` masks the message, asks for JSON, and validates the answer with jsonschema. An
+  invalid answer raises `LLMOutputError`, which the caller treats as low confidence. The output is a proposal,
+  never a decision.
+- `reply(facts, lang)` masks the facts and asks for a message in Spanish or Portuguese that uses only them.
+
+Masking is enforced in the port, not left to callers: adapters accept only a `MaskedPrompt`, which only the port
+can build after masking, and they raise `UnmaskedInputError` otherwise. `tests/agent/test_llm.py` sends a message
+with a document number, card, email, phone and name through both calls and checks that none of them reaches the
+adapter.
+
+Adapters: `AnthropicAdapter` (official SDK, JSON through `output_config` json_schema), `OpenAICompatibleAdapter`
+(`/chat/completions`, which covers OpenAI, Groq, Gemini's OpenAI-compatible endpoint and Ollama at
+`http://localhost:11434/v1`), and `FakeAdapter` (deterministic, no network, used by every test). Configuration
+comes only from environment variables loaded from `.env`:
+
+| Variable | Meaning |
+|---|---|
+| `LLM_PROVIDER` | `anthropic`, `openai`, `groq`, `gemini`, `ollama`, `openai_compatible` or `fake` |
+| `LLM_MODEL` | Model id for that provider |
+| `LLM_BASE_URL` | Overrides the provider default; required for `openai_compatible` |
+| `LLM_API_KEY_ENV` | Name of the variable holding the key, if not the provider default |
+| `LLM_TIMEOUT_S` | Request timeout in seconds, default 30 |
+| `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GROQ_API_KEY`, `GEMINI_API_KEY`, `LLM_API_KEY` | Provider keys; Ollama needs none |
+
+Each call records trace id, provider, model, prompt version (`PROMPT_VERSION`), input and output tokens, latency
+and estimated cost in a `UsageLog`, and writes an audit record without the prompt text. Prices come from
+`agent/llm/prices.yaml`; every real provider row is a TODO with a null price until someone fills it from the
+official pricing page with its URL and date, so cost is reported as not defined until then. These variables
+still need to be added to the repository's `.env.example`.
 
 ## Wiring rules for the orchestrator
 

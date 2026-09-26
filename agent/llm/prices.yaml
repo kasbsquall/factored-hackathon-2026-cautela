@@ -1,0 +1,45 @@
+# LLM price table used for per-call cost estimates (USD per million tokens).
+#
+# Prices are left null on purpose: the team fills each row from the provider's official pricing page and records
+# the URL and the date it was read. A null price makes the cost "not defined" in every report; it is never
+# replaced by a guess. `model: "*"` matches any model of that provider.
+currency: USD
+unit: per_million_tokens
+
+prices:
+  - provider: anthropic
+    model: TODO
+    input_per_mtok: null
+    output_per_mtok: null
+    source: TODO official pricing URL and date read
+
+  - provider: openai
+    model: TODO
+    input_per_mtok: null
+    output_per_mtok: null
+    source: TODO official pricing URL and date read
+
+  - provider: groq
+    model: TODO
+    input_per_mtok: null
+    output_per_mtok: null
+    source: TODO official pricing URL and date read
+
+  - provider: gemini
+    model: TODO
+    input_per_mtok: null
+    output_per_mtok: null
+    source: TODO official pricing URL and date read
+
+  - provider: ollama
+    model: "*"
+    input_per_mtok: null
+    output_per_mtok: null
+    source: >-
+      TODO decide how to cost local inference (no API charge; hardware and energy are not per-token prices)
+
+  - provider: fake
+    model: "*"
+    input_per_mtok: 0.0
+    output_per_mtok: 0.0
+    source: Deterministic test adapter; no provider is called, so there is no charge
