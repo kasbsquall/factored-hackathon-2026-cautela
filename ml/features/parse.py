@@ -16,6 +16,7 @@ from difflib import SequenceMatcher
 from functools import lru_cache
 from datetime import date, timedelta
 
+from ml.features.numbers import IMPLIES_PESOS, SLANG_CURRENCY, SLANG_MULTIPLIERS, words_to_digits
 from ml.features.lexicon import (APPROX_WORDS, CHANNEL_WORDS, CURRENCY_WORDS, MONTHS, MULTIPLIERS, NOUN_MERCHANTS,
                                  TYPE_WORDS, WEEKDAYS)
 
@@ -39,8 +40,11 @@ class ParsedDescription:
 
 
 _NUM = r"\d{1,3}(?:[.,]\d{3})+(?:[.,]\d{1,2})?|\d+(?:[.,]\d{1,2})?"
-_AMOUNT_RE = re.compile(rf"(?:(usd|cop|ars|\$)\s*)?({_NUM})(?:\s*(mil|k|millones|millon|milhoes|milhao)\b)?"
-                        rf"(?:\s*(?:de\s+)?(dolares|dolar|usd|dlls|dls|pesos))?")
+_MULT_WORDS = sorted([*MULTIPLIERS, *SLANG_MULTIPLIERS], key=len, reverse=True)
+_CUR_WORDS = sorted(["dolares", "dolar", "usd", "dlls", "dls", "pesos", *SLANG_CURRENCY], key=len, reverse=True)
+_AMOUNT_RE = re.compile(rf"(?:(usd|cop|ars|\$)\s*)?({_NUM})(?:\s*({'|'.join(_MULT_WORDS)})\b)?"
+                        rf"(?:\s*(?:de\s+)?({'|'.join(_CUR_WORDS)})\b)?")
+_TRAILING_PUNCT = re.compile(r"([,.;:?!])(?=\s|$)")
 
 
 def parse_number(tok: str) -> float:
@@ -58,7 +62,7 @@ def parse_number(tok: str) -> float:
 
 def _date_context(t: str, start: int, end: int) -> bool:
     before, after = t[max(0, start - 8):start], t[end:end + 7]
-    if re.search(r"(\bel|\bdia|\bhace|\bha)\s*$", before) or re.match(r"\s*(dias|de (?:%s))" % "|".join(MONTHS), after):
+    if re.search(r"(\bel|\bdia|\bhace|\bha)\s*$", before) or re.match(r"\s*(dias|semanas?|mes(es)?|de (?:%s))" % "|".join(MONTHS), after):
         return True
     return bool(re.match(r"\s*/", after)) or bool(re.search(r"/\s*$", before))
 
@@ -69,18 +73,23 @@ def _amount(t: str, p: ParsedDescription) -> None:
         code, num, mult, word = m.groups()
         if _date_context(t, m.start(2), m.end(2)) and not (code or mult or word):
             continue
-        value = parse_number(num) * MULTIPLIERS.get(mult or "", 1)
+        factor = MULTIPLIERS.get(mult or "") or SLANG_MULTIPLIERS.get(mult or "", (1, ""))[0]
+        value = parse_number(num) * factor
         strength = bool(code) + bool(mult) + bool(word)
         if 2020 <= value <= 2030 and not strength:
             continue
         if best is None or strength > best[0]:
-            best = (strength, value, code, word)
+            best = (strength, value, code, word, mult)
     if best:
-        _, p.amount, code, word = best
+        _, p.amount, code, word, best_mult = best
         cur = (code or "") + " " + (word or "")
         for key, words in CURRENCY_WORDS.items():
             if any(w in cur.split() for w in words):
                 p.currency = key
+        if word in SLANG_CURRENCY:
+            p.currency = SLANG_CURRENCY[word][0]
+        if p.currency is None and best_mult in IMPLIES_PESOS:
+            p.currency = "PESOS"
         if code in ("cop", "ars"):
             p.currency = code.upper()
         p.approx = any(re.search(rf"\b{w}\b", t) for w in APPROX_WORDS)
@@ -164,7 +173,7 @@ def parse_description(text: str, report: date) -> ParsedDescription:
     raw = norm(text)
     t = " ".join(_correct(w) for w in raw.split())
     p = ParsedDescription(text=raw)
-    _amount(t, p)
+    _amount(words_to_digits(_TRAILING_PUNCT.sub(r" \1", t)), p)
     _dates(t, report, p)
     for typ, words in TYPE_WORDS.items():
         if any(re.search(rf"\b{w}\b", t) for w in words):

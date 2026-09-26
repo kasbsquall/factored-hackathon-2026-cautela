@@ -101,8 +101,9 @@ def test_parser_reads_seen_phrasing_in_both_languages():
 
 
 def test_parser_leaves_unknown_cues_empty():
+    # "verdes" (dollars) and "el finde" are deliberately not in the lexicon
     p = parse_description("me cayó un cargo de como quinientos verdes el finde", date(2026, 3, 18))
-    assert p.amount is None and p.date_lo is None
+    assert p.amount == 500 and p.currency is None and p.date_lo is None
 
 
 def test_llm_payload_masks_pii_and_hides_ids():
