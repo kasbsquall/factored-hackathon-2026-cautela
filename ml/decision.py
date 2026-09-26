@@ -20,7 +20,7 @@ any other split, so the test split cannot reach them through any code path.
 from __future__ import annotations
 
 import math
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 
 import numpy as np
 from sklearn.linear_model import LogisticRegression
@@ -28,6 +28,10 @@ from sklearn.linear_model import LogisticRegression
 from ml.metrics import outcome
 
 K_CLARIFY = 3
+# Business rule, not fitted: act only when the system's act confidence is at least 0.60. Chosen before any
+# test result was seen, as the same bar agent/tools/ranking.py uses for its top score (AMBIGUITY_MIN_TOP).
+# Override with the CAUTELA_ACT_FLOOR environment variable or `ml.train --act-floor`.
+DEFAULT_ACT_FLOOR = 0.60
 
 
 def summary(ranked: list[tuple[str, float]]) -> list[float]:
@@ -68,13 +72,22 @@ class Calibrator:
 
 @dataclass(frozen=True)
 class DecisionPolicy:
-    """abstain if abstain_score >= t_abstain; else act if act_score >= t_act; else clarify with top k."""
+    """abstain if abstain_score >= t_abstain; else act if act_score >= max(t_act, act_floor); else clarify.
+
+    ``t_act`` and ``t_abstain`` are searched on val. ``act_floor`` is a business rule set outside the search
+    (default ``DEFAULT_ACT_FLOOR``): the service never acts below it, whatever val suggests.
+    """
 
     t_act: float
     t_abstain: float
     k: int = K_CLARIFY
     max_unsafe_rate: float = 0.01
     fitted_on: str = "val"
+    act_floor: float = 0.0
+
+    @property
+    def effective_t_act(self) -> float:
+        return max(self.t_act, self.act_floor)
 
     def as_dict(self) -> dict:
         return asdict(self)
@@ -84,7 +97,7 @@ def decide(ranked: list[tuple[str, float]], act_score: float, abstain_score: flo
     top_k = [tid for tid, _ in ranked[: policy.k]]
     if not ranked or abstain_score >= policy.t_abstain:
         return {"decision": "abstain", "top_k": []}
-    if act_score >= policy.t_act:
+    if act_score >= policy.effective_t_act:
         return {"decision": "act", "top_k": top_k[:1]}
     return {"decision": "clarify", "top_k": top_k}
 
@@ -142,6 +155,9 @@ class FixedRuleDecider:
             return s1, {"decision": "clarify", "top_k": [t for t, _ in ranked[:K_CLARIFY]]}
         return s1, {"decision": "act", "top_k": [ranked[0][0]]}
 
+    def with_floor(self, floor: float) -> "FixedRuleDecider":
+        return self  # its own fixed rule already requires a top score of 0.60
+
     def params(self) -> dict:
         return {"min_top": self.MIN_TOP, "min_margin": self.MIN_MARGIN, "fitted": False}
 
@@ -155,6 +171,9 @@ class CalibratedDecider:
     def decide_case(self, inp: dict, candidates: list[dict], ranked: list[tuple[str, float]]) -> tuple[float, dict]:
         conf = self.calibrator.predict(ranked)
         return conf, decide(ranked, conf, 1.0 - (ranked[0][1] if ranked else 0.0), self.policy)
+
+    def with_floor(self, floor: float) -> "CalibratedDecider":
+        return CalibratedDecider(self.calibrator, replace(self.policy, act_floor=floor))
 
     def params(self) -> dict:
         return {"calibrator": self.calibrator.params(), "policy": self.policy.as_dict(),

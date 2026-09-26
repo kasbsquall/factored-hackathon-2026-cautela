@@ -17,6 +17,8 @@ the abstain score.
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 import numpy as np
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
@@ -86,6 +88,9 @@ class DispositionDecider:
     def decide_case(self, inp: dict, candidates: list[dict], ranked: list[tuple[str, float]]) -> tuple[float, dict]:
         p = self.proba(inp, candidates, ranked)
         return float(p["match"]), decide(ranked, p["match"], p["no_match"], self.policy)
+
+    def with_floor(self, floor: float) -> "DispositionDecider":
+        return DispositionDecider(self.model, replace(self.policy, act_floor=floor), self.model_name)
 
     def params(self) -> dict:
         return {"model": self.model_name, "features": CASE_FEATURES, "policy": self.policy.as_dict(),

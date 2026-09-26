@@ -11,7 +11,9 @@ The test split is never read here.
 
 from __future__ import annotations
 
+import argparse
 import json
+import os
 import pickle
 import time
 
@@ -25,7 +27,7 @@ from sklearn.preprocessing import StandardScaler
 
 from ml import tracking
 from ml.data import MODELS_DIR, REPORTS_DIR, data_version, load_cases, ranker_input, record
-from ml.decision import CalibratedDecider, FixedRuleDecider
+from ml.decision import DEFAULT_ACT_FLOOR, CalibratedDecider, FixedRuleDecider
 from ml.disposition import DispositionDecider
 from ml.features.pairwise import FEATURE_NAMES, candidate_features
 from ml.metrics import reciprocal_rank
@@ -84,7 +86,17 @@ def out_of_fold_records(make_model, cases: list[dict], folds: int = 5) -> list[d
     return [out[c["case_id"]] for c in cases]
 
 
+def act_floor_setting(cli_value: float | None) -> float:
+    """Business floor for acting: CLI, then CAUTELA_ACT_FLOOR, then DEFAULT_ACT_FLOOR. Never fitted."""
+    if cli_value is not None:
+        return cli_value
+    return float(os.environ.get("CAUTELA_ACT_FLOOR", DEFAULT_ACT_FLOOR))
+
+
 def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--act-floor", type=float, default=None, help=f"default {DEFAULT_ACT_FLOOR}")
+    act_floor = act_floor_setting(ap.parse_args().act_floor)
     t0 = time.time()
     train, val = load_cases("train"), load_cases("val")
     version = data_version()
@@ -114,9 +126,9 @@ def main() -> None:
 
     systems = {  # name -> (ranker key, decider); evaluate.py runs exactly these on test
         "rules_fixed": ("rules", FixedRuleDecider()),
-        "rules_tuned": ("rules", rules_tuned),
-        "learned_ranker_calibrated": ("learned", ranker_only),
-        "learned_ranker_disposition": ("learned", disposition),
+        "rules_tuned": ("rules", rules_tuned.with_floor(act_floor)),
+        "learned_ranker_calibrated": ("learned", ranker_only.with_floor(act_floor)),
+        "learned_ranker_disposition": ("learned", disposition.with_floor(act_floor)),
     }
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
     learned.save(MODELS_DIR / "learned.pkl")
@@ -131,14 +143,14 @@ def main() -> None:
         "systems": {name: {"ranker": rk, "decider": dec.name, **dec.params()} for name, (rk, dec) in systems.items()},
         "val_fit": {"rules_tuned": info_rules, "learned_ranker_calibrated": info_ranker_only,
                     "learned_ranker_disposition": info_disp},
-        "max_unsafe_rate": MAX_UNSAFE_RATE, "seconds": round(time.time() - t0, 1),
+        "max_unsafe_rate": MAX_UNSAFE_RATE, "act_floor": act_floor, "seconds": round(time.time() - t0, 1),
     }
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     out = REPORTS_DIR / "fitted.json"
     out.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8", newline="\n")
     with tracking.run("train", {"data_version": version, "selected_ranker_model": best, "seed": SEED,
                                 "disposition_model": disposition.model_name,
-                                "max_unsafe_rate": MAX_UNSAFE_RATE, "features": ",".join(FEATURE_NAMES)}):
+                                "max_unsafe_rate": MAX_UNSAFE_RATE, "act_floor": act_floor, "features": ",".join(FEATURE_NAMES)}):
         tracking.log_metrics({"selection": selection, "val_fit": summary["val_fit"]})
         tracking.log_artifact(out)
     print(json.dumps({"selected_ranker_model": best, "val_fit": summary["val_fit"]}, indent=2))
