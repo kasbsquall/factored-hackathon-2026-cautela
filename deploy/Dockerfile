@@ -32,6 +32,8 @@ COPY agent ./agent
 COPY api ./api
 COPY ml ./ml
 COPY deploy/serve.py deploy/lock.py ./deploy/
+# Read at runtime: every handoff is validated against it before it reaches the console.
+COPY docs/schemas/handoff.schema.json ./docs/schemas/handoff.schema.json
 RUN /opt/venv/bin/python -m compileall -q agent api ml deploy
 
 # ---- data, variant 1: the demo bundle, verified against the committed lock ------------------------------------
@@ -60,6 +62,7 @@ COPY --from=build /src/agent /app/agent
 COPY --from=build /src/api /app/api
 COPY --from=build /src/ml /app/ml
 COPY --from=build /src/deploy /app/deploy
+COPY --from=build /src/docs /app/docs
 
 # Code and data are root-owned and read-only for the service user. The only writable path is the volume at
 # /var/lib/cautela (audit JSONL and the LLM budget counters); /tmp is a tmpfs in the compose file.

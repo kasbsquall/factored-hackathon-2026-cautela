@@ -129,6 +129,13 @@ def build_app(settings: ApiSettings, environ: dict[str, str] | None = None) -> H
     return HealthWithBudget(create_app(runtime=runtime), bundle)
 
 
+def check_runtime_files() -> None:
+    """Fail at startup, not at the first handoff: every handoff is validated against this schema."""
+    from agent.handoff import _validator
+
+    _validator()
+
+
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
     settings = ApiSettings.from_env()
@@ -136,8 +143,9 @@ def main() -> None:
     if settings.demo_mode:
         clear_audit(settings.audit_dir)
     try:
+        check_runtime_files()
         app = build_app(settings)
-    except BundleError as exc:
+    except (BundleError, OSError, ValueError) as exc:
         log.error("refusing to start: %s", exc)
         raise SystemExit(1) from exc
     config = uvicorn.Config(app, host=settings.host, port=settings.port, log_level="info",

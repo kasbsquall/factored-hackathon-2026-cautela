@@ -9,6 +9,7 @@
 !api/
 !ml/
 !data_engineering/
+!docs/schemas/handoff.schema.json
 !deploy/serve.py
 !deploy/lock.py
 !deploy/demo-bundle.lock.json

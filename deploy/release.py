@@ -27,7 +27,8 @@ from pathlib import Path
 from deploy import lock
 
 ROOT = Path(__file__).resolve().parents[1]
-PATHS = ("pyproject.toml", "uv.lock", "agent", "api", "ml", "data_engineering", "deploy")
+PATHS = ("pyproject.toml", "uv.lock", "agent", "api", "ml", "data_engineering", "deploy",
+         "docs/schemas/handoff.schema.json")  # read at runtime by agent/handoff.py
 LOCK_REL = "deploy/demo-bundle.lock.json"
 FORBIDDEN = (".env", ".duckdb", ".pkl", ".parquet", ".csv")
 
