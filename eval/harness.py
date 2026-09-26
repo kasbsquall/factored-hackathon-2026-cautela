@@ -24,6 +24,7 @@ import threading
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any, Callable
 
 from agent.clock import FrozenClock
@@ -83,19 +84,20 @@ class Transcript:
     harness_error: str | None = None
 
 
-_IDS: dict[str, str] = {}
+_IDS: dict[str, dict[str, str]] = {}
 
 
-def customer_ids() -> dict[str, str]:
-    """customer_ref -> customer_id for the slice (the suite stores only the pseudonymous ref)."""
-    if not _IDS:
+def customer_ids(slice_path: Path = SLICE_PATH) -> dict[str, str]:
+    """customer_ref -> customer_id for a slice (the suite stores only the pseudonymous ref)."""
+    key = str(slice_path)
+    if key not in _IDS:
         import duckdb
 
         from eval.slice import customer_ref
-        with duckdb.connect(str(SLICE_PATH), read_only=True) as con:
-            _IDS.update({customer_ref(c): c for (c,) in con.execute("SELECT customer_id FROM silver.customers")
-                         .fetchall()})
-    return _IDS
+        with duckdb.connect(key, read_only=True) as con:
+            _IDS[key] = {customer_ref(c): c for (c,) in con.execute("SELECT customer_id FROM silver.customers")
+                         .fetchall()}
+    return _IDS[key]
 
 
 def _visible(result) -> str:
@@ -116,7 +118,7 @@ def _forge(token: str, customer_id: str) -> str:
 
 class Conversation:
     def __init__(self, spec: dict, disposition: Any, llm_factory: Callable[[Any], Any] | None,
-                 customer_policy: str | None = None) -> None:
+                 customer_policy: str | None = None, slice_path: Path = SLICE_PATH) -> None:
         self.spec = spec
         self.disposition = disposition
         self.llm_factory = llm_factory
@@ -129,10 +131,10 @@ class Conversation:
         start = datetime.fromisoformat(spec["clock_start"]) + timedelta(days=spec["events"]["clock_advance_days"])
         self.clock = FrozenClock(start)
         self.faults = FaultInjector(seed=7)
-        self.stack = build_stack(SLICE_PATH, self.clock, secrets.token_bytes(48), faults=self.faults)
+        self.stack = build_stack(slice_path, self.clock, secrets.token_bytes(48), faults=self.faults)
         self.llm = llm_factory(self.stack.audit) if llm_factory else None
         self.orch = Orchestrator(self.stack.service, self.llm, disposition)
-        self.customer_id = customer_ids()[spec["customer_ref"]]
+        self.customer_id = customer_ids(slice_path)[spec["customer_ref"]]
         self.t = Transcript(spec["conv_id"], self.customer_id)
         self.token: str | None = None
         self.conversation_id: str | None = None
@@ -341,8 +343,8 @@ _AUDIT_LOCK = threading.Lock()
 
 
 def run_conversation(spec: dict, disposition: Any, llm_factory=None, customer_policy: str | None = None,
-                     audit_sink=None) -> Transcript:
-    conv = Conversation(spec, disposition, llm_factory, customer_policy)
+                     audit_sink=None, slice_path: Path = SLICE_PATH) -> Transcript:
+    conv = Conversation(spec, disposition, llm_factory, customer_policy, slice_path)
     transcript = conv.run()
     if audit_sink is not None:
         with _AUDIT_LOCK:

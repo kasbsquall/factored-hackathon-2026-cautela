@@ -39,8 +39,20 @@ def suite_pool_sizes() -> dict[str, int]:
     return out
 
 
+@lru_cache(maxsize=1)
+def fresh_pool_sizes() -> dict[str, int]:
+    """Same as suite_pool_sizes for the test_fresh cases that eval_fresh (eval/fresh) is built from."""
+    path = DISPUTES_DIR / "test_fresh.jsonl"
+    if not path.exists():
+        return {}
+    return {c["case_id"]: len(c["candidates"]) for c in
+            (json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip())}
+
+
 def pool_bucket_of(group: str) -> str | None:
     n = suite_pool_sizes().get(group)
+    if n is None and group.startswith("test_fresh-"):
+        n = fresh_pool_sizes().get(group)
     return None if n is None else bucket(n)
 
 

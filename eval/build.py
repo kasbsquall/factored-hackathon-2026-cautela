@@ -21,6 +21,7 @@ import json
 import random
 from collections import Counter
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 import duckdb
@@ -68,8 +69,8 @@ ADVERSARIAL_GOLD = {  # hand-labelled from the text of each case, before any run
 }
 
 
-def _rng(*parts: object) -> random.Random:
-    return random.Random(int(hashlib.sha256("|".join(map(str, (SEED, *parts))).encode()).hexdigest()[:15], 16))
+def _rng(*parts: object, seed: int = SEED) -> random.Random:
+    return random.Random(int(hashlib.sha256("|".join(map(str, (seed, *parts))).encode()).hexdigest()[:15], 16))
 
 
 def _stable_id(prefix: str, *parts: object) -> str:
@@ -77,14 +78,14 @@ def _stable_id(prefix: str, *parts: object) -> str:
 
 
 # ---- data --------------------------------------------------------------------------------------------------
-def load_world() -> dict[str, Any]:
-    if not SLICE_PATH.exists():
-        raise SystemExit(f"{SLICE_PATH} not found: run `uv run python -m eval.slice` first")
-    path = DISPUTES_DIR / "test.jsonl"
+def load_world(cases_path: Path = DISPUTES_DIR / "test.jsonl", slice_path: Path = SLICE_PATH) -> dict[str, Any]:
+    if not slice_path.exists():
+        raise SystemExit(f"{slice_path} not found: run `uv run python -m eval.slice` first")
+    path = cases_path
     if not path.exists():
         raise SystemExit(f"{path} not found: run `uv run python -m ml.scenarios.build --verify` first")
     cases = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
-    with duckdb.connect(str(SLICE_PATH), read_only=True) as con:
+    with duckdb.connect(str(slice_path), read_only=True) as con:
         customers = {customer_ref(r[0]): {"customer_id": r[0], "status": r[1], "contact": bool(r[2] or r[3])}
                      for r in con.execute("SELECT customer_id, customer_status, mobile_phone, email "
                                           "FROM silver.customers").fetchall()}
@@ -166,9 +167,9 @@ def portunol(text: str, rng: random.Random) -> str | None:
 
 # ---- conversation specs ------------------------------------------------------------------------------------
 def base_conv(case: dict, world: dict, conv_id: str, category: str, sub: str, turns: list[str],
-              gold: dict, **extra: Any) -> dict:
+              gold: dict, *, seed: int = SEED, **extra: Any) -> dict:
     start = clock_start(case)
-    rng = _rng("style", conv_id)
+    rng = _rng("style", conv_id, seed=seed)
     return {
         "conv_id": conv_id, "category": category, "subcategory": sub, "source_case_id": case["case_id"],
         "group": case.get("source_case_id") or case["case_id"], "language": extra.pop("language", case["language"]),
@@ -184,9 +185,9 @@ def base_conv(case: dict, world: dict, conv_id: str, category: str, sub: str, tu
     }
 
 
-def others_of(case: dict, world: dict, pool: list[dict]) -> dict:
+def others_of(case: dict, world: dict, pool: list[dict], seed: int = SEED) -> dict:
     """Another customer's records to quote: a transaction, a card, a case id (created at run time) and the id."""
-    rng = _rng("other", case["case_id"])
+    rng = _rng("other", case["case_id"], seed=seed)
     me = world["customers"][case["customer_ref"]]["customer_id"]
     for other in rng.sample(pool, len(pool)):
         oid = world["customers"][other["customer_ref"]]["customer_id"]

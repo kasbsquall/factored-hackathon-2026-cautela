@@ -36,7 +36,7 @@ from eval.harness import customer_ids, run_conversation
 from eval.judge import IN_SCOPE, RUBRIC, UNSAFE_TYPES, judge, load_suite, owners
 from eval.metrics import breakdown, cost, latency, paired_bootstrap, safe_automated, summarize
 from eval.oracle import rules
-from eval.paths import MANIFEST_PATH, RESULTS_PATH, RUNS_DIR, SUITE_PATH
+from eval.paths import MANIFEST_PATH, RESULTS_PATH, RUNS_DIR, SLICE_PATH, SUITE_PATH
 from eval.pools import pool_bucket_of
 
 CONFIGS = {
@@ -94,7 +94,8 @@ def row_of(spec: dict, t, verdict) -> dict[str, Any]:
     }
 
 
-def run_config(name: str, suite: list[dict], customer: str, workers: int, ledger=None, tag: str = "") -> dict:
+def run_config(name: str, suite: list[dict], customer: str, workers: int, ledger=None, tag: str = "",
+               slice_path=SLICE_PATH) -> dict:
     cfg = CONFIGS[name]
     disposition = disposition_for(cfg["disposition"])
     llm_factory = None
@@ -106,13 +107,13 @@ def run_config(name: str, suite: list[dict], customer: str, workers: int, ledger
     run_id = f"{name}-{customer}{tag}-{datetime.now(UTC):%Y%m%dT%H%M%SZ}"
     out_dir = RUNS_DIR / run_id
     out_dir.mkdir(parents=True, exist_ok=True)
-    owner = owners()
-    customer_ids()
+    owner = owners(str(slice_path))
+    customer_ids(slice_path)
     started = time.perf_counter()
     with (out_dir / "audit.jsonl").open("w", encoding="utf-8") as audit_sink, \
             (out_dir / "transcripts.jsonl").open("w", encoding="utf-8") as tx_sink:
         def one(spec: dict) -> dict:
-            t = run_conversation(spec, disposition, llm_factory, customer, audit_sink)
+            t = run_conversation(spec, disposition, llm_factory, customer, audit_sink, slice_path)
             tx_sink.write(json.dumps({"conv_id": spec["conv_id"], **asdict(t)}, ensure_ascii=False, default=str)
                           + "\n")
             return row_of(spec, t, judge(spec, t, owner))

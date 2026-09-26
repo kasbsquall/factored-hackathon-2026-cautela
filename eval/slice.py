@@ -1,6 +1,7 @@
 """Cut the evaluation warehouse from the organizer warehouse: only the customers of the held-out test split.
 
     uv run python -m eval.slice [--source data/warehouse_real.duckdb] [--out data/eval/warehouse_eval.duckdb]
+    uv run python -m eval.slice --split test_fresh   # customers of test_fresh -> data/eval/warehouse_eval_fresh.duckdb
 
 The agent reads gold serving tables (and silver for identity and products) through WarehouseRepository. The slice
 keeps exactly those tables, with every row of the selected customers and nothing else, plus the control tables the
@@ -19,7 +20,7 @@ from pathlib import Path
 
 import duckdb
 
-from eval.paths import DISPUTES_DIR, REAL_WAREHOUSE, SLICE_PATH
+from eval.paths import DISPUTES_DIR, FRESH_SLICE_PATH, REAL_WAREHOUSE, SLICE_PATH
 
 TABLES = {  # table -> ordering key for the content hash
     "silver.customers": "customer_id",
@@ -35,8 +36,8 @@ def customer_ref(customer_id: str) -> str:
     return "cust_" + hashlib.sha256(customer_id.encode()).hexdigest()[:12]
 
 
-def test_customer_refs(cases_dir: Path = DISPUTES_DIR) -> set[str]:
-    path = cases_dir / "test.jsonl"
+def test_customer_refs(cases_dir: Path = DISPUTES_DIR, split: str = "test") -> set[str]:
+    path = cases_dir / f"{split}.jsonl"
     if not path.exists():
         raise SystemExit(f"{path} not found: rebuild it with `uv run python -m ml.scenarios.build --verify`")
     with path.open(encoding="utf-8") as fh:
@@ -92,9 +93,12 @@ def build_slice(source: Path = REAL_WAREHOUSE, out: Path = SLICE_PATH, refs: set
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--source", type=Path, default=REAL_WAREHOUSE)
-    ap.add_argument("--out", type=Path, default=SLICE_PATH)
+    ap.add_argument("--out", type=Path, default=None)
+    ap.add_argument("--split", choices=("test", "test_fresh"), default="test",
+                    help="whose customers to keep: the test split (eval/heldout) or test_fresh (eval/fresh)")
     args = ap.parse_args()
-    print(json.dumps(build_slice(args.source, args.out), indent=2))
+    out = args.out or (FRESH_SLICE_PATH if args.split == "test_fresh" else SLICE_PATH)
+    print(json.dumps(build_slice(args.source, out, test_customer_refs(split=args.split)), indent=2))
 
 
 if __name__ == "__main__":

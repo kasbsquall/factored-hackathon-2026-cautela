@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from collections import Counter
 from datetime import UTC, datetime
+from pathlib import Path
 
 import duckdb
 
@@ -26,8 +27,8 @@ def engine_view(facts: dict, as_of: datetime) -> tuple[str, str | None, bool]:
     return "not_disputable", None, False
 
 
-def agreement(suite: list[dict]) -> dict:
-    with duckdb.connect(str(SLICE_PATH), read_only=True) as con:
+def agreement(suite: list[dict], slice_path: Path = SLICE_PATH) -> dict:
+    with duckdb.connect(str(slice_path), read_only=True) as con:
         cols = [d[0] for d in con.execute("SELECT * FROM gold.dispute_policy_inputs LIMIT 0").description]
         facts = {r[0]: dict(zip(cols, r, strict=True)) for r in con.execute("SELECT * FROM gold.dispute_policy_inputs")
                  .fetchall()}
