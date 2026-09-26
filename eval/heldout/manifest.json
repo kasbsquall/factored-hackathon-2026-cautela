@@ -1,0 +1,33 @@
+{
+  "suite_version": "e2e-suite-v1",
+  "seed": 20260926,
+  "suite_sha256": "83f62ce21fea7eb225939a29976c6003bd6ee30507154b4f28e66c1d840b2b74",
+  "policy_version": "2026-09-26.2",
+  "warehouse_slice_content_hash": "552ab2f435d830823d7815ba68a79e9928da01173f5f1e005828148d1f8e21b0",
+  "sources": {
+    "disputes_test_sha256": "68f99bca2d4ece3062e7c596223359e9e806a6612c6705fd5526bf7f5e30c5e2",
+    "data_version": "0189e386ce7fe882",
+    "adversarial_sha256": "dc4a992b24dc429eb6361ada1bb301baac5eb13bb1c2ab56e1105e81cdfa4abe",
+    "test_fresh_used": false
+  },
+  "conversations": 1462,
+  "oracle_engine_agreement": {
+    "charges": 607,
+    "agree": 607
+  },
+  "by_category": {
+    "adversarial": 48,
+    "bad_data": 50,
+    "dispute": 930,
+    "expired_session": 40,
+    "human_request": 46,
+    "identity": 30,
+    "injection": 62,
+    "multilingual": 60,
+    "out_of_scope": 44,
+    "recognized": 48,
+    "tool_failure": 48,
+    "unauthorized": 56
+  },
+  "note": "Gold outcomes are written into suite.jsonl before any configuration runs. suite.jsonl is git-ignored (organizer-derived ids); rebuild with `uv run python -m eval.build --verify`."
+}
