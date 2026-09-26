@@ -1,0 +1,250 @@
+"""Typed request and response models. They are the contract exported to docs/schemas/openapi.json.
+
+No response carries a session secret other than the session token issued at login, and none carries a
+confirmation token: confirmations are answered by id and the token stays on the server.
+"""
+
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Any, Literal
+
+from pydantic import BaseModel, ConfigDict, Field
+
+Language = Literal["es", "pt"]
+ReasonCode = Literal["policy_requires_review", "amount_above_threshold", "low_confidence", "tool_failure",
+                     "suspected_fraud", "customer_requested_human", "out_of_scope", "security_event"]
+Stage = Literal["collecting", "clarifying", "awaiting_confirmation", "resolved", "handed_off", "abstained", "closed"]
+
+
+class _Request(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+# ---- errors ----------------------------------------------------------------------------------------------------
+class ErrorBody(BaseModel):
+    code: str = Field(description="Stable machine-readable code, e.g. session_expired, otp_invalid, rate_limited")
+    message: str
+    trace_id: str | None = None
+    fields: list[str] = Field(default_factory=list, description="Invalid request fields (validation errors only)")
+
+
+class ErrorResponse(BaseModel):
+    error: ErrorBody
+
+
+# ---- auth ------------------------------------------------------------------------------------------------------
+class ChallengeRequest(_Request):
+    document_number: str = Field(min_length=4, max_length=32, pattern=r"^[A-Za-z0-9.\- ]+$")
+
+
+class ChallengeResponse(BaseModel):
+    challenge_id: str
+    channel_hint: str = Field(description="Where the one-time code was sent; never the destination itself")
+    expires_at: datetime
+
+
+class VerifyRequest(_Request):
+    challenge_id: str = Field(min_length=8, max_length=64)
+    code: str = Field(min_length=6, max_length=6, pattern=r"^\d{6}$")
+
+
+class SessionResponse(BaseModel):
+    session_token: str = Field(description="Send as 'Authorization: Bearer <token>'. Expires in 15 minutes.")
+    expires_at: datetime
+    customer_ref: str
+
+
+class OutboxResponse(BaseModel):
+    code: str = Field(description="Demo mode only: the code the mock channel delivered for this challenge")
+
+
+class DemoIdentity(BaseModel):
+    document_number: str
+    label: str
+    scenario: str
+    messages: dict[str, list[str]] = Field(description="Suggested customer messages by language")
+
+
+# ---- conversation ----------------------------------------------------------------------------------------------
+class TurnRequest(_Request):
+    message: str = Field(min_length=1, max_length=2000)
+    conversation_id: str | None = Field(None, max_length=40)
+    language: Language | None = Field(None, description="Fixed for the conversation on its first turn")
+
+
+class ConfirmRequest(_Request):
+    confirmation_id: str = Field(min_length=4, max_length=64)
+    accept: bool = True
+
+
+class OptionView(BaseModel):
+    index: int
+    kind: Literal["transaction", "card"]
+    label: str
+
+
+class ConfirmationView(BaseModel):
+    confirmation_id: str
+    tool: str
+    label: str
+    expires_at: datetime
+    review: bool = Field(description="True when policy sends the registered case to human review")
+
+
+class CaseRef(BaseModel):
+    case_id: str
+    verified: bool
+
+
+class TrailStepView(BaseModel):
+    trace_id: str
+    step: str
+    outcome: str
+    detail: dict[str, Any]
+    rule_ids: list[str]
+    latency_ms: float
+
+
+class LlmUsage(BaseModel):
+    calls: int = 0
+    failed: int = 0
+    input_tokens: int = 0
+    output_tokens: int = 0
+    latency_ms: float = 0.0
+    cost_usd: float | None = Field(None, description="null when a price is unknown")
+    provider: str | None = None
+    model: str | None = None
+
+
+class TurnResponse(BaseModel):
+    conversation_id: str
+    trace_id: str
+    language: Language
+    stage: Stage
+    reply: str
+    reply_source: Literal["llm", "template"]
+    options: list[OptionView]
+    confirmation: ConfirmationView | None
+    case: CaseRef | None
+    handoff_id: str | None
+    transfer_reason: ReasonCode | None
+    trail: list[TrailStepView]
+    llm: LlmUsage
+    latency_ms: float
+
+
+class TranscriptLine(BaseModel):
+    role: Literal["customer", "assistant"]
+    text: str
+
+
+class ConversationView(BaseModel):
+    conversation_id: str
+    language: Language
+    stage: Stage
+    transcript: list[TranscriptLine]
+    options: list[OptionView]
+    confirmation: ConfirmationView | None
+    case_id: str | None
+    handoff_id: str | None
+
+
+class CaseStatusResponse(BaseModel):
+    case_id: str
+    transaction_id: str
+    status: Literal["open", "pending_human_review"]
+    created_at: datetime
+    policy_rule_ids: list[str]
+
+
+# ---- console: handoff (mirrors docs/schemas/handoff.schema.json) -------------------------------------------------
+class HandoffRequestPart(BaseModel):
+    summary: str
+    intent: str
+    disputed_transaction_ids: list[str] = Field(default_factory=list)
+
+
+class TransferReason(BaseModel):
+    code: ReasonCode
+    rule_ids: list[str]
+    confidence: float | None = None
+
+
+class VerifiedFact(BaseModel):
+    fact: str
+    source: str
+
+
+class ActionTakenView(BaseModel):
+    action: str
+    status: Literal["verified", "failed", "not_verified"]
+    record_id: str | None = None
+
+
+class Handoff(BaseModel):
+    handoff_id: str
+    trace_id: str
+    created_at: datetime
+    language: Language
+    customer_ref: str
+    request: HandoffRequestPart
+    transfer_reason: TransferReason
+    verified_facts: list[VerifiedFact]
+    actions_taken: list[ActionTakenView]
+    evidence: list[str] = Field(default_factory=list)
+    open_questions: list[str]
+
+
+class HandoffQueueItem(BaseModel):
+    conversation_id: str
+    received_at: datetime
+    status: Literal["pending"] = "pending"
+    handoff: Handoff
+
+
+class AuditRecordView(BaseModel):
+    trace_id: str
+    seq: int
+    ts: str
+    step: str
+    tool: str | None
+    args_hash: str | None
+    masked_args: dict[str, Any]
+    rule_ids: list[str]
+    outcome: str
+    reason: str | None
+    latency_ms: float
+    customer_ref: str | None
+    attempts: int
+    prev_hash: str
+    record_hash: str
+
+
+class ChainStatus(BaseModel):
+    status: Literal["intact", "broken"]
+    checked_at: datetime
+    records_checked: int
+
+
+class TraceView(BaseModel):
+    trace_id: str
+    records: list[AuditRecordView]
+    chain: ChainStatus
+
+
+class ConversationAudit(BaseModel):
+    conversation_id: str
+    trace_ids: list[str]
+    trail: list[TrailStepView]
+    records: list[AuditRecordView]
+    chain: ChainStatus
+
+
+class HealthResponse(BaseModel):
+    status: Literal["ok"]
+    llm_provider: str
+    llm_model: str | None
+    disposition_model: str
+    demo_mode: bool
+    service_clock: datetime

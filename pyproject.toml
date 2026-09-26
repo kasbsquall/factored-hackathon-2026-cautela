@@ -13,10 +13,15 @@ dependencies = [
     "scikit-learn>=1.9.1",
     "mlflow>=3.16.1",
     "anthropic>=1.8.0",
+    "fastapi>=0.141.1",
+    "uvicorn>=0.30",
 ]
 
 [dependency-groups]
-dev = ["pytest>=8.0"]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=8.0",
+]
 
 [tool.uv]
 package = false
