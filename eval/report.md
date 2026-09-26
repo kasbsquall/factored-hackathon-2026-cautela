@@ -14,6 +14,9 @@ All three configurations ran on the same 1462 conversations with the same simula
 three times on a stratified subset of 284 conversations, and its injection and unauthorized conversations ran three
 times in full.
 
+The numbers below are those of the original agent. The seven agent bugs were fixed afterwards; the rerun on this same
+suite is in "After fixes (suite used for error analysis)".
+
 * **The rules baseline (a) has the highest safe automated resolution, and the most unsafe outcomes.** It resolves
   40.5% of in-scope conversations safely against 38.3% for (b) and 36.5% for (c), but it wrote a dispute on a charge
   the customer did not mean in 9 conversations, against 2 for (b) and 2 for (c). The paired differences are
@@ -729,6 +732,147 @@ Trace ids refer to the rules run (`rules-compliant-20260926T191206Z`) unless mar
    handoff.** In unauthorized mid-conversation cases it scored 5 of 24 (rules 15): the first message is a vague
    dispute, the model abstains with `low_confidence`, and the conversation is closed before the other customer's id
    arrives. The outcome is safe (a person takes it), but the security reason is lost.
+
+## After fixes (suite used for error analysis)
+
+Everything above this section is the original evaluation and its numbers are unchanged. The seven bugs listed above
+and the extra transfers of (b) and (c) were then fixed in `agent/` (commits `785029b`, `be506c4`, `80c21fd` and
+`773a62b`), and the three configurations were rerun on the same frozen suite (same sha, same warehouse slice, same
+simulated customer) with the evaluation code of `0fc526b`.
+
+Read these numbers with care. This suite is where the bugs were found, so an after-fix number on it says that the
+fixes work on the conversations that exposed them; it does not measure how the fixed agent generalizes. Thresholds
+and lexicon choices were checked on validation data (`eval/cases/disputes/val.jsonl`), and no fix names a suite
+conversation or its wording. One fix was still shaped by suite failures: the rule for the model's injection flag was
+tightened after the first after-fix run of (c) (see bug 4 below). The held-out figure for the fixed agent comes from
+the separately frozen second suite and is not reported here.
+
+Run ids: `rules-compliant-20260926T220423Z`, `learned-compliant-20260926T220632Z`,
+`llm-compliant-20260926T220932Z`.
+
+| metric | `rules` before | `rules` after | `learned` before | `learned` after | `llm` before | `llm` after |
+|---|---|---|---|---|---|---|
+| Safe automated resolution (in-scope) | 476/1176 = 40.5% | 476/1176 = 40.5% | 450/1176 = 38.3% | 476/1176 = 40.5% | 429/1176 = 36.5% | 477/1176 = 40.6% |
+| Correct outcome | 1347/1462 = 92.1% | 1439/1462 = 98.4% | 1293/1462 = 88.4% | 1431/1462 = 97.9% | 1240/1462 = 84.8% | 1432/1462 = 98.0% |
+| Unsafe outcomes | 9/1462 = 0.6% | 8/1462 = 0.5% | 2/1462 = 0.1% | 2/1462 = 0.1% | 2/1462 = 0.1% | 2/1462 = 0.1% |
+| Containment | 604/1462 = 41.3% | 540/1462 = 36.9% | 546/1462 = 37.4% | 533/1462 = 36.5% | 509/1462 = 34.8% | 530/1462 = 36.2% |
+| Automation attempted (in-scope) | 847/1176 = 72.0% | 848/1176 = 72.1% | 805/1176 = 68.5% | 835/1176 = 71.0% | 741/1176 = 63.0% | 836/1176 = 71.1% |
+| Missed transfers | 78/931 = 8.4% | 14/931 = 1.5% | 48/931 = 5.2% | 9/931 = 1.0% | 35/931 = 3.8% | 9/931 = 1.0% |
+| Unnecessary transfers | 5/531 = 0.9% | 5/531 = 0.9% | 33/531 = 6.2% | 7/531 = 1.3% | 57/531 = 10.7% | 10/531 = 1.9% |
+| Correct reason code (among correct transfers) | 821/853 = 96.2% | 913/917 = 99.6% | 793/883 = 89.8% | 905/922 = 98.2% | 761/896 = 84.9% | 905/922 = 98.2% |
+| Handoff passes every rubric item | 821/858 = 95.7% | 913/922 = 99.0% | 793/916 = 86.6% | 905/929 = 97.4% | 761/953 = 79.8% | 905/932 = 97.1% |
+| Latency per call p50 / p95 (ms) | 13.0 / 31.2 | 14.8 / 31.7 | 16.9 / 41.6 | 18.3 / 41.2 | 1473.1 / 2770.7 | 1313.4 / 2698.5 |
+| LLM USD per attempted conversation | 0.0 | 0.0 | 0.0 | 0.0 | 0.0001705 | 0.0002047 |
+| LLM USD per safe automated resolution | 0.0 | 0.0 | 0.0 | 0.0 | 0.0005812 | 0.0006273 |
+
+Correct conversations by category (unsafe outcomes in parentheses):
+
+| category | n | `rules` before | `rules` after | `learned` before | `learned` after | `llm` before | `llm` after |
+|---|---|---|---|---|---|---|---|
+| adversarial | 48 | 48 | 48 | 48 | 48 | 48 | 48 |
+| bad_data | 50 | 49 (1) | 49 (1) | 45 | 50 | 42 | 50 |
+| dispute | 930 | 911 (7) | 912 (7) | 883 (2) | 907 (2) | 826 (2) | 908 (2) |
+| expired_session | 40 | 40 | 40 | 40 | 40 | 37 | 40 |
+| human_request | 46 | 30 (1) | 46 | 29 | 46 | 45 | 46 |
+| identity | 30 | 30 | 30 | 30 | 30 | 30 | 30 |
+| injection | 62 | 14 | 62 | 12 | 62 | 11 | 62 |
+| multilingual | 60 | 59 | 59 | 58 | 59 | 50 | 59 |
+| out_of_scope | 44 | 23 | 41 | 18 | 37 | 26 | 37 |
+| recognized | 48 | 48 | 48 | 46 | 48 | 44 | 48 |
+| tool_failure | 48 | 48 | 48 | 47 | 48 | 44 | 48 |
+| unauthorized | 56 | 47 | 56 | 37 | 56 | 37 | 56 |
+
+Containment fell in (a) because conversations that used to end without a handoff (a request for a person, an
+out-of-scope topic, an injection) now get the handoff the gold expects: missed transfers went from 78 to 14.
+
+### What each fix changed
+
+1. **Routing at every stage** (`agent/orchestrator/routing.py`). Each turn first screens for injection and for
+   another customer's record, then routes a request for a person, a record reference, an out-of-scope topic or a new
+   charge description before a pending recognition or option pick is asked again; the superseded question is cleared
+   and recorded in the trail. Unauthorized mid-conversation went from 15, 5 and 5 of 24 to 24 in every configuration;
+   human request mid-conversation from 20, 19 and 29 of 30 to 30.
+2. **No write without a charge cue with the LLM off** (`actions.py`, `core.py`). A transaction is shown for
+   recognition or written only when the message names a charge (amount, date, merchant or type, or a channel said
+   about a charge) or the customer picked a candidate; otherwise the service asks for details. `hum1-002` ("carne y
+   hueso") no longer registers a dispute, and the unsafe outcome in human_request is gone.
+3. **Documented es/pt lexicon** (`agent/orchestrator/lexicon.py`). Requests for a person and out-of-scope topics in
+   regional Spanish and Brazilian Portuguese, with precedence rules against dispute words (topics that overlap
+   disputes, such as transfers, refunds and loans, yield to a dispute signal). Tested on phrasings written for the
+   test (`tests/orchestrator/test_lexicon.py`); none of the 754 validation descriptions is flagged. Human requests
+   are 46 of 46 in every configuration.
+4. **Injection detection** (`agent/orchestrator/injection.py`). An explicit marker, one strong signal (reassigning
+   the assistant's role, a note addressed to the model, a claim to be system or policy instructions) or two weak
+   signals of different kinds (switching off a control, a conditional address to a bot, operator authority, a
+   dictated reply, "execute", English imperatives). An impatient customer gives one weak signal and is not flagged.
+   False positives on validation descriptions: 0 of 754. The model may add a flag through a quote that must appear in
+   the message and carry a detector signal other than a request to skip a step; it cannot remove the deterministic
+   flag, which is computed before the model is called. In the first after-fix run of (c) the model's flag also fired
+   on impatient or rank-claiming customers ("No me hagas confirmar nada", "Como gerente de sucursal te autorizo"):
+   adversarial fell to 44 of 48 and 13 conversations got an unnecessary `security_event`. The corroborating-signal
+   rule above was added after that run, and adversarial is back to 48 of 48. Injection is 62 of 62 in every
+   configuration (before: 14, 12, 11).
+5. **LLM extraction merged with the parser** (`intent.merge`). The parser's amount, currency and date (with its
+   date tolerance) are kept whenever it read them, which covers magnitude words ("1,7 millones", "30 lucas", "2
+   palos"); the model adds a value only where the parser read none; a message with a dispute signal stays a dispute
+   when the model calls it an out-of-scope topic (disputed transfers, and questions such as "¿qué es un cobro que me
+   salió?", a form that about a third of the validation descriptions take). Record ids are stripped before any
+   number is read as an amount.
+6. **Reply guard** (`replies.py`, reply prompt). A paid probe found three causes of the rejections: a required
+   mention that starts a sentence gets a capital letter, the model paraphrased reasons it had to copy, and "esta" and
+   "o" counted as Portuguese in Spanish replies. The guard now accepts only the first-letter capitalization and
+   collapsed whitespace, the language word lists keep words exclusive to each language, and the prompt asks for exact
+   copies. Rejected drafts went from 673 to 15 (12 missing mention, 3 number not in facts), and the LLM wording
+   reaches 3479 of 3540 replies (98.3%, before 78.4%). A reworded policy reason is still rejected (test in
+   `tests/orchestrator/test_llm_merge.py`).
+7. **Security before disposition, also after closing**. The screen runs before the disposition on every turn, and a
+   closed conversation still runs it, so another customer's id sent after a `low_confidence` handoff records a
+   `security_event`. Unauthorized mid-conversation in (b) went from 5 to 24 of 24.
+
+### Why (b) and (c) transferred more than (a)
+
+Two causes, fixed without refitting any threshold.
+
+* The learned disposition checked P(no_match) >= t_abstain (0.0464) before anything else, so a ranking where a
+  match was by far the most likely class still ended in a `low_confidence` transfer. It now abstains only when
+  no_match is the most likely class; otherwise it asks the customer to choose among the top candidates. On
+  validation this changes 10 cases, 8 of them with the target in the top 3.
+* Digits inside record ids ("TRX-55CF…") were read as an amount, a cue that matched no charge of the customer.
+
+In (c), the model's out-of-scope label on disputed transfers and charge questions, and its injection flag on
+impatient customers, added more transfers; bugs 4 and 5 above cover them. Unnecessary transfers went from 33 to 7 in
+(b) and from 57 to 10 in (c).
+
+### Spend of the after-fix work
+
+Ledger `data/eval/llm_spend_fixes.json` (git-ignored), cap USD 2.00 enforced by `eval/budget.py`; no call was
+refused.
+
+| item | calls | USD |
+|---|---|---|
+| probe of rejected reply drafts | 54 | 0.0021 |
+| first after-fix run of (c), superseded (see bug 4) | 4986 | 0.2979 |
+| final run of (c), 1462 conversations | 5005 | 0.2992 |
+| **total recorded in the ledger** | 10045 | **0.5993** |
+
+The variance subset and the repeated injection runs were not rerun after the fixes.
+
+### Not fixed
+
+* **Unsafe writes of the rules ranker.** (a) still has 8 wrong-charge writes (`bad1-test-00768-es`,
+  `dsp-test-00023-es`, `dsp-test-00165-es`, `dsp-test-00561-es`, `dsp-test-00593-es`, `dsp-test-00593-pt`,
+  `dsp-test-00743-es`, `dsp-test-00768-es`), and (b) and (c) keep 2 (`dsp-test-00023-es`, `dsp-test-00427-es`). The
+  message names a charge, the ranker puts the wrong one first, and the customer confirms it. This is a ranking
+  problem outside the seven bugs.
+* **A topic switch after a handoff.** Out-of-scope mid-conversation switch is 21, 17 and 17 of 24. When the first
+  turn already ended in a handoff (`low_confidence` or `amount_above_threshold`), a later out-of-scope message does
+  not replace the handoff reason, so the case keeps the review reason instead of `out_of_scope`. Replacing it would
+  drop the reason a person needs to review the charge.
+* **Clarifying where the gold is a transfer.** In no_match disputes the service sometimes keeps asking and the
+  customer leaves (7 in (a), 5 in (b) and (c)) where the gold is a `low_confidence` handoff.
+* **Reason code on large amounts.** In (b) and (c), 9 normal disputes above the amount threshold are handed off as
+  `low_confidence` before the charge is identified, where the gold reason is `amount_above_threshold`. Both are
+  transfers; the reason code differs.
 
 ## Corrections made during the evaluation
 
