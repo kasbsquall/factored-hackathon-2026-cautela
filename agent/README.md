@@ -227,7 +227,7 @@ still need to be added to the repository's `.env.example`.
 |---|---|---|
 | Session gate | `IdentityService.validate`; an expired, revoked or forged token stops the turn before any step | `core.py` |
 | Understand | Injection markers first (deterministic, SYN-SEC-001). Then `MaskedLLM.extract` into a `DisputeIntent` validated by JSON Schema and pydantic; any value the message does not state (a record id, an amount, a date, a currency, a merchant) is dropped and the dropped fields are recorded. On a model failure or invalid output, the `ml.features.parse` parser plus explicit date, currency-code and record-id patterns; the reason is in the trail. Parser escalation signals (a person, an out-of-scope topic) apply even when the model disagrees | `intent.py` |
-| Decide | `list_recent_transactions` (90 days) feeds the learned disposition model from `ml/` (resolve, clarify, escalate); without its git-ignored artifacts the labeled rule baseline runs. For the chosen charge, `get_dispute_policy` gives the deterministic decision and `narrow()` applies the proposal | `disposition.py`, `actions.py` |
+| Decide | `list_recent_transactions` (90 days); a charge that fits every cue and moved no money goes straight to policy (see below); otherwise the pool feeds the learned disposition model from `ml/` (resolve, clarify, escalate); without its git-ignored artifacts the labeled rule baseline runs. For the chosen charge, `get_dispute_policy` gives the deterministic decision and `narrow()` applies the proposal | `disposition.py`, `actions.py` |
 | Act | `request_confirmation`; the token stays in server-side state and the customer answers by confirmation id | `actions.py` |
 | Verify | After the write, `get_case_status` (or the card status in `get_customer_profile`) is read back; success is reported only if it matches | `actions.py` |
 | Escalate | Handoff from tool-read facts with sources, actions with verified status, rule citations as evidence, open questions, reason code and rule ids; validated against the schema | `handoffs.py` |
@@ -255,8 +255,19 @@ a prompt, reply, trail or audit record). The HTTP layer is in `api/` (see `api/R
 
 Known behavior worth reading before a demo: the learned disposition was trained on pools with a median of 4
 candidates, while fixture customers have 16 to 78 transactions in 90 days, so it asks more often than on its test
-set; it also treats a declined charge as matching nothing, so "I don't recognize this declined charge" can end in a
-`low_confidence` handoff instead of the SYN-STATUS-002 explanation, depending on the wording.
+set.
+
+Declined and reversed charges. The disposition models learned "which charge" from labels where only approved or
+pending debits can be the charge a customer means, so a declined charge that fits every cue gets a low ranker score
+and the outcome used to depend on wording: the Portuguese demo opener ("uma compra") adds a type cue, which drops
+the neighbouring charges out of the near-fit count and pushed P(no_match) over the abstain threshold, so Portuguese
+ended in a `low_confidence` handoff while Spanish was explained under SYN-STATUS-002. Disputability is a policy
+question, so the decide step now checks first whether exactly one charge fits every cue the customer gave (two or
+more cues, same tolerances as the labels) and that charge moved no money; if so it goes straight to
+`get_dispute_policy` (trail step `decide.status_check`) and no model is asked. A retry pattern (a declined attempt
+and an approved charge that both fit) still goes to the model. Regression test:
+`tests/orchestrator/test_declined_status.py`, both languages, with the rule baseline, the learned model and a model
+that always escalates.
 
 ### Local model run (qwen2.5:7b-instruct on Ollama, 2026-09-25)
 

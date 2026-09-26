@@ -19,12 +19,15 @@ from pathlib import Path
 from typing import Any, Literal, Protocol
 
 from ml.decision import FixedRuleDecider
+from ml.disposition import cue_fits
 from ml.rankers.learned import LearnedRanker
 from ml.rankers.rules import RuleRanker
 
 MODELS_DIR = Path(__file__).resolve().parents[2] / "data" / "ml" / "models"
 LEARNED_SYSTEM = "learned_ranker_disposition"
 _MAP = {"act": "resolve", "clarify": "clarify", "abstain": "escalate"}
+DISPUTABLE_STATUSES = frozenset({"Approved", "Pending"})  # the label rule's disputable charges (ml/scenarios/hints.py)
+MIN_FIT_CUES = 2  # one cue ("a purchase last week") is too little to name a single charge
 
 
 @dataclass(frozen=True)
@@ -90,6 +93,24 @@ class RuleDisposition:
             return Disposition("escalate", 0.0, [], self.name)
         confidence, decided = self.decider.decide_case(inp, candidates, ranked)
         return Disposition(_MAP[decided["decision"]], round(float(confidence), 4), list(decided["top_k"]), self.name)
+
+
+def non_disputable_fit(text: str, report_date: date, overrides: Mapping[str, Any],
+                       pool: Sequence[Mapping[str, Any]]) -> Mapping[str, Any] | None:
+    """The one charge the description fits on every cue, when that charge moved no money (declined or reversed).
+
+    The disposition models learned "which charge" from labels where only approved or pending debits can be the
+    charge a customer means, so a declined charge that fits every cue scores low and the result turns on incidental
+    wording. Whether a charge can be disputed is the policy engine's question (SYN-STATUS-002, SYN-STATUS-003), so
+    this charge goes to policy directly. None when fewer than MIN_FIT_CUES cues were read, when no charge or more
+    than one fits every cue, or when the one that fits is disputable: the model decides those.
+    """
+    candidates = [dict(t) for t in pool]
+    cues, ids = cue_fits(ranker_input(text, report_date, overrides), candidates)
+    if len(cues) < MIN_FIT_CUES or len(ids) != 1:
+        return None
+    tx = next(t for t in candidates if t["transaction_id"] == ids[0])
+    return None if tx.get("transaction_status") in DISPUTABLE_STATUSES else tx
 
 
 def load_default(models_dir: Path = MODELS_DIR) -> DispositionModel:

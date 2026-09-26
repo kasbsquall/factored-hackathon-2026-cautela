@@ -22,7 +22,7 @@ from agent.llm.port import LanguageModel, LLMOutputError, LLMUnavailable
 from agent.orchestrator import intent as nlu
 from agent.orchestrator import replies
 from agent.orchestrator.actions import ActionsMixin
-from agent.orchestrator.disposition import DispositionModel, load_default
+from agent.orchestrator.disposition import DispositionModel, load_default, non_disputable_fit
 from agent.orchestrator.state import FINAL_STAGES, ConversationStore, Option, TrailStep
 from agent.orchestrator.steps import HandoffSink, Turn, tx_label
 from agent.security.audit import new_trace_id
@@ -243,6 +243,14 @@ class Orchestrator(ActionsMixin):
             self._clarify_details(turn, cues)
             return
         started = time.perf_counter()
+        spent = non_disputable_fit(state.text, self.service.clock().date(), state.slots.overrides(), pool)
+        if spent is not None:  # a charge that moved no money: policy explains it, no model is asked
+            self._step(turn, "decide.status_check", "fits_non_disputable_charge",
+                       {"status": spent.get("transaction_status"), "cues": sorted(cues), "pool_size": len(pool)},
+                       started=started)
+            self._act_on_transaction(turn, spent["transaction_id"], None,
+                                     "status check (the only charge that fits every cue moved no money)")
+            return
         disposition = self.disposition.decide(state.text, self.service.clock().date(), state.slots.overrides(), pool)
         state.confidence = disposition.confidence
         self._step(turn, "decide.disposition", disposition.decision,

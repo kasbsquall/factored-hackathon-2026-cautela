@@ -52,6 +52,19 @@ def _cue_hits(row: list[float]) -> dict[str, bool]:
     return hits
 
 
+def cue_fits(inp: dict, candidates: list[dict]) -> tuple[list[str], list[str]]:
+    """The cues read from the description, and the ids of the candidates that satisfy every one of them.
+
+    Same cue tests (and label tolerances) as the case features below, applied to every candidate whatever its type
+    or status: which charge a description fits is a separate question from whether that charge can be disputed.
+    """
+    parsed, report = coerce_features(inp)
+    rows = candidate_features(parsed, candidates, report) if candidates else []
+    hits = [_cue_hits(r) for r in rows]
+    cues = sorted(hits[0]) if hits else []
+    return cues, [c["transaction_id"] for c, h in zip(candidates, hits) if h and all(h.values())]
+
+
 def case_features(inp: dict, candidates: list[dict], ranked: list[tuple[str, float]]) -> list[float]:
     parsed, report = coerce_features(inp)
     rows = candidate_features(parsed, candidates, report) if candidates else []
