@@ -1,25 +1,47 @@
 # Data engineering
 
-Bronze, silver and gold layers for the LATAM Bank dataset, built against the organizer data dictionary, tested on a labeled synthetic test fixture and run on the organizer data (CSV files in an S3 bucket, under `data/`). The reader is source-agnostic: a local directory and an `s3://` prefix go through the same code.
+Bronze, silver and gold layers for the LATAM Bank dataset, built against the organizer data dictionary, tested on a labeled synthetic test fixture and run on the organizer data (CSV files in an S3 bucket, under `data/`). The reader is source-agnostic: a local directory and an `s3://` prefix go through the same code. The committed pipeline numbers on organizer data were produced from a local copy of the bucket in `data/raw`, which `make mirror` fills.
 
-## Run it
+## Run it on the synthetic fixture
 
 ```bash
 uv sync
 make fixture    # uv run python -m data_engineering.fixtures.generate --out data/fixture --seed 42
 make pipeline   # uv run python -m data_engineering.pipelines.run --source data/fixture --target data/warehouse.duckdb
+make gold       # uv run python -m data_engineering.gold.run --target data/warehouse.duckdb
 make test       # uv run pytest
 ```
 
-On Windows without `make`, run the commands in the comments. `--tables transactions complaints` limits a run to a subset (parents must already be loaded) and `--full-refresh` rebuilds the selected tables. Everything under `data/` is git-ignored.
+`make fixture pipeline gold` took 15 s on the laptop that built this. On Windows without `make`, run the command under each target in the `Makefile`. `--tables transactions complaints` limits a run to a subset (parents must already be loaded) and `--full-refresh` rebuilds the selected tables. Everything under `data/` is git-ignored.
 
-The real dataset is on Amazon S3 with read-only participant credentials. Copy `.env.example` to `.env` (git-ignored) and fill `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` (us-east-2 when empty) and `LATAM_BANK_S3_URI`. Then:
+## Reproduce from zero on the organizer data
 
-```bash
-make pipeline-s3   # uv run python -m data_engineering.pipelines.run --target data/warehouse_s3.duckdb
-```
+The organizer data is on Amazon S3 with read-only participant credentials. The organizer warehouse is always `data/warehouse_real.duckdb` (`WAREHOUSE_REAL` in the `Makefile`), and the `Makefile` targets that read organizer data (`gold-real`, `analytics`, `demo-seed`, `demo-artifacts`) default to it, as do the eval scripts. Times below were measured once each on one Windows laptop, so read them as orders of magnitude. Disk: about 5.35 GB for `data/raw` and 4.2 GB for the warehouse.
 
-Without `--source`, the pipeline reads `LATAM_BANK_S3_URI`, which must end in the prefix that holds the tables (`s3://<bucket>/data`); pointed at the bucket root it would only find `marketing_campaigns.csv`. The real data gets its own warehouse file on purpose: a warehouse refuses to load a second source, because the file ledger keys files by path relative to the source root and a fixture file could otherwise shadow a real file with the same relative path.
+| Step | Command | Measured |
+|---|---|---|
+| 0. Dependencies | `uv sync` | |
+| 1. Credentials | copy `.env.example` to `.env` (git-ignored) and fill `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` (us-east-2 when empty) and `LATAM_BANK_S3_URI=s3://<bucket>/data` | |
+| 2. Local copy of the bucket | `make mirror` | 7,671 files, 5.35 GB. With the same copy code: the 11 smaller tables (5,491 files, 1.27 GB) in 265 s during `make freshness-demo`, and digital_events plus campaign_sends (2,180 files, 4.08 GB) in 112 s on 2026-09-27. Memory not measured |
+| 3a. Bronze and silver, 11 tables | `make pipeline-real TABLES=branches,customers,service_agents,call_center_interactions,call_transcripts,marketing_campaigns,products,complaints,daily_exchange_rates,satisfaction_surveys,transactions` | 10.0 minutes, 6,127,393 rows. Memory not measured |
+| 3b. Bronze and silver, the two large tables | `make pipeline-real` (the 11 tables are already in the ledger, so only digital_events and campaign_sends are read) | 36.3 minutes, 17,367,795 rows; the process held at least 23 GB of memory and spilled at least 19 GB to its temp directory (observed readings, not measured peaks) |
+| 4. Gold | `make gold-real` | first build 32 s, rerun 3 s. Memory not measured |
+| 5. Analytics report | `make analytics` | not timed |
+| 6. Freshness | `make freshness-status TARGET=data/warehouse_real.duckdb` | seconds; exits 1 on this static delivery, because every daily table is months behind the calendar |
+
+Steps 3a and 3b are the two runs behind the committed numbers. A single `make pipeline-real` loads all 13 tables in one run; that run was never timed. The expected result is `reports/organizer_load.md`: 13 tables, 23,495,188 rows, 0 quarantined. `make mirror` keeps each object's S3 `LastModified` as the file time, so the file ledger fingerprints what the bucket holds, and a rerun copies only files whose size or time changed.
+
+`LATAM_BANK_S3_URI` must name the prefix that holds the table folders (`s3://<bucket>/data`); pointed at the bucket root, `make mirror` stops and names the tables it did not find. The pipeline can also read the bucket directly (`uv run python -m data_engineering.pipelines.run --target <another file>` reads `LATAM_BANK_S3_URI` when `--source` is omitted). That route uses the same reader but was never run at full volume, and it needs its own warehouse file: a warehouse refuses to load a second source, because the file ledger keys files by path relative to the source root and a file from one source could otherwise shadow a file with the same relative path from another. `make pipeline-s3` is kept as another name for `make pipeline-real`.
+
+### Which committed numbers cover which tables
+
+| Number | Where | Tables |
+|---|---|---|
+| 0 of 6,127,393 rows quarantined after reconciliation, 10 minutes | the reconciliation section below | the 11 tables other than digital_events and campaign_sends, which were not in the local copy yet |
+| 13 tables, 23,495,188 rows, 0 quarantined | `reports/organizer_load.md` | all 13 |
+| 31 of 31 objects equal to a single load | `reports/freshness_backup_vs_current.md` | the same 11 tables; the two large ones are compared by file listing only |
+| gold row counts, first build 32 s | the gold section below | no gold table reads digital_events or campaign_sends |
+| every figure in `data_analytics/reports/` | `why-this-workflow.md` | no figure reads digital_events or campaign_sends |
 
 ## Layout
 
@@ -36,6 +58,8 @@ Without `--source`, the pipeline reads `LATAM_BANK_S3_URI`, which must end in th
 | `pipelines/warehouse.py` | Warehouse schemas, file ledger, watermarks |
 | `pipelines/report.py` | Quality report JSON |
 | `pipelines/run.py` | CLI entry point |
+| `pipelines/mirror.py` | `make mirror`: copies the bucket into `data/raw`, keeping each object's modification time |
+| `pipelines/load_summary.py` | Aggregate-only summary of quality reports, committed as `reports/organizer_load.md` |
 | `pipelines/gold.py` | Old placeholder, superseded by `gold/` |
 | `gold/` | Gold layer: contracts, SQL, incremental build, checks and CLI (see the gold section) |
 | `freshness/` | Freshness status against the policy, and the update test on organizer data (stage, compare, demo, report); see the freshness section |
@@ -53,8 +77,8 @@ the tool repository's freshness check sees the same history. `control.file_ledge
 bronze rows came from, and `control.demo_slice` records which scenario each customer was chosen for and from which
 warehouse. The gold analytics tables are left out: they aggregate every customer and would be wrong for a slice.
 
-For the eight demo customers of the organizer data the slice is 284 transactions and 3.9 MB (the full warehouse is
-1.8 GB). Two slices of the same customers hold the same rows but not the same file bytes (DuckDB's block layout), so
+For the eight demo customers of the organizer data the slice is 284 transactions and 3.9 MB (the full warehouse was
+1.8 GB when the slice was cut; with all 13 tables it is 4.2 GB). Two slices of the same customers hold the same rows but not the same file bytes (DuckDB's block layout), so
 `content_digest()` hashes the rows in a fixed order; the bundle lock records both. Tests: `tests/deploy/test_slice.py`.
 
 ## Design and the reasons behind it
@@ -228,7 +252,7 @@ The first run's customer quarantine (149,995 orphans) was not a cascade from the
 
 ### Observations reported, not changed
 
-- **Row counts differ from the summary.** transactions 4,425,008 (summary 5,000,000); call_center_interactions 686,296 (800,000); satisfaction_surveys 212,759 (250,000); call_transcripts 171,321 (200,000); complaints 67,095 (80,000); daily_exchange_rates 13,164 (3,000). customers 150,000, products 400,000, branches 350, service_agents 1,200 and marketing_campaigns 200 match. `digital_events` and `campaign_sends` were not in the local mirror this first run read, but they are in the delivery: 1,097 daily files (3.76 GB) and 1,083 daily files (326 MB) under `data/` in the bucket. The mirror did not have them, so this first run never loaded them.
+- **Row counts differ from the summary.** transactions 4,425,008 (summary 5,000,000); call_center_interactions 686,296 (800,000); satisfaction_surveys 212,759 (250,000); call_transcripts 171,321 (200,000); complaints 67,095 (80,000); daily_exchange_rates 13,164 (3,000). customers 150,000, products 400,000, branches 350, service_agents 1,200 and marketing_campaigns 200 match. `digital_events` and `campaign_sends` were not in the local mirror this first run read, but they are in the delivery: 1,097 daily files (3.76 GB) and 1,083 daily files (326 MB) under `data/` in the bucket. The mirror did not have them, so this first run never loaded them; they were loaded on 2026-09-27 (see below).
 - **No duplicates.** No delivered table has a repeated key. Detection ignores `process_date` and ingestion columns, so a re-delivered record would count. A direct check on bronze also finds no rows that repeat the same content under a different id (transactions by customer, product, timestamp, amount and type; complaints by customer, timestamp, category and description; interactions by customer, timestamp and reason; surveys by customer, timestamp and interaction). The "~2%" in the summary is not reproduced.
 - **Mexican accounts are in USD.** All 200,398 products and 2,216,431 transactions of Mexican customers are in USD; MXN never appears in products or transactions. Argentina uses ARS (792,585) and USD (87,420), Colombia COP (1,194,444) and USD (134,128). In total 2,437,979 transactions are in USD.
 - **Exchange rates cover every directed pair.** 12 pairs among MXN, COP, ARS and USD for each of 1,097 days (2023-06-17 to 2026-06-17) give the 13,164 rows. The pair names the direction, which resolves that question from the dictionary.
@@ -237,11 +261,11 @@ The first run's customer quarantine (149,995 orphans) was not a cascade from the
 - **Complaint categories are English and nearly uniform.** Transactions 13,580; Fees 13,553; Technical 13,407; Branch 13,361; Service 13,194. None is specific to an unrecognized charge; this matters for the workflow choice.
 - **Uniqueness.** `service_agents.employee_code` repeats 13 values over 26 rows and `products.product_number` 6 values over 12 rows (reported, not quarantined).
 
-After reconciliation the full refresh quarantines 0 of 6,127,393 rows. Remaining warnings are the 149,995 and 831 branch orphans and the 24,029 null transcript durations. The run takes about 10 minutes on a laptop; about 80 seconds of it is per-file CSV header sniffing.
+After reconciliation the full refresh of these 11 tables quarantines 0 of 6,127,393 rows. Remaining warnings are the 149,995 and 831 branch orphans and the 24,029 null transcript durations. That run took 10.0 minutes on a laptop; about 80 seconds of it is per-file CSV header sniffing. With the two tables below, the warehouse holds 23,495,188 rows in 13 tables and none is quarantined (`reports/organizer_load.md`).
 
 ### digital_events and campaign_sends
 
-Loaded on 2026-09-27 into the same warehouse (`--tables digital_events,campaign_sends`, after copying the two tables from the bucket into the local mirror with `freshness/stage.py`), with the contracts already written from the dictionary. Nothing was changed in either contract.
+Loaded on 2026-09-27 into the same warehouse (`--tables digital_events,campaign_sends`, after copying the two tables from the bucket into the local mirror with `freshness/stage.py`, the copy `make mirror` now runs), with the contracts already written from the dictionary. Nothing was changed in either contract.
 
 | Table | Files | Rows in | Quarantined | Duplicates | Silver | Warnings | Orphans | Drift |
 |---|---|---|---|---|---|---|---|---|
@@ -255,8 +279,8 @@ The load took 37 minutes on a laptop, most of it on digital_events, which DuckDB
 ## Gold layer
 
 ```bash
-make gold                                        # uv run python -m data_engineering.gold.run --target data/warehouse.duckdb
-make gold TARGET=data/warehouse_real.duckdb      # organizer data
+make gold        # uv run python -m data_engineering.gold.run --target data/warehouse.duckdb (fixture)
+make gold-real   # uv run python -m data_engineering.gold.run --target data/warehouse_real.duckdb (organizer data)
 ```
 
 Gold is built from silver inside the same warehouse, in the `gold` schema. Each table has a contract in `gold/contracts/<table>.yaml` and one SELECT in `gold/sql/<table>.sql`. The workflow is unrecognized-charge disputes ("Cargo no reconocido"); the evidence for that choice is in `data_analytics/reports/why-this-workflow.md`.
@@ -295,7 +319,7 @@ The agent tools in `agent/tools/repository.py` read `customer_profile`, `custome
 
 A new complaint changes the prior and next complaint features of the same customer's other complaints, so `complaint_facts` recomputes every complaint of a touched customer. `tests/gold/test_gold_incremental.py` loads the fixture in the same two waves as the silver test, builds gold after each, and requires the result to equal gold built once over a full load, row for row, apart from the run ids.
 
-**Freshness policy.** Gold runs after every silver load (`make pipeline` then `make gold`), and the tool repository refuses to start when gold is older than silver. The policy tools compute transaction age at request time, which is why no age is stored. The full policy, including what happens after a rewritten file, is in the freshness section below.
+**Freshness policy.** Gold runs after every silver load (`make pipeline` then `make gold`, or `make pipeline-real` then `make gold-real`), and the tool repository refuses to start when gold is older than silver. The policy tools compute transaction age at request time, which is why no age is stored. The full policy, including what happens after a rewritten file, is in the freshness section below.
 
 **Result on the organizer data.** First build 32 s on a laptop, rerun 3 s (every table skipped). Rows: 4,425,008 transactions, 150,000 customer profiles, 67,095 complaint facts, 154 complaint outcome rows, 98 interaction outcome rows, 32,053 hour cells and 111,771 day cells. Every check passes.
 

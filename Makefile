@@ -2,9 +2,12 @@
 SEED ?= 42
 SOURCE ?= data/fixture
 TARGET ?= data/warehouse.duckdb
-TARGET_S3 ?= data/warehouse_s3.duckdb
+# Organizer data: `make mirror` copies the bucket (LATAM_BANK_S3_URI and AWS_* from .env) into RAW, and every target
+# that reads organizer data uses WAREHOUSE_REAL. See "Reproduce from zero" in data_engineering/README.md.
+RAW ?= data/raw
+WAREHOUSE_REAL ?= data/warehouse_real.duckdb
 
-.PHONY: fixture pipeline pipeline-s3 cases test all
+.PHONY: fixture pipeline mirror pipeline-real pipeline-s3 gold-real cases test all
 
 fixture:  ## synthetic test fixture (team-generated, not organizer data)
 	uv run python -m data_engineering.fixtures.generate --out data/fixture --seed $(SEED)
@@ -12,8 +15,16 @@ fixture:  ## synthetic test fixture (team-generated, not organizer data)
 pipeline:  ## bronze and silver, incremental; SOURCE can be a local path or s3://bucket/prefix
 	uv run python -m data_engineering.pipelines.run --source $(SOURCE) --target $(TARGET)
 
-pipeline-s3:  ## real data: source and credentials come from .env (LATAM_BANK_S3_URI, AWS_*)
-	uv run python -m data_engineering.pipelines.run --target $(TARGET_S3)
+mirror:  ## copy the organizer delivery from LATAM_BANK_S3_URI into RAW (only changed files on a rerun)
+	uv run python -m data_engineering.pipelines.mirror --dest $(RAW)
+
+pipeline-real:  ## bronze and silver of the organizer data: RAW into WAREHOUSE_REAL, incremental; TABLES=a,b limits it
+	uv run python -m data_engineering.pipelines.run --source $(RAW) --target $(WAREHOUSE_REAL) $(if $(TABLES),--tables $(TABLES))
+
+pipeline-s3: pipeline-real  ## former name of pipeline-real, kept because other documents cite it
+
+gold-real:  ## gold of the organizer data, in WAREHOUSE_REAL
+	uv run python -m data_engineering.gold.run --target $(WAREHOUSE_REAL)
 
 cases:  ## rebuild the held-out dispute cases and check them against the committed manifest
 	uv run python -m ml.scenarios.build --verify
@@ -24,7 +35,7 @@ test:
 all: fixture pipeline test
 
 # Gold layer and workflow evidence. REPORT_WAREHOUSE must hold the organizer data: the report is committed.
-REPORT_WAREHOUSE ?= $(TARGET_S3)
+REPORT_WAREHOUSE ?= $(WAREHOUSE_REAL)
 .PHONY: gold analytics
 
 gold:  ## gold serving and analytics tables from silver, incremental; TARGET selects the warehouse
@@ -35,7 +46,7 @@ analytics:  ## data_analytics/reports: why-this-workflow.md and chart JSON, from
 
 # Public demo on organizer data. Inputs are git-ignored: the full warehouse, the learned model (data/ml/models, from
 # `uv run python -m ml.train`) and the seed. Outputs: deploy/demo-bundle/ (git-ignored) and the committed lock.
-DEMO_WAREHOUSE ?= data/warehouse_real.duckdb
+DEMO_WAREHOUSE ?= $(WAREHOUSE_REAL)
 DEMO_SEED ?= data/demo/real_seed.json
 .PHONY: demo-seed demo-artifacts release
 
