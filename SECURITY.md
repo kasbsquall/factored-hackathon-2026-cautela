@@ -153,6 +153,17 @@ Tests: `tests/agent/test_tools.py::test_verify_step_catches_writes_that_did_not_
 `::test_block_card_verify_catches_lost_write`;
 `tests/orchestrator/test_decide_and_failures.py::test_lost_write_is_caught_by_the_verify_step`.
 
+**Data at rest: classified, stored in clear.** Every column of the data contracts carries a classification
+(`pii_direct`, `pii_quasi`, `sensitive_financial`, `none`; `tests/test_classification.py`), and storage does not act
+on it yet. The local copy of the delivery (`data/raw/`) and bronze, silver and `quarantine.records` in the warehouse
+hold document numbers, names, dates of birth, email, phones and addresses in clear, and the DuckDB files are not
+encrypted. The public demo ships the bronze and silver rows of its eight organizer customers, with those fields, to
+the VPS inside the demo bundle, where the serving container and anyone with shell access to the host can read them.
+Gold serving tables hold the customer's first and last name and no document or contact detail. In production:
+keyed-hash tokenization of the document number, an identity store or column masking by role for names and contacts,
+encryption at rest with managed keys, a retention limit on quarantined raw records, and synthetic identities in any
+demo copy. Details: "Data classification and data at rest" in `data_engineering/README.md`.
+
 ### The model
 
 **PII masking before any model call: implemented and tested, with residual risk.** `agent/security/pii.py`
@@ -288,6 +299,9 @@ These are known gaps. Each would have to be closed before real customers used th
 * **Conversation turns still hold the process lock during model calls.** Translation calls run outside it; the
   extraction and reply calls of a turn do not, so a slow provider slows every other visitor's turn. Planned: a lock
   per conversation.
+* **Product reads still on silver.** The tools read products from `silver.products`. `gold.customer_products` is
+  built and `tests/gold/test_gold_products.py` reconciles it with silver, but switching now would change the content
+  hash of the frozen eval_fresh warehouse slice. Planned: switch after the final evaluation.
 * **No WAF and no request body size limit** at the application or the proxy. Out of scope.
 * **All state in memory, reset every 30 minutes.** Rate-limit counters, sessions and the case store live in one
   process; a restart clears them, and there is one process, so the limits do not hold across replicas. A real
