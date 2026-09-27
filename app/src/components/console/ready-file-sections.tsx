@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { ArrowsClockwise, ChatText, Files, Question, SealCheck } from "@phosphor-icons/react";
 import type { Handoff } from "@/lib/api/types";
-import { ACTION_STATUS, LANGUAGE_NAME } from "@/lib/labels";
+import { ACTION_STATUS, LANGUAGE_NAME, policyWords } from "@/lib/labels";
 import { StatusChip } from "@/components/ui/status-chip";
 import styles from "./ready-file.module.css";
 
@@ -30,7 +30,7 @@ const DATE_TIME = /(\d{4}-\d{2}-\d{2}(?: \d{2}:\d{2})?)/;
 function FactText({ text }: { text: string }) {
   return (
     <>
-      {text.split(DATE_TIME).map((part, i) => (i % 2 ? <span key={i} className={styles.nowrap}>{part}</span> : part))}
+      {policyWords(text).split(DATE_TIME).map((part, i) => (i % 2 ? <span key={i} className={styles.nowrap}>{part}</span> : part))}
     </>
   );
 }
@@ -51,9 +51,9 @@ export function RequestSection({ handoff, index }: { handoff: Handoff; index: nu
   const { request, language } = handoff;
   return (
     <Section icon={<ChatText aria-hidden />} title="Request" index={index}>
-      <blockquote className={styles.quote} lang={language === "pt" ? "pt" : "es"}>{request.summary}</blockquote>
+      <blockquote className={styles.quote} lang="en">{request.summary}</blockquote>
       <p className={styles.caption}>
-        Request summary in {LANGUAGE_NAME[language] ?? language}, after PII masking · intent{" "}
+        Summary in English after PII masking; a customer statement is quoted in {LANGUAGE_NAME[language] ?? language} · intent{" "}
         <span className="mono">{request.intent}</span>
         {request.disputed_transaction_ids?.length ? (
           <> · disputed <span className="mono">{request.disputed_transaction_ids.join(", ")}</span></>
@@ -130,7 +130,7 @@ export function EvidenceSection({ handoff, index }: { handoff: Handoff; index: n
     <Section icon={<Files aria-hidden />} title="Evidence" count={evidence.length} index={index}>
       {evidence.length ? (
         <ul className={styles.evidence}>
-          {evidence.map((e) => <li key={e}>{e}</li>)}
+          {evidence.map((e) => <li key={e}>{policyWords(e)}</li>)}
         </ul>
       ) : (
         <Empty>No additional evidence attached.</Empty>

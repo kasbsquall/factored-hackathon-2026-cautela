@@ -42,3 +42,15 @@ export const RULES: Record<string, { source: "legal" | "synthetic_policy"; summa
 };
 
 export const LANGUAGE_NAME: Record<string, string> = { es: "Spanish", pt: "Portuguese" };
+
+/**
+ * The policy engine writes rules.yaml enums into its evidence lines: "MX-WINDOW-001 (legal, team_research): claim
+ * window 90 natural days". Every page says "law" and "calendar days", so the console shows those lines with the same
+ * words. The audit trail keeps the records exactly as written.
+ */
+export function policyWords(text: string): string {
+  return text
+    .replace(/\(legal([,)])/g, "(law$1")
+    .replace(/\(synthetic_policy([,)])/g, "(synthetic policy$1")
+    .replace(/\bnatural days\b/g, "calendar days");
+}

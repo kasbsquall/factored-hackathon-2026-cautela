@@ -7,7 +7,7 @@ export function RuleTag({ id }: { id: string }) {
   return (
     <span className={styles.tag} title={rule?.summary}>
       <span className="mono">{id}</span>
-      {rule ? <span className={`${styles.src} ${rule.source === "legal" ? styles.legal : ""}`}>{rule.source === "legal" ? "legal" : "synthetic"}</span> : null}
+      {rule ? <span className={`${styles.src} ${rule.source === "legal" ? styles.legal : ""}`}>{rule.source === "legal" ? "law" : "synthetic policy"}</span> : null}
     </span>
   );
 }

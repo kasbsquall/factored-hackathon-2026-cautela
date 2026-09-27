@@ -294,6 +294,9 @@
   padding-left: var(--s-16);
   display: grid;
   gap: var(--s-6);
+  min-width: 0;
+  /* Model ids such as learned_ranker_disposition:disposition_multinomial_logreg_C1 have no spaces to break at. */
+  overflow-wrap: anywhere;
 }
 
 .evidence li::marker {

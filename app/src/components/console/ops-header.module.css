@@ -8,13 +8,21 @@
   background: var(--bg);
 }
 
-/* Four surfaces do not fit one line at 375px: wrap instead of a horizontal scroll that hides the last link. */
+/* On phones the links use their short names so the four surfaces fit one row; wrap stays as the fallback. */
 .nav {
   display: flex;
   flex-wrap: wrap;
-  gap: 0 var(--s-4);
+  gap: 0 var(--s-2);
   order: 3;
   width: 100%;
+}
+
+.long {
+  display: none;
+}
+
+.short {
+  display: inline;
 }
 
 .link {
@@ -44,8 +52,15 @@
   background: var(--sf2);
 }
 
-.badge {
+.badges {
   margin-left: auto;
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--s-4) var(--s-16);
+}
+
+.badge {
   display: inline-flex;
   align-items: center;
   gap: var(--s-6);
@@ -59,6 +74,11 @@
   height: 14px;
 }
 
+.demoDate {
+  color: var(--ink);
+  cursor: help;
+}
+
 @media (min-width: 768px) {
   .header {
     flex-wrap: nowrap;
@@ -68,5 +88,13 @@
   .nav {
     order: 0;
     width: auto;
+  }
+
+  .long {
+    display: inline;
+  }
+
+  .short {
+    display: none;
   }
 }
