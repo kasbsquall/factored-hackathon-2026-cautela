@@ -85,7 +85,8 @@ Nothing of this project listens on a public interface, and no firewall rule is o
   `HealthResponse`.
 - **Rate limits depend on X-Forwarded-For.** The API trusts that header only from the Docker gateway
   (`10.83.30.1`), which is where OpenLiteSpeed's connections arrive. If OpenLiteSpeed does not send it (check the
-  logs, step 5), every visitor shares one bucket: 10 logins and 30 turns per minute in total.
+  logs, step 5), every visitor shares one bucket: the `CAUTELA_RATE_AUTH` and `CAUTELA_RATE_TURN` limits then
+  apply to everyone together (60 logins and 120 turns per minute with the demo values below).
 - Demo mode publishes the demo logins and their one-time codes, so anyone can log in as the synthetic customers.
   That is the point of the demo; none of them is a real person.
 - The console key is one shared secret, and the console endpoints are reachable from the internet (key-gated).
@@ -169,6 +170,19 @@ sudo nano /opt/cautela/shared/cautela.env
 Values: `LLM_PROVIDER=openai`, `LLM_MODEL=gpt-6-luna`, `LLM_REASONING_EFFORT=none`, the OpenAI project key,
 the two generated secrets, `CAUTELA_CORS_ORIGINS` (the frontend's https origin, or leave empty), `CAUTELA_DEMO_MODE=1`.
 Leave the caps empty for 2000 calls and USD 1.00, or set smaller ones.
+
+Throttles of the public demo (none of them is a secret):
+
+| Variable | Public demo | Default |
+|---|---|---|
+| `CAUTELA_LOGIN_CHALLENGES` | `30` new login challenges per document per 15 min | `3` |
+| `CAUTELA_RATE_AUTH` | `60/60` login requests per address per 60 s | `10/60` |
+| `CAUTELA_RATE_TURN` | `120/60` conversation requests per address per 60 s | `30/60` |
+
+They are higher because the demo identities are shared by every visitor and their one-time codes are shown on
+screen: the per-document cap protects nothing there, and at 3 a few judges trying the same customer would lock each
+other out for 15 minutes. Anything that is not a public demo with synthetic customers keeps the defaults or stricter
+values. `SECURITY.md` lists the controls these belong to.
 
 ## 3. Deploy a release
 
