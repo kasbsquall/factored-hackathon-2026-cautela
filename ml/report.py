@@ -1,4 +1,4 @@
-"""Render ml/reports/results.md from results.json, fitted.json and the case manifest.
+"""Render ml/reports/results.md from results.json, fitted.json, the case manifest and, when present, results_llm.json.
 
     uv run python -m ml.report
 
@@ -142,6 +142,17 @@ def render() -> str:
                 "`rank_v1`, default model `claude-sonnet-5`); with a key, `ml.evaluate` runs it on a stratified "
                 "test subset three times and reports variance and cost." if llm["status"] != "run"
                 else f"LLM ranker run: model `{llm['model']}`, prompt `{llm['prompt_version']}`, see results.json.")
+    rung_file = REPORTS_DIR / "results_llm.json"
+    if llm["status"] != "run" and rung_file.exists():
+        rung = json.loads(rung_file.read_text(encoding="utf-8"))
+        r1 = rung["run1_summary"]
+        llm_line = (f"**LLM ranker:** the in-process path of `ml.evaluate` (`ml/rankers/llm.py`) did not run "
+                    f"({llm['reason']}). The LLM rung was measured separately by `{rung['generated_by']}`: "
+                    f"{rung['provider']} `{rung['model']}`, reasoning effort {rung['reasoning_effort']}, prompt "
+                    f"`{rung['prompt_version']}`, {len(rung['runs'])} runs on all {r1['n_cases']} {rung['split']} "
+                    f"cases. Run 1: correct decisions {_v(r1['correct_decision_rate'])}, unsafe "
+                    f"{_frac(r1['unsafe'])}, safe automated resolution {_v(r1['safe_automated_resolution_rate'])}. "
+                    "Full tables in `results_llm.md`.")
     head = [
         "# Results: which charge is the customer disputing?\n",
         "Offline evaluation on generated scenarios over organizer transactions, not production results. "

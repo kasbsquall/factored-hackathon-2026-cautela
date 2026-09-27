@@ -90,7 +90,7 @@ Everything below is the original test split. The number-word and slang parser an
 * Splits: train 2259, val 754, test 1107 cases; customers disjoint across splits; report dates disjoint in time; families F5 and F6 only in test.
 * Label quality: valid by construction from explicit hints and tolerances (see `ml/DATASHEET.md`); not human-annotated; a system can partly learn the generator, which the held-out families measure.
 * Ranker model: `hgb_d6_lr0.1` (val MRR and log loss: see fitted.json). Disposition model: `multinomial_logreg_C1`. Thresholds fitted on val with an unsafe rate cap of 1%.
-* **LLM ranker: not run** (ANTHROPIC_API_KEY is not set). The code path exists (`ml/rankers/llm.py`, prompt `rank_v1`, default model `claude-sonnet-5`); with a key, `ml.evaluate` runs it on a stratified test subset three times and reports variance and cost.
+* **LLM ranker:** the in-process path of `ml.evaluate` (`ml/rankers/llm.py`) did not run (ANTHROPIC_API_KEY is not set). The LLM rung was measured separately by `ml/evaluate_llm.py`: openai `gpt-6-luna`, reasoning effort none, prompt `rank_v1`, 3 runs on all 1107 test cases. Run 1: correct decisions 54.0% [50.9%, 57.4%], unsafe 12 / 1107, safe automated resolution 22.3% [19.7%, 25.1%]. Full tables in `results_llm.md`.
 * Confidence intervals: 95% percentile bootstrap, 1,000 resamples of Spanish source groups (a case and its Portuguese twin move together).
 
 ### Systems
