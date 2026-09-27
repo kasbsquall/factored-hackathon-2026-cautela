@@ -1,4 +1,4 @@
-"""Build the workflow evidence from the gold layer: chart JSON files and why-this-workflow.md.
+"""Build the workflow evidence from the gold layer: chart JSON files, insights.json and why-this-workflow.md.
 
     uv run python -m data_analytics.run --warehouse data/warehouse_real.duckdb
     uv run python -m data_analytics.run --warehouse data/warehouse.duckdb --out <dir>   # fixture
@@ -18,13 +18,17 @@ from pathlib import Path
 
 import duckdb
 
-from data_analytics import figures
-from data_analytics.cost_model import cost_model, ml_rates
+from data_analytics import figures, workload
+from data_analytics.cost_model import cost_model, eval_rates, ml_rates
 from data_analytics.data_limits import diagnostics
+from data_analytics.insights import insights
 from data_analytics.render import render_report
+from data_analytics.satisfaction import satisfaction
+from data_analytics.thresholds import threshold_analysis
 
 DEFAULT_OUT = Path(__file__).resolve().parent / "reports"
 DEFAULT_ML = Path("ml/reports/results.json")
+DEFAULT_EVAL = Path("eval/results.json")
 
 
 def _json_default(value):
@@ -45,24 +49,37 @@ def provenance(con: duckdb.DuckDBPyConnection, warehouse: Path) -> dict:
             "silver_runs": silver, "latest_gold_run": gold[0] if gold else None}
 
 
-def collect(warehouse: Path, ml_results: Path) -> dict:
+def collect(warehouse: Path, ml_results: Path, eval_results: Path = DEFAULT_EVAL) -> dict:
     con = duckdb.connect(str(warehouse), read_only=True)
     try:
         profile = figures.dispute_profile(con)
         categories = figures.by_reason_category(con)
-        ml = ml_rates(ml_results)
+        ml, ev = ml_rates(ml_results), eval_rates(eval_results)
+        ranking = workload.workflow_ranking(con, categories, profile)
+        reach = workload.channel_reach(con, profile)
+        demand = figures.demand(con)
+        cm = cost_model(profile, categories, ml, ev, reach, ranking["contact_center"]["agent_hours_per_year"])
+        fcr = figures.fcr_by_reason(con)
+        all_reasons = next((r for r in fcr if r["contact_reason"] == "(all reasons)"), None)
         return {
             "provenance": provenance(con, warehouse),
             "workflows": figures.workflow_table(con),
             "dispute_profile": profile,
-            "fcr_by_reason": figures.fcr_by_reason(con),
+            "fcr_by_reason": fcr,
             "fcr_by_reason_category": categories,
             "interaction_channel_mix": figures.interaction_channel_mix(con),
             "breakdowns": figures.breakdowns(con),
-            "demand": figures.demand(con),
+            "demand": demand,
             "data_limits": diagnostics(con),
             "ml": ml,
-            "cost_model": cost_model(profile, categories, ml),
+            "eval": ev,
+            "workflow_ranking": ranking,
+            "channel_reach": reach,
+            "cost_model": cm,
+            "handoff_queue": workload.handoff_queue(con, demand, cm["projections"],
+                                                    all_reasons and all_reasons["duration_mean_seconds"]),
+            "thresholds": threshold_analysis(con),
+            "satisfaction": satisfaction(con),
         }
     finally:
         con.close()
@@ -100,8 +117,8 @@ def chart_files(ev: dict) -> dict[str, dict]:
         "dispute_breakdowns.json": _chart(
             "Unrecognized-charge complaints by country and segment", "complaints",
             "complaints in the group; customers in the group for the per-1,000 rate", ev["breakdowns"], p),
-        "cost_model.json": _chart("Cost per resolution and automation savings (projection)", "hours and USD",
-                                  "see inputs", ev["cost_model"], p),
+        "cost_model.json": _chart("Cost per resolution and automation savings (projection)",
+                                  "agent-hours per year and USD", "see inputs", ev["cost_model"], p),
         "data_limits.json": _chart("Where the supplied data is uniform, templated or unlinkable", "various",
                                    "see each entry", ev["data_limits"], p),
     }
@@ -115,6 +132,10 @@ def write_outputs(ev: dict, out: Path) -> list[Path]:
         path.write_text(json.dumps(payload, indent=2, ensure_ascii=False, default=_json_default) + "\n",
                         encoding="utf-8")
         written.append(path)
+    path = out / "insights.json"
+    path.write_text(json.dumps(insights(ev), indent=2, ensure_ascii=False, default=_json_default) + "\n",
+                    encoding="utf-8")
+    written.append(path)
     report = out / "why-this-workflow.md"
     report.write_text(render_report(ev), encoding="utf-8")
     written.append(report)
@@ -125,6 +146,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Cautela workflow evidence")
     parser.add_argument("--warehouse", required=True, help="warehouse with gold built")
     parser.add_argument("--ml-results", default=str(DEFAULT_ML), help="ml/reports/results.json")
+    parser.add_argument("--eval-results", default=str(DEFAULT_EVAL), help="eval/results.json")
     parser.add_argument("--out", default=str(DEFAULT_OUT), help="output directory")
     args = parser.parse_args(argv)
     if hasattr(sys.stdout, "reconfigure"):
@@ -135,7 +157,7 @@ def main(argv: list[str] | None = None) -> int:
               file=sys.stderr)
         return 1
     try:
-        ev = collect(warehouse, Path(args.ml_results))
+        ev = collect(warehouse, Path(args.ml_results), Path(args.eval_results))
     except (duckdb.Error, FileNotFoundError, KeyError) as exc:
         print(f"analytics failed: {exc}", file=sys.stderr)
         return 1
