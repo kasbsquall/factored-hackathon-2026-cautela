@@ -235,6 +235,8 @@ The seven bugs were fixed and every configuration rerun on the same suite at com
 
 The label rule of the ML section, run as the disposition of the same agent, gets 1,432 correct outcomes, 476 safe automated resolutions and 5 unsafe outcomes. Not fixed: wrong-charge writes when the customer confirms a wrong top charge, and a day of the month read as an amount by the parser (needs a retrain).
 
+Repeated runs of the high-risk categories (injection, unauthorized, adversarial, identity and human_request; 242 conversations, three runs each for rules, learned and llm) ended every conversation with the same outcome and handoff reason in all runs, with no unsafe outcome, for USD 0.09 of LLM spend (`make eval-repeats`, `eval/results_repeats.json`, section "Repeated runs of the high-risk categories" in `eval/report.md`). Three runs still allow up to 1.6% of these conversations to change between runs (95% interval).
+
 ### Final end-to-end result on eval_fresh (runs once at code freeze)
 
 Not run yet. It runs once per configuration at code freeze; results will be added here unchanged.
@@ -302,6 +304,7 @@ The organizer data is copied from its S3 bucket into `data/raw` with `make mirro
 | LLM rung (paid, capped) | `uv run python -m ml.evaluate_llm` | `ml/reports/results_llm.md` |
 | Model probe (paid) | `LLM_PROVIDER=openai LLM_MODEL=gpt-6-luna uv run python -m ml.probe_llm --n 50 --parallel 4` | `ml/reports/probe/` |
 | End-to-end | `make eval-suite`, `make eval`, `make eval-llm` (paid, USD 3.00 cap), `uv run python -m eval.repeat --runs 2`, `uv run python -m eval.report_tables` | `eval/results.json`, `eval/report.md` |
+| High-risk repeats (paid for llm, USD 0.50 cap) | `make eval-repeats` | `eval/results_repeats.json` |
 | eval_fresh | see the eval_fresh section above | `eval/fresh/results.json` |
 | Demo bundle and release | `make demo-seed`, `make demo-artifacts`, `make release` | `deploy/demo-bundle.lock.json`, `release/` |
 
