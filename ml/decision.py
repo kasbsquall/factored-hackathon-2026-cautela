@@ -102,6 +102,20 @@ def decide(ranked: list[tuple[str, float]], act_score: float, abstain_score: flo
     return {"decision": "clarify", "top_k": top_k}
 
 
+def deployed_abstain_rule(decided: dict, ranked: list[tuple[str, float]], probabilities: dict[str, float],
+                          k: int = K_CLARIFY) -> tuple[dict, str | None]:
+    """The one change the service makes to a fitted decision, and the note it records.
+
+    An abstention stands only when no_match is also the most likely class. Otherwise the service asks the customer
+    to pick among the top ``k`` charges. So P(no_match) >= t_abstain still blocks acting, and a hand-off also needs
+    no_match to be the argmax. The service (agent/orchestrator/disposition.py) and the component evaluation of the
+    deployed decision (ml/evaluate_baselines.py) both call this function.
+    """
+    if decided["decision"] == "abstain" and ranked and max(probabilities, key=probabilities.get) != "no_match":
+        return {"decision": "clarify", "top_k": [t for t, _ in ranked[:k]]}, "abstain_to_clarify"
+    return decided, None
+
+
 def _rates(records: list[dict], acts: list[float], abstains: list[float], policy: DecisionPolicy) -> tuple[float, float]:
     correct = unsafe = 0
     for r, a, b in zip(records, acts, abstains):

@@ -26,7 +26,7 @@ from sklearn.metrics import log_loss
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
-from ml.decision import DecisionPolicy, _require_split, decide, search_policy
+from ml.decision import DecisionPolicy, _require_split, decide, deployed_abstain_rule, search_policy
 from ml.features.pairwise import FEATURE_NAMES, candidate_features
 from ml.rankers.protocol import coerce_features
 
@@ -132,3 +132,27 @@ class DispositionDecider:
         policy, info = search_policy(records, pv[:, cls_idx["match"]].tolist(), pv[:, cls_idx["no_match"]].tolist(),
                                      max_unsafe_rate)
         return cls(model, policy, best), {"model_selection_val_log_loss": selection, **info}
+
+
+class DeployedDecider:
+    """What the service decides: a fitted decider followed by ``ml.decision.deployed_abstain_rule``.
+
+    Same ``decide_case`` shape as the other deciders, so ``ml/evaluate_baselines.py`` scores the deployed decision
+    on the same cases as the fitted one.
+    """
+
+    def __init__(self, inner: DispositionDecider):
+        self.inner, self.policy = inner, inner.policy
+        self.name = f"{inner.name}+deployed_abstain_rule"
+
+    def decide_case(self, inp: dict, candidates: list[dict], ranked: list[tuple[str, float]]) -> tuple[float, dict]:
+        conf, decided = self.inner.decide_case(inp, candidates, ranked)
+        probabilities = {str(c): float(v) for c, v in self.inner.proba(inp, candidates, ranked).items()}
+        return conf, deployed_abstain_rule(decided, ranked, probabilities, self.policy.k)[0]
+
+    def with_floor(self, floor: float) -> "DeployedDecider":
+        return DeployedDecider(self.inner.with_floor(floor))
+
+    def params(self) -> dict:
+        return {**self.inner.params(), "abstain_rule": "abstain only when P(no_match) >= t_abstain and no_match is "
+                                                       "the most likely class; otherwise clarify with the top k"}
