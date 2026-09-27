@@ -64,3 +64,15 @@ eval:  ## rules and learned configurations, compliant and attentive customer: ev
 
 eval-llm:  ## llm configuration plus two repeated runs on the variance subset (paid, capped)
 	uv run python -m eval.run --configs llm --variance-runs 2 --workers 6
+
+# Update and freshness test on organizer data (data_engineering/freshness/). Copies data_backup_20260831/ (earlier
+# state) and data/ (current state) from the .env bucket into the git-ignored data/freshness/ (about 1.9 GB), loads
+# one after the other into a scratch warehouse, checks it against a single load, and writes the committed report
+# data_engineering/reports/freshness_backup_vs_current.md. About 30 minutes on a laptop.
+.PHONY: freshness-demo freshness-status
+
+freshness-demo:  ## update test: earlier delivery state, then the current one, into the same warehouse
+	uv run python -m data_engineering.freshness.demo
+
+freshness-status:  ## freshness of TARGET against the policy; exit code 1 when a table or gold is stale
+	uv run python -m data_engineering.freshness.status --target $(TARGET)

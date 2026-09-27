@@ -60,15 +60,29 @@ def _keys(r: dict) -> list[str]:
 
 
 def _update(r: dict) -> list[str]:
+    cadence = {t: x["partitioning"] for t, x in r["freshness_after"]["tables"].items()}
     rows = []
     for t, s in r["run_after"]["tables"].items():
         f, rw, rt, hwm = s["files"], s["rows"], s["retracted"] or {}, s["high_water_mark"]
-        rows.append([t, f["discovered"], f["new"], f["rewritten"], f["already_loaded"], rw["bronze_in"],
-                     rt.get("silver_rows", 0), rw["replayed"], rw["quarantined"], rw["silver_total"],
-                     f"{_n(hwm['before'])} to {_n(hwm['after'])}", len(s["drift_events"])])
-    return _table(["table", "files found", "new", "rewritten", "unchanged, not read", "rows read",
-                   "silver rows withdrawn", "replayed", "quarantined", "silver rows after", "high-water mark",
-                   "drift events"], rows)
+        # a snapshot table's watermark is its file name, which says nothing about time
+        mark = f"{_n(hwm['before'])} to {_n(hwm['after'])}" if cadence.get(t) == "daily" else "-"
+        rows.append([t, f["discovered"], f["new"], f["rewritten"], f["already_loaded"], f["missing_from_source"],
+                     rw["bronze_in"], rt.get("silver_rows", 0), rw["replayed"], rt.get("quarantine_rows", 0),
+                     rw["quarantined"], rw["silver_total"], mark, len(s["drift_events"])])
+    return _table(["table", "files found", "new", "rewritten", "unchanged, not read", "gone from source",
+                   "rows read", "silver rows withdrawn", "replayed", "quarantine rows withdrawn",
+                   "quarantined", "silver rows after", "high-water mark", "drift events"], rows)
+
+
+def _quarantine(r: dict) -> list[str]:
+    lines = []
+    for label, key in (("Earlier state", "run_before"), ("Update", "run_after")):
+        parts = [f"`{t}` {_n(s['rows']['quarantined'])} ({', '.join(f'{k} {v:,}' for k, v in s['quarantine_by_reason'].items())})"
+                 for t, s in r[key]["tables"].items() if s["rows"]["quarantined"]]
+        lines.append(f"- {label}: " + ("; ".join(parts) if parts else "no row quarantined"))
+    withdrawn = sum((s["retracted"] or {}).get("quarantine_rows", 0) for s in r["run_after"]["tables"].values())
+    lines.append(f"- Quarantine rows withdrawn with the files they came from: {_n(withdrawn)}")
+    return lines + [""]
 
 
 def _drift(r: dict) -> list[str]:
@@ -116,6 +130,64 @@ def _equivalence(r: dict) -> list[str]:
         ["object", "rows, updated warehouse", "rows, one-load warehouse", "equal"], rows)
 
 
+def _meaning(r: dict) -> list[str]:
+    files, after = r["files"], r["run_after"]["tables"]
+    shared = sum(f["shared_paths"] for f in files.values())
+    changed = sum(f["changed_content"] for f in files.values())
+    same_bytes_reloaded = sorted(t for t, f in files.items() if f["identical_content"] and after[t]["files"]["rewritten"])
+    gone = sum(f["only_before"] for f in files.values())
+    eq = r.get("equivalence") or {}
+    equal = sum(1 for v in eq.values() if v["equal"])
+    replayed = sum(s["rows"]["replayed"] or 0 for s in after.values())
+    keys = [k for k in r["key_changes"].values() if k]
+    keys_before, withdrawn = sum(k["keys_before"] for k in keys), sum(k["withdrawn"] for k in keys)
+    only_now = sorted(t for t, f in files.items() if not f["files_before"] and f["files_after"])
+    quarantined_before = r["run_before"]["totals"]["quarantined"]
+    lags = {t: x.get("lag_vs_dataset_clock_days") for t, x in r["freshness_before"]["tables"].items()
+            if x.get("lag_vs_dataset_clock_days")}
+    lag_text = ("; ".join(f"`{t}` was {n:,} days behind the newest daily partition before the update" for t, n in
+                          sorted(lags.items())) + ", and 0 after it") if lags else "no daily table lagged the others"
+    lines = [
+        "`data_backup_20260831/` is an earlier generation of the dataset, not an incremental predecessor of `data/`. "
+        f"Of {shared:,} file paths present in both states, {changed:,} hold different bytes; {withdrawn:,} of the "
+        f"{keys_before:,} silver primary keys of the earlier state do not exist in the current one; "
+        f"{_n(quarantined_before)} rows of the earlier state fail the contracts, which follow the current delivery; "
+        f"and {', '.join(only_now) or 'no table'} exist only in the current state. A real daily increment would add "
+        "a few partitions and rewrite a few files; this test rewrites almost everything at once.",
+        "",
+        "What it shows:",
+        "",
+        f"- Change detection works with the delivery's own file sizes and upload times (S3 LastModified, kept by the "
+        f"copy into the landing directory): every file whose size or time changed was read again ({_n(r['run_after']['totals']['files_rewritten'])} rewritten, "
+        f"{_n(r['run_after']['totals']['files_new'])} new), and a rerun read nothing.",
+        "- Withdrawing a rewritten file's rows works at full volume, including quarantine: rows quarantined from the "
+        "earlier generation left with their files.",
+        f"- The updated warehouse equals a warehouse loaded once from the current state: {equal} of {len(eq)} "
+        "compared objects (bronze, silver, gold, quarantine and the current file ledger), ignoring only run ids and "
+        "ingestion times." if eq else "- The one-load comparison was skipped (--no-baseline).",
+        "- Gold fails closed: after the rewrite every materialized gold table was rebuilt in full, and gold reported "
+        "stale between the silver update and the gold run.",
+        f"- The freshness status separates the calendar from the dataset clock: {lag_text}.",
+        "",
+        "What it does not show:",
+        "",
+        f"- Replay of an older version from another file: every file of a table was rewritten, so no key had a version "
+        f"left elsewhere ({replayed} rows replayed). That path is covered on the synthetic fixture in "
+        "`tests/test_freshness.py`.",
+        "- A realistic increment (new partitions plus a few corrected files): also covered only on the fixture "
+        "(`tests/test_incremental.py`, `tests/test_freshness.py`).",
+        f"- Removal of files that disappear from the source: no path existed only in the earlier state ({gone}), "
+        "and the pipeline keeps the rows of such files by design.",
+        "- Whether either generation is right. Contracts follow the current delivery; values of the earlier "
+        "generation outside the contract lists are quarantined or reported, not mapped.",
+    ]
+    if same_bytes_reloaded:
+        lines.append(f"- Content-level change detection: {', '.join(same_bytes_reloaded)} had identical bytes in both "
+                     "states but a new upload time, so they were reloaded (the result is the same, the run pays for "
+                     "the reload).")
+    return lines + [""]
+
+
 def render(r: dict) -> str:
     before, after, rerun = r["run_before"]["totals"], r["run_after"]["totals"], r["rerun"]["totals"]
     total_s = sum(r["timings_s"].values())
@@ -130,6 +202,9 @@ def render(r: dict) -> str:
         f"Generated by `make freshness-demo` (`uv run python -m data_engineering.freshness.demo`), run started "
         f"{r['started_at'][:19]} UTC, {total_s / 60:,.1f} minutes in total. Tables: {', '.join(r['tables'])}.",
         "",
+        "## What this test shows, and what it does not",
+        "",
+        *_meaning(r),
         "## Method",
         "",
         "1. Both states are copied from the bucket into a git-ignored cache, keeping each object's LastModified as "
@@ -158,6 +233,9 @@ def render(r: dict) -> str:
         f"{_n(after['silver_total'])} rows in silver.",
         "",
         *_update(r),
+        "Quarantine:",
+        "",
+        *_quarantine(r),
         "Drift events reported (they never stop a run):",
         "",
         *_drift(r),
@@ -183,7 +261,9 @@ def render(r: dict) -> str:
         f"{_n(rerun['bronze_in'])}; silver rows inserted {_n(rerun['inserted'])}, updated {_n(rerun['updated'])}. "
         f"Between the silver rerun and the gold rerun, gold was {stale_between['status']} "
         f"(older than silver: {_n(stale_between['gold_older_than_silver'])}). Gold rerun modes: "
-        f"{', '.join(gold_rerun_modes)}.",
+        f"{', '.join(gold_rerun_modes)}. A silver run that loads nothing still counts as a newer silver run, so "
+        "the tool repository would refuse to start until gold runs again: conservative, and cheap because gold then "
+        "skips every table.",
         "",
         "## Updated warehouse against a single load of the current state",
         "",
