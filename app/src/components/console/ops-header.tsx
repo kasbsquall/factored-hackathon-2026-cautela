@@ -22,8 +22,9 @@ const DEMO_NOTE = "The service runs on a demo date, the date the test data is se
 
 export function OpsHeader() {
   const path = usePathname();
-  const clock = useDemoClock();
-  const demoDate = clock && CLOCKED.some((p) => path.startsWith(p)) ? utcStamp(clock).split(",")[0] : null;
+  const clocked = CLOCKED.some((p) => path.startsWith(p));
+  const clock = useDemoClock(clocked);
+  const demoDate = clock && clocked ? utcStamp(clock).split(",")[0] : null;
   return (
     <>
       <a href="#main" className="skip-link">Skip to content</a>
