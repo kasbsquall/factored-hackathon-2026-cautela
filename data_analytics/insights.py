@@ -18,7 +18,8 @@ def projection_range(cm: dict) -> dict:
     for p in cm["projections"]:
         m = _money_at(p, CENTRAL_HOURLY_COST_USD)
         rows.append({"handling": p["scenario"].split(":")[0], "reach": p["reach"], "reach_share": p["reach_share"],
-                     "rate": p["rate"], "safe_automated_resolution_rate": p["safe_automated_resolution_rate"],
+                     "rate": p["rate"], "rate_label": p["rate_label"],
+                     "safe_automated_resolution_rate": p["safe_automated_resolution_rate"],
                      "disputes_routed_per_year": p["disputes_routed_per_year"],
                      "hours_saved_per_year": p["hours_saved_per_year"],
                      "human_hours_left_per_year": p["human_hours_left_per_year"],
@@ -97,7 +98,7 @@ def insights(ev: dict) -> dict:
                          "dispute_resolution_satisfaction": sat["complaints"]["by_is_dispute"]},
         "assumptions": [
             f"USD {CENTRAL_HOURLY_COST_USD:g} per agent-hour is an illustrative placeholder "
-            f"({inputs['hourly_cost_usd']['source']}).",
+            f"({inputs['hourly_cost_usd']['note']}).",
             inputs["call_center_routed_to_flow"]["note"],
             inputs["failed_attempt_human_minutes"]["note"],
             "Handling time per dispute is the Complaint contact-reason mean (complaints cannot be linked to contacts).",

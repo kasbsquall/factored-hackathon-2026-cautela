@@ -8,7 +8,11 @@ import styles from "./business.module.css";
 
 /** Four significant digits for token costs: 0.0005812 (the unit, USD, goes under the figure). */
 const tiny = (value: number) => new Intl.NumberFormat("en-US", { maximumSignificantDigits: 4 }).format(value);
-const RATE_NAME: Record<string, string> = { conservative: "conservative", optimistic: "optimistic" };
+/** The report's rate keys, named as ml/ and eval/ name them. */
+const RATE_NAME: Record<string, string> = {
+  conservative: "end-to-end safe automated resolution, deployed",
+  optimistic: "safe act rate (component)",
+};
 const HANDLING_NAME: Record<string, string> = { low: "low", central: "central", high: "high" };
 
 function monthName(month: string): string {
@@ -29,7 +33,7 @@ function End({ title, h, assumption }: { title: string; h: Headline; assumption?
       <p className={`${styles.endMoney} num`}>{usd(h.net_savings_per_year_usd)} net per year</p>
       <dl className={styles.endFacts}>
         <div><dt>Reach</dt><dd>{pct(h.reach_share)} of disputes ({reach.name})</dd></div>
-        <div><dt>Safe automated resolution</dt><dd>{pct(h.safe_automated_resolution_rate)}, {RATE_NAME[h.rate] ?? h.rate} rate</dd></div>
+        <div><dt>Automation rate</dt><dd>{pct(h.safe_automated_resolution_rate)}, {RATE_NAME[h.rate] ?? h.rate}</dd></div>
         <div><dt>Share of contact-center hours</dt><dd>{pct(h.share_of_contact_center_hours, 2)}</dd></div>
         <div><dt>Handoffs to a person</dt><dd>{int(Math.round(h.handoffs_per_year))} per year</dd></div>
       </dl>
@@ -301,15 +305,12 @@ export function Satisfaction() {
   );
 }
 
-/** The report writes the placeholder note twice ("... placeholder (illustrative placeholder)."): shown once. */
-const tidy = (text: string) => text.replace(/ \(illustrative placeholder\)\.$/, ".");
-
 export function Assumptions() {
   return (
     <section className={styles.notes} aria-labelledby="assumptions">
       <h3 id="assumptions" className={styles.h3}>Assumptions behind the business figures</h3>
       <ol>
-        {ASSUMPTIONS.map((a) => <li key={a}>{tidy(a.charAt(0).toUpperCase() + a.slice(1))}</li>)}
+        {ASSUMPTIONS.map((a) => <li key={a}>{a.charAt(0).toUpperCase() + a.slice(1)}</li>)}
       </ol>
     </section>
   );

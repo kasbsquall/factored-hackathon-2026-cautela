@@ -60,10 +60,12 @@ describe("InsightsView", () => {
     expect(chosen).toHaveTextContent("chosen");
     expect(chosen).toHaveTextContent("278.3 h");
     expect(screen.getByText(/Disputes rank 7 of 7 by these hours/)).toHaveTextContent("chosen for verifiability");
-    expect(screen.getByText("45.5")).toBeInTheDocument();
+    expect(screen.getByText("50.9")).toBeInTheDocument();
     expect(screen.getByText("212.3")).toBeInTheDocument();
-    expect(screen.getByText("USD 455 net per year")).toBeInTheDocument();
+    expect(screen.getByText("USD 509 net per year")).toBeInTheDocument();
     expect(screen.getByText("USD 2,123 net per year")).toBeInTheDocument();
+    expect(screen.getByText(/56\.9%, safe act rate \(component\)/)).toBeInTheDocument();
+    expect(screen.queryByText(/placeholder \(illustrative placeholder\)/)).toBeNull();
     expect(screen.getByText("not defined")).toBeInTheDocument();
     expect(screen.getByText(/the score threshold adds nothing beyond the flag/)).toBeInTheDocument();
     expect(screen.getByText(/exists for 471 of 12,297 disputes/)).toBeInTheDocument();

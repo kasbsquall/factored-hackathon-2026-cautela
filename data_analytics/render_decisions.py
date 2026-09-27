@@ -262,7 +262,7 @@ def cost_section(ev: dict) -> str:
     proj = []
     for p in central:
         m = next(x for x in p["money"] if x["hourly_cost_usd"] == CENTRAL_HOURLY_COST_USD)
-        proj.append([p["reach"], f"{p['rate']} ({rate(p['safe_automated_resolution_rate'])})",
+        proj.append([p["reach"], f"{p['rate']}: {p['rate_label']} ({rate(p['safe_automated_resolution_rate'])})",
                      n(p["disputes_routed_per_year"]), n(p["hours_saved_per_year"]), n(p["human_hours_left_per_year"]),
                      rate(p["share_of_contact_center_hours"], 2), usd(p["llm_usd_per_year"]),
                      usd_year(m["net_savings_per_year_usd"])])
@@ -295,8 +295,9 @@ def cost_section(ev: dict) -> str:
             f"{lo['reach'].split(' (')[0]}) to {n(hi['hours_saved_per_year'])} ({hi['rate']} rate, "
             f"{hi['reach'].split(' (')[0]}), {rate(lo['share_of_contact_center_hours'], 2)} to "
             f"{rate(hi['share_of_contact_center_hours'], 2)} of all contact-center agent-hours. The conservative rate "
-            "is the deployed configuration's end-to-end result on simulated conversations; the optimistic rate is the "
-            "decision component alone on the split used for error analysis. Labor savings at this scale are small; "
+            "is the deployed configuration's end-to-end safe automated resolution on simulated conversations; the "
+            "optimistic rate is the safe act rate (component), the decision component alone on the split used for "
+            "error analysis. Labor savings at this scale are small; "
             "section 1 gives the reason for the choice.")
     text += ["### Sensitivity: every handling scenario, reach and rate", sens_table,
              "Reading the break-even column: a bot conversation (model calls, hosting, review of automated outcomes) "

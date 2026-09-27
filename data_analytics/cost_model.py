@@ -8,8 +8,9 @@ Every input carries a `kind`:
 
 Scope: human intake handling only. Back-office investigation time and hosting are not in the data, so they are
 left out. The projection is a range over three independent choices:
-  automation rate   conservative: end-to-end safe automated resolution of the deployed configuration
-                    (eval/results.json); optimistic: the decision component alone (ml/reports/results.json)
+  automation rate   conservative: end-to-end safe automated resolution of the deployed configuration after the
+                    fix round (eval/results_after_fix.json); optimistic: the safe act rate of the decision
+                    component alone (ml/reports/results.json)
   channel reach     the App and Web share of dispute intake (measured); and, as an assumption, that share plus the
                     call-center disputes if the bank routes them to the same flow
   handling time     low, central and high human minutes per dispute (measured proxies and one assumption)
@@ -26,12 +27,15 @@ from pathlib import Path
 ILLUSTRATIVE_HOURLY_COST_USD = (5.0, 10.0, 20.0)
 CENTRAL_HOURLY_COST_USD = 10.0
 # The public demo runs the learned disposition with gpt-6-luna for extraction and replies (deploy/README.md, "The
-# model"); in eval/results.json that is configuration `llm`, configuration (c) of eval/report.md.
+# model"); in eval/results_after_fix.json that is configuration `llm`, configuration (c) of eval/report.md.
 DEPLOYED_EVAL_CONFIG = "llm"
+# What each end of the range is called in the reports and on /insights, matching ml/ and eval/.
+RATE_LABELS = {"conservative": "end-to-end safe automated resolution (deployed configuration)",
+               "optimistic": "safe act rate (component)"}
 
 
 def ml_rates(results_path: str | Path) -> dict:
-    """Safe automated resolution of the proposed decision component, read from ml/reports/results.json."""
+    """Safe act rate of the proposed decision component, read from ml/reports/results.json."""
     data = json.loads(Path(results_path).read_text(encoding="utf-8"))
     name = data["proposed_system"]
     s = data["systems"][name]["summary"]
@@ -44,7 +48,7 @@ def ml_rates(results_path: str | Path) -> dict:
 
 
 def eval_rates(eval_path: str | Path, config: str = DEPLOYED_EVAL_CONFIG) -> dict:
-    """End-to-end rates and measured LLM spend of one configuration, read from eval/results.json."""
+    """End-to-end rates and measured LLM spend of one configuration, read from eval/results_after_fix.json."""
     data = json.loads(Path(eval_path).read_text(encoding="utf-8"))
     c = data["configs"][config]
     s, cost = c["summary"], c["cost"]
@@ -114,8 +118,8 @@ def build_inputs(profile: dict, categories: list[dict], ml: dict, ev: dict, reac
             f"{ev['safe_automated_resolutions']} / {ev['in_scope_conversations']} simulated conversations"),
         "safe_automated_resolution_optimistic": _inp(
             ml["safe_automated_resolution_rate"], "share of cases", "cited", ml["source"],
-            f"decision component only, {ml['n_cases']} generated cases of the {ml['split']} split, the split used "
-            "for error analysis"),
+            f"safe act rate (component): decision component only, {ml['n_cases']} generated cases of the "
+            f"{ml['split']} split, the split used for error analysis"),
         "llm_usd_per_conversation": _inp(
             ev["llm_usd_per_conversation"], "USD per conversation", "cited", ev["source"],
             f"llm_cost_usd_total {ev['llm_cost_usd_total']} / {ev['conversations']} conversations of run "
@@ -179,6 +183,7 @@ def projections(inputs: dict, cc_hours_per_year: float | None) -> list[dict]:
             for rate_name, sar in rates:
                 saved = routed * sar * minutes / 60
                 out.append({"scenario": name, "reach": reach, "reach_share": share, "rate": rate_name,
+                            "rate_label": RATE_LABELS[rate_name],
                             "safe_automated_resolution_rate": sar, "human_minutes_per_dispute": round(minutes, 2),
                             "disputes_routed_per_year": round(routed, 1),
                             "safe_automated_per_year": round(routed * sar, 1),

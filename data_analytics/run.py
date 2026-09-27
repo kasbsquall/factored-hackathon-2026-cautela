@@ -28,7 +28,7 @@ from data_analytics.thresholds import threshold_analysis
 
 DEFAULT_OUT = Path(__file__).resolve().parent / "reports"
 DEFAULT_ML = Path("ml/reports/results.json")
-DEFAULT_EVAL = Path("eval/results.json")
+DEFAULT_EVAL = Path("eval/results_after_fix.json")
 
 
 def _json_default(value):
@@ -146,7 +146,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Cautela workflow evidence")
     parser.add_argument("--warehouse", required=True, help="warehouse with gold built")
     parser.add_argument("--ml-results", default=str(DEFAULT_ML), help="ml/reports/results.json")
-    parser.add_argument("--eval-results", default=str(DEFAULT_EVAL), help="eval/results.json")
+    parser.add_argument("--eval-results", default=str(DEFAULT_EVAL), help="eval/results_after_fix.json")
     parser.add_argument("--out", default=str(DEFAULT_OUT), help="output directory")
     args = parser.parse_args(argv)
     if hasattr(sys.stdout, "reconfigure"):

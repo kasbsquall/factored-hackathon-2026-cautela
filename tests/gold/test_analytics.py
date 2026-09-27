@@ -18,7 +18,7 @@ EVAL_USD, EVAL_CONVERSATIONS, EVAL_SAFE = 0.08, 400, 120
 
 @pytest.fixture()
 def eval_results(tmp_path):
-    """A minimal eval/results.json with the shape eval/run.py writes; values are test inputs, not results."""
+    """A minimal eval/results_after_fix.json with the shape eval/run.py writes; values are test inputs, not results."""
     config = {"run_id": "llm-test", "description": "test", "summary": {
         "conversations": EVAL_CONVERSATIONS,
         "safe_automated_resolution": {"k": EVAL_SAFE, "n": 300, "rate": 0.4, "ci95": [0.35, 0.46]},
@@ -121,7 +121,7 @@ def test_cost_model_arithmetic_and_labels(evidence):
     assert all(v["value"] is None for v in inputs.values() if v["kind"] == "not_defined")
     assert inputs["hourly_cost_usd"]["kind"] == "assumption"
     assert inputs["call_center_routed_to_flow"]["kind"] == "assumption"
-    assert inputs["safe_automated_resolution_conservative"]["value"] == 0.4  # eval/results.json, deployed config
+    assert inputs["safe_automated_resolution_conservative"]["value"] == 0.4  # eval/results_after_fix.json, deployed config
     assert inputs["safe_automated_resolution_optimistic"]["value"] == 0.5  # ml/reports/results.json
     bot = EVAL_USD / EVAL_CONVERSATIONS
     assert inputs["llm_usd_per_conversation"]["value"] == round(bot, 7)
@@ -239,6 +239,9 @@ def test_outputs_state_unit_and_denominator(evidence, tmp_path):
         assert ins[key], key
     assert ins["cost_per_resolution"]["llm_usd_per_safe_automated_resolution"] == round(EVAL_USD / EVAL_SAFE, 7)
     assert ins["provenance"]["eval_run_id"] == "llm-test"
+    assert "placeholder (illustrative placeholder)" not in ins["assumptions"][0]
+    labels = {r["rate"]: r["rate_label"] for r in ins["projection_range"]["rows"]}
+    assert labels["optimistic"] == "safe act rate (component)"
 
 
 def test_cli_refuses_to_write_fixture_numbers_into_the_committed_reports(gold_db, ml_results, tmp_path,

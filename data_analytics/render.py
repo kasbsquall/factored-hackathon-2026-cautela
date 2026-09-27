@@ -1,6 +1,6 @@
 """Render why-this-workflow.md from the collected evidence. Every number printed here comes from `ev`, which
-`run.collect` filled from warehouse queries, eval/results.json and ml/reports/results.json; nothing is typed in by
-hand."""
+`run.collect` filled from warehouse queries, eval/results_after_fix.json and ml/reports/results.json; nothing is
+typed in by hand."""
 
 from __future__ import annotations
 
@@ -63,8 +63,8 @@ def _headline(ev: dict) -> str:
             f"({usd_year(m_lo['net_savings_per_year_usd'])} per year) with the deployed configuration's end-to-end "
             f"rate of {rate(lo['safe_automated_resolution_rate'])} on App and Web disputes only, up to "
             f"{n(hi['hours_saved_per_year'])} agent-hours per year ({usd_year(m_hi['net_savings_per_year_usd'])}) "
-            f"with the component rate of {rate(hi['safe_automated_resolution_rate'])} and call-center disputes "
-            "routed to the flow (an assumption). Failed attempts are charged at full human cost plus tokens. "
+            f"with the component safe act rate of {rate(hi['safe_automated_resolution_rate'])} and call-center "
+            "disputes routed to the flow (an assumption). Failed attempts are charged at full human cost plus tokens. "
             "These are offline projections; no saving was measured in production (section 9).")
     hq = ev["handoff_queue"]["scenarios"]
     if hq:
@@ -282,11 +282,12 @@ def render_report(ev: dict) -> str:
         "## 10. Where the data is uniform or templated, and what that means", _limits_section(ev),
         _conclusion(ev),
         "## Reproduce",
-        f"```bash\nmake gold TARGET=data/{p['warehouse']}\nmake analytics REPORT_WAREHOUSE=data/{p['warehouse']}\n```",
-        "The warehouse comes from the bronze/silver pipeline over the organizer data (`make pipeline-s3`, see "
-        "`data_engineering/README.md`). A fixture warehouse is refused for the committed reports directory. The "
-        "queries live in `data_analytics/` (`figures.py`, `workload.py`, `thresholds.py`, `satisfaction.py`, "
-        "`data_limits.py`); the cost model reads `eval/results.json` and `ml/reports/results.json` as committed. "
+        "```bash\nmake mirror\nmake pipeline-real\nmake gold-real\nmake analytics\n```",
+        f"The warehouse (`data/{p['warehouse']}`) comes from `make mirror` then `make pipeline-real` over the "
+        "organizer data (see `data_engineering/README.md`). A fixture warehouse is refused for the committed "
+        "reports directory. The queries live in `data_analytics/` (`figures.py`, `workload.py`, `thresholds.py`, "
+        "`satisfaction.py`, `data_limits.py`); the cost model reads `eval/results_after_fix.json` and "
+        "`ml/reports/results.json` as committed. "
         "`insights.json` next to this report carries the decision figures for the /insights page.",
     ]
     return "\n\n".join(parts) + "\n"
