@@ -7,15 +7,15 @@ Nothing of this project listens on a public interface, and no firewall rule is o
 
 | File | Purpose |
 |---|---|
-| `Dockerfile` | Python 3.12 slim image: runtime dependencies from `uv.lock` (mlflow and the dev group left out), `agent/`, `api/`, `ml/`, and the demo data. Build argument `CAUTELA_DATA=bundle` (default) copies the demo bundle after checking it against the lock; `CAUTELA_DATA=fixture` builds the synthetic fixture warehouse instead (CI, local checks). Runs as uid 10001 |
-| `Dockerfile.dockerignore` | Build-context allowlist, so `.env`, `data/`, `.venv/`, `eval/` and `app/` never reach the builder; the demo bundle and its lock are the only data allowed in |
+| `Dockerfile` | Python 3.12 slim image: runtime dependencies from `uv.lock` (mlflow and the dev group left out), `agent/`, `api/`, `ml/`, the handoff schema (`docs/schemas/handoff.schema.json`), and the demo data. Build argument `CAUTELA_DATA=bundle` (default) copies the demo bundle after checking it against the lock; `CAUTELA_DATA=fixture` builds the synthetic fixture warehouse instead (CI, local checks). Runs as uid 10001 |
+| `Dockerfile.dockerignore` | Build-context allowlist, so `.env`, `data/`, `.venv/`, `eval/` and `app/` never reach the builder; the demo bundle and its lock are the only data allowed in, plus the handoff schema from `docs/` |
 | `demo_select.py` | Picks one organizer customer per demo scenario and keeps it only if the orchestrator, with the learned model, plays the scenario to the expected outcome in Spanish and Portuguese. Writes the seed (git-ignored) with the demo clock |
 | `bundle.py` | Builds `deploy/demo-bundle/` (git-ignored): learned model, slim warehouse (`data_engineering/slice.py`), seed. Replays every scenario on the slim warehouse before writing the lock |
 | `demo-bundle.lock.json` | Committed. Size and sha256 of the four bundle files, the demo clock, the model name, the scenario names; no customer identifier |
 | `lock.py` | Standard-library check of a bundle against the lock; run in the image build and at every start |
 | `release.py` | `release/cautela-<sha>.tar.gz` (git archive of HEAD), `release/cautela-<sha>-demo-bundle.tar.gz` and `SHA256SUMS` |
 | `docker-compose.behind-proxy.yml` | Loopback port, read-only root, tmpfs `/tmp`, `cap_drop: ALL`, `no-new-privileges`, 640 MB and 0.75 CPU, no swap, healthcheck, `restart: unless-stopped`, one named volume |
-| `serve.py` | Container entry point: bundle verification and the learned-model gate, daily LLM cap, `llm_budget` and `demo_bundle` in `/health`, 30-minute demo reset, client address from the proxy |
+| `serve.py` | Container entry point: handoff schema check, bundle verification and the learned-model gate, daily LLM cap, `llm_budget` and `demo_bundle` in `/health`, 30-minute demo reset, client address from the proxy |
 | `.env.example` | Variable names for `deploy/.env` (git-ignored, never in the image or the tarball) |
 | `audit.sh` | Post-deploy audit: exposure, ceilings, hardening, secrets, `/health`, proxy and ACME path |
 | `vhost.conf.example` | OpenLiteSpeed virtual host: reverse proxy, `/.well-known/` from disk, security headers, TLS placeholders |
@@ -44,7 +44,9 @@ Nothing of this project listens on a public interface, and no firewall rule is o
   Only customers of the case builder's held-out `test` bucket were eligible, so the learned model never saw them
   while it was fitted or calibrated. Each one passed its scripted conversation in Spanish and Portuguese with the
   learned model and no language model (deterministic parser and reply templates) on the slim warehouse before the
-  bundle was locked. The deployed service parses with gpt-6-luna; those conversations were not run from here.
+  bundle was locked. The deployed service parses with gpt-6-luna. Running the scenarios against the public URL
+  after deploying is how the missing handoff schema was found (every handoff failed; fix `0c6fbeb`, tested by
+  `tests/deploy/test_release_contents.py`).
 - The demo clock starts at 2026-06-19T12:00Z, the day after the dataset's last transaction, at every start and
   every reset. It is stored in the seed and the lock; the charges are inside their claim windows only around it.
 - The learned disposition model (`learned_ranker_disposition`, about 0.8 MB). The service refuses to start unless
@@ -60,7 +62,8 @@ Nothing of this project listens on a public interface, and no firewall rule is o
 **Off**
 
 - Organizer data beyond the eight demo customers, the S3 pipeline, MLflow, the evaluation harness.
-- The frontend (`app/`). This runbook deploys the API only. The Next.js live mode reaches the API through its own
+- The frontend (`app/`) on this server. This runbook deploys the API only; the frontend is on Vercel
+  (https://cautela-eight.vercel.app). The Next.js live mode reaches the API through its own
   server-side proxy (`CAUTELA_API_URL`), so `CAUTELA_CORS_ORIGINS` matters only for browsers calling the API
   directly.
 - Any real banking system: the case store is the in-memory sandbox.
@@ -94,9 +97,9 @@ Nothing of this project listens on a public interface, and no firewall rule is o
   locally; the 640 MB ceiling kills and restarts the container if it is reached, rather than letting it swap.
 - The audit trail is emptied at every reset. It is demo evidence, not the retention the code describes.
 - Image: about 216 MB compressed, 920 MB on disk (scipy, scikit-learn, pyarrow and duckdb are most of it), measured
-  on the fixture image of 3647a2f. The bundle image adds 4.8 MB of data and drops the fixture build step; it has not
-  been built or measured yet (Docker Desktop was not running when it was written). Memory with the learned model
-  loaded was not measured either.
+  on the fixture image of 3647a2f. The bundle image adds 4.8 MB of data and drops the fixture build step; it is the
+  image the public demo runs, but its size and its memory with the learned model loaded are not recorded in this
+  repository.
 - The bundle ships pickles. `serve.py` checks the sha256 of every bundle file against the committed lock before it
   opens any of them, so a pickle that was not locked is never loaded. The lock is only as trustworthy as the commit
   that carries it.
@@ -144,7 +147,7 @@ scp release/cautela-$SHA.tar.gz release/cautela-$SHA-demo-bundle.tar.gz release/
 
 | File | Contents |
 |---|---|
-| `cautela-<sha>.tar.gz` | `git archive HEAD` of `pyproject.toml`, `uv.lock`, `agent/`, `api/`, `ml/`, `data_engineering/`, `deploy/` (the lock included), under `cautela-<sha>/`. No data, no model, no `.env` (checked) |
+| `cautela-<sha>.tar.gz` | `git archive HEAD` of `pyproject.toml`, `uv.lock`, `agent/`, `api/`, `ml/`, `data_engineering/`, `deploy/` (the lock included) and `docs/schemas/handoff.schema.json`, under `cautela-<sha>/`. No data, no model, no `.env` (checked) |
 | `cautela-<sha>-demo-bundle.tar.gz` | The four bundle files under `cautela-<sha>/deploy/demo-bundle/`: `models/learned.pkl`, `models/systems.pkl`, `warehouse.duckdb`, `demo_customers.json`. Organizer-derived: keep it off public places |
 | `SHA256SUMS` | sha256 of both tarballs |
 
@@ -203,8 +206,8 @@ curl -s http://127.0.0.1:8330/health; echo
 
 `/health` must show `"disposition_model": "learned_ranker_disposition:disposition_multinomial_logreg_C1"` and
 `"demo_bundle": {"verified": true, ...}` with the clock 2026-06-19. If the container restarts in a loop, `sudo docker
-logs --tail 20 cautela-api` shows `refusing to start:` and the reason (bundle missing or not matching the lock, or the
-model did not load). A build that stops at `demo bundle REJECTED` means the bundle tarball and the code tarball are
+logs --tail 20 cautela-api` shows `refusing to start:` and the reason (handoff schema missing, bundle missing or not
+matching the lock, or the model did not load). A build that stops at `demo bundle REJECTED` means the bundle tarball and the code tarball are
 from different builds: rebuild both on the laptop.
 
 Drop `sudo` before `docker` if your user is in the `docker` group. If the server is short of memory for the

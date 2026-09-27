@@ -1,12 +1,13 @@
 # Agent core: identity, permissions, policy, tools, audit and handoff
 
 This package holds every control that decides what Cautela may read or do. It is plain Python with pydantic
-contracts, so it runs and is tested without a web framework; a FastAPI layer can wrap `ToolService` later without
-moving any enforcement. The language model is treated as untrusted: it proposes tool calls, and this code decides.
+contracts, so it runs and is tested without a web framework; the FastAPI layer in `api/` wraps the orchestrator
+without moving any enforcement. The language model is treated as untrusted: it proposes tool calls, and this code
+decides.
 
 ```bash
 uv sync
-uv run pytest tests/agent                     # 236 tests on the synthetic fixture warehouse (gold built on a copy)
+uv run pytest tests/agent                     # tests on the synthetic fixture warehouse (gold built on a copy)
 uv run python -m agent.tools.export_schemas   # rewrite docs/schemas/tools/*.json from the contracts
 ```
 
@@ -29,7 +30,7 @@ Generate one with `python -c "import secrets; print(secrets.token_urlsafe(48))"`
 | `tools/faults.py` | Failure injection and bounded retries with backoff |
 | `service.py` | `ToolService`: the single entry point (guard, execute, verify, audit) |
 | `handoff.py` | Handoff builder validated against `docs/schemas/handoff.schema.json` |
-| `llm/` | Provider-agnostic LLM port: masking before any adapter, schema-checked extraction, usage and cost |
+| `llm/` | Provider-agnostic LLM port: masking before any adapter, schema-checked extraction, usage and cost, daily cap |
 
 ## Controls and the requirement each one answers
 
@@ -195,6 +196,8 @@ The service reaches a language model only through `LanguageModel`, implemented b
   invalid answer raises `LLMOutputError`, which the caller treats as low confidence. The output is a proposal,
   never a decision.
 - `reply(facts, lang)` masks the facts and asks for a message in Spanish or Portuguese that uses only them.
+- `translate(text, source_language)` masks the text and returns an English machine translation for reviewers
+  (`POST /conversations/{id}/translate`, see `api/README.md`).
 
 Masking is enforced in the port, not left to callers: adapters accept only a `MaskedPrompt`, which only the port
 can build after masking, and they raise `UnmaskedInputError` otherwise. `tests/agent/test_llm.py` sends a message
@@ -218,9 +221,18 @@ comes only from environment variables loaded from `.env`:
 
 Each call records trace id, provider, model, prompt version (`PROMPT_VERSION`), input and output tokens, latency
 and estimated cost in a `UsageLog`, and writes an audit record without the prompt text. Prices come from
-`agent/llm/prices.yaml`; every real provider row is a TODO with a null price until someone fills it from the
-official pricing page with its URL and date, so cost is reported as not defined until then. These variables
-still need to be added to the repository's `.env.example`.
+`agent/llm/prices.yaml`, each row with the official pricing URL and the date it was read (2026-09-25):
+gpt-6-luna USD 0.10 input and 0.50 output per million tokens, gpt-4o-mini 0.15 and 0.60, claude-haiku-4-5 1.00 and
+5.00, gemini-2.5-flash-lite 0.10 and 0.40; Ollama and the fake adapter cost 0. The Groq row is still a TODO with a
+null price, and a model with no row or a null price gets cost "not defined" (`price_unknown`), never a guess. The
+variables above are listed in the repository's `.env.example`.
+
+`llm/budget.py` caps calls and estimated spend per UTC day (`LLM_DAILY_MAX_CALLS`, default 2000;
+`LLM_DAILY_MAX_USD`, default 1.00; `LLM_BUDGET_FILE` keeps the counters across restarts). A refused call never
+reaches the provider, and the service falls back to the parser and templates. Only the deployed process
+(`deploy/serve.py`) and the paid evaluation scripts (`eval/budget.py`) wrap their adapter; `python -m api` and
+`python -m agent.demo` are not capped. The cap variables are in `deploy/.env.example`, not in the root
+`.env.example`.
 
 ## Wiring rules for the orchestrator
 

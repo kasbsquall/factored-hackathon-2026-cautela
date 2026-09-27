@@ -1,6 +1,6 @@
 # Cautela design direction
 
-Status: draft, day 1. This is written before any styles. The UI build follows the owner's ui-workflow: design skills are loaded first, and the render is verified in a browser with audits for interaction, wording and pixel accuracy.
+Written on day 1, before any styles; the typography and the stack below were updated to match `app/`. The UI build follows the owner's ui-workflow: design skills are loaded first, and the render is verified in a browser with audits for interaction, wording and pixel accuracy.
 
 ## Purpose
 
@@ -27,7 +27,7 @@ Institutional ledger: calm, dense and exact, like a well-kept bank record book a
 ## Visual rules (from the owner's ui-workflow)
 
 - **Typography.**
-  - Display and UI: Instrument Sans. Data, ids and amounts: IBM Plex Mono. Both are OFL.
+  - Display: Bricolage Grotesque. Body and UI: Atkinson Hyperlegible Next. Data, ids and amounts: IBM Plex Mono. All three are OFL, loaded through `next/font/google` (`app/src/app/layout.tsx`).
   - No Inter, Roboto or system fonts.
   - Numbers are always `tabular-nums lining-nums slashed-zero`.
 - **Color.**
@@ -50,7 +50,6 @@ Institutional ledger: calm, dense and exact, like a well-kept bank record book a
 
 The UI copy is in Spanish and Portuguese for the customer surface, and in English for the agent and audit surfaces (the judges' working language). All labels follow the owner's writing guide.
 
-## Open
+## Stack
 
-- The framework for the frontend (to be decided with the backend stack).
-- The references moodboard before the first screen.
+Next.js App Router, TypeScript, CSS Modules and Phosphor icons (`app/package.json`). The surfaces are `/customer`, `/console`, `/audit` and `/insights`.
