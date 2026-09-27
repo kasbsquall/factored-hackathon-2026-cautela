@@ -16,7 +16,7 @@ Paths are relative to the repository root. Test names are `file::test`.
 
 ## Reporting a vulnerability
 
-Contact: `<TEAM: add a security contact address here>`. Please do not open a public issue for a vulnerability.
+Report it privately through GitHub: open the repository's **Security** tab and choose **Report a vulnerability**. The report is visible only to the maintainer. Please do not open a public issue for a vulnerability.
 
 ## Threat model
 
