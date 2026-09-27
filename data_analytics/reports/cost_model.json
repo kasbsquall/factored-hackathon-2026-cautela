@@ -1,6 +1,6 @@
 {
   "title": "Cost per resolution and automation savings (projection)",
-  "unit": "hours and USD",
+  "unit": "agent-hours per year and USD",
   "denominator": "see inputs",
   "provenance": {
     "warehouse": "warehouse_real.duckdb",
@@ -16,8 +16,11 @@
     "scope": "human intake handling of unrecognized-charge complaints; projection from offline results",
     "formula": {
       "human_minutes_per_dispute": "handling_seconds * contacts_per_dispute / 60",
-      "hours_saved_per_year": "disputes_per_year * human_minutes_per_dispute / 60 * safe_automated_resolution_rate",
-      "break_even_automation_cost_per_attempted_case": "human cost per dispute * safe_automated_resolution_rate / automation_attempted_share"
+      "disputes_routed_per_year": "disputes_per_year * reach_share",
+      "hours_saved_per_year": "disputes_routed_per_year * safe_automated_resolution * human_minutes_per_dispute / 60",
+      "cost_per_routed_dispute_with_bot": "llm_usd_per_conversation + (1 - safe_automated_resolution) * human_cost_per_dispute",
+      "net_savings_per_year": "disputes_routed_per_year * (safe_automated_resolution * human_cost_per_dispute - llm_usd_per_conversation)",
+      "break_even_bot_usd_per_conversation": "safe_automated_resolution * human_cost_per_dispute"
     },
     "inputs": {
       "disputes_in_window": {
@@ -36,7 +39,7 @@
       },
       "disputes_per_year": {
         "value": 4087.8,
-        "unit": "complaints/year",
+        "unit": "complaints per year",
         "kind": "measured",
         "source": "disputes_in_window / window_days * 365",
         "note": ""
@@ -64,38 +67,80 @@
       },
       "contacts_per_dispute_floor": {
         "value": 1,
-        "unit": "contacts",
+        "unit": "contacts per dispute",
         "kind": "assumption",
         "source": "modeling choice",
         "note": "one intake contact per complaint"
       },
       "contacts_per_dispute_upper": {
         "value": 2.294,
-        "unit": "contacts",
+        "unit": "contacts per dispute",
         "kind": "assumption",
         "source": "1 / complaint_contact_fcr",
         "note": "every unresolved contact retries with the same FCR (geometric)"
       },
-      "safe_automated_resolution_rate": {
+      "chat_eligible_share": {
+        "value": 0.2526,
+        "unit": "share of disputes",
+        "kind": "measured",
+        "source": "gold.complaint_facts, reception_channel App or Web",
+        "note": "3106 / 12297"
+      },
+      "call_center_share": {
+        "value": 0.5035,
+        "unit": "share of disputes",
+        "kind": "measured",
+        "source": "gold.complaint_facts, reception_channel Call Center",
+        "note": "6192 / 12297"
+      },
+      "call_center_routed_to_flow": {
+        "value": true,
+        "unit": "yes/no",
+        "kind": "assumption",
+        "source": "scenario",
+        "note": "only in the second reach scenario: the bank sends call-center disputes to the same flow; nothing in the data measures that they would use it"
+      },
+      "safe_automated_resolution_conservative": {
+        "value": 0.3648,
+        "unit": "share of in-scope conversations",
+        "kind": "cited",
+        "source": "eval/results.json",
+        "note": "end to end, configuration `llm` (the deployed one), run llm-compliant-20260926T192124Z, 429 / 1176 simulated conversations"
+      },
+      "safe_automated_resolution_optimistic": {
         "value": 0.5691,
-        "unit": "share",
+        "unit": "share of cases",
         "kind": "cited",
         "source": "ml/reports/results.json",
-        "note": "offline, 1107 held-out generated cases"
+        "note": "decision component only, 1107 generated cases of the test split, the split used for error analysis"
       },
-      "automation_attempted_share": {
-        "value": 0.5718,
-        "unit": "share",
+      "llm_usd_per_conversation": {
+        "value": 0.0001705,
+        "unit": "USD per conversation",
         "kind": "cited",
-        "source": "ml/reports/results.json",
-        "note": ""
+        "source": "eval/results.json",
+        "note": "llm_cost_usd_total 0.249337 / 1462 conversations of run llm-compliant-20260926T192124Z; provider tokens times list price, not an invoice"
       },
-      "handed_off_case_savings": {
-        "value": 0,
+      "llm_usd_per_safe_automated_resolution": {
+        "value": 0.0005812,
+        "unit": "USD per safe automated resolution",
+        "kind": "cited",
+        "source": "eval/results.json",
+        "note": "llm_cost_usd_total / 429 safe automated resolutions"
+      },
+      "failed_attempt_human_minutes": {
+        "value": "full handling time",
         "unit": "minutes",
         "kind": "assumption",
         "source": "conservative choice",
-        "note": "a structured handoff may shorten the human contact; not measured"
+        "note": "a conversation the bot does not resolve safely costs its tokens and then the whole human handling time; a structured handoff may shorten the human contact, not measured"
+      },
+      "hosting_usd_per_conversation": {
+        "value": null,
+        "unit": "USD per conversation",
+        "kind": "not_defined",
+        "source": "not measured",
+        "note": "compute and hosting are excluded; the break-even column bounds them"
       },
       "back_office_minutes_per_dispute": {
         "value": null,
@@ -104,116 +149,539 @@
         "source": "not in the data",
         "note": "investigation and chargeback effort are excluded"
       },
-      "automation_cost_per_attempted_case": {
-        "value": null,
-        "unit": "USD",
-        "kind": "not_defined",
-        "source": "eval not run with an LLM",
-        "note": "reported below as a break-even value instead"
-      },
       "hourly_cost_usd": {
         "value": [
           5.0,
           10.0,
           20.0
         ],
-        "unit": "USD/hour",
+        "unit": "USD per agent-hour",
         "kind": "assumption",
         "source": "illustrative placeholder",
         "note": "not sourced; replace with the bank's loaded cost"
       }
     },
-    "scenarios": [
+    "cost_per_resolution": {
+      "scenario": "central: complaint contact time, one contact",
+      "human_minutes_per_dispute": 7.24,
+      "human_usd_per_dispute_by_hourly_cost": {
+        "5.0": 0.6,
+        "10.0": 1.21,
+        "20.0": 2.41
+      },
+      "llm_usd_per_safe_automated_resolution": 0.0005812,
+      "llm_usd_per_conversation": 0.0001705,
+      "cost_per_routed_dispute_with_bot_by_hourly_cost": {
+        "5.0": 0.3836,
+        "10.0": 0.767,
+        "20.0": 1.5338
+      },
+      "rate": "conservative",
+      "hosting": "not defined",
+      "source_llm": "eval/results.json"
+    },
+    "projections": [
       {
         "scenario": "low: transactional contact time, one contact",
-        "handling_seconds": 220.8,
-        "contacts_per_dispute": 1,
+        "reach": "App and Web disputes (measured share)",
+        "reach_share": 0.2526,
+        "rate": "conservative",
+        "safe_automated_resolution_rate": 0.3648,
         "human_minutes_per_dispute": 3.68,
-        "human_hours_per_year": 250.7,
-        "hours_saved_per_year": 142.7,
+        "disputes_routed_per_year": 1032.6,
+        "safe_automated_per_year": 376.7,
+        "handoffs_per_year": 655.9,
+        "human_hours_routed_per_year": 63.3,
+        "hours_saved_per_year": 23.1,
+        "human_hours_left_per_year": 40.2,
+        "share_of_contact_center_hours": 0.00113,
+        "llm_usd_per_year": 0.18,
         "money": [
           {
             "hourly_cost_usd": 5.0,
             "human_cost_per_dispute_usd": 0.31,
-            "human_cost_per_year_usd": 1254,
-            "savings_per_year_usd": 713,
-            "break_even_automation_cost_per_attempted_case_usd": 0.31
+            "cost_per_routed_dispute_with_bot_usd": 0.195,
+            "net_saving_per_routed_dispute_usd": 0.1117,
+            "net_savings_per_year_usd": 115,
+            "break_even_bot_usd_per_conversation": 0.1119
           },
           {
             "hourly_cost_usd": 10.0,
             "human_cost_per_dispute_usd": 0.61,
-            "human_cost_per_year_usd": 2507,
-            "savings_per_year_usd": 1427,
-            "break_even_automation_cost_per_attempted_case_usd": 0.61
+            "cost_per_routed_dispute_with_bot_usd": 0.3898,
+            "net_saving_per_routed_dispute_usd": 0.2236,
+            "net_savings_per_year_usd": 231,
+            "break_even_bot_usd_per_conversation": 0.2237
           },
           {
             "hourly_cost_usd": 20.0,
             "human_cost_per_dispute_usd": 1.23,
-            "human_cost_per_year_usd": 5014,
-            "savings_per_year_usd": 2854,
-            "break_even_automation_cost_per_attempted_case_usd": 1.22
+            "cost_per_routed_dispute_with_bot_usd": 0.7793,
+            "net_saving_per_routed_dispute_usd": 0.4473,
+            "net_savings_per_year_usd": 462,
+            "break_even_bot_usd_per_conversation": 0.4475
+          }
+        ]
+      },
+      {
+        "scenario": "low: transactional contact time, one contact",
+        "reach": "App and Web disputes (measured share)",
+        "reach_share": 0.2526,
+        "rate": "optimistic",
+        "safe_automated_resolution_rate": 0.5691,
+        "human_minutes_per_dispute": 3.68,
+        "disputes_routed_per_year": 1032.6,
+        "safe_automated_per_year": 587.6,
+        "handoffs_per_year": 444.9,
+        "human_hours_routed_per_year": 63.3,
+        "hours_saved_per_year": 36.0,
+        "human_hours_left_per_year": 27.3,
+        "share_of_contact_center_hours": 0.00177,
+        "llm_usd_per_year": 0.18,
+        "money": [
+          {
+            "hourly_cost_usd": 5.0,
+            "human_cost_per_dispute_usd": 0.31,
+            "cost_per_routed_dispute_with_bot_usd": 0.1323,
+            "net_saving_per_routed_dispute_usd": 0.1744,
+            "net_savings_per_year_usd": 180,
+            "break_even_bot_usd_per_conversation": 0.1745
+          },
+          {
+            "hourly_cost_usd": 10.0,
+            "human_cost_per_dispute_usd": 0.61,
+            "cost_per_routed_dispute_with_bot_usd": 0.2645,
+            "net_saving_per_routed_dispute_usd": 0.3489,
+            "net_savings_per_year_usd": 360,
+            "break_even_bot_usd_per_conversation": 0.349
+          },
+          {
+            "hourly_cost_usd": 20.0,
+            "human_cost_per_dispute_usd": 1.23,
+            "cost_per_routed_dispute_with_bot_usd": 0.5287,
+            "net_saving_per_routed_dispute_usd": 0.6979,
+            "net_savings_per_year_usd": 721,
+            "break_even_bot_usd_per_conversation": 0.6981
+          }
+        ]
+      },
+      {
+        "scenario": "low: transactional contact time, one contact",
+        "reach": "App, Web and call-center disputes (assumption: call center routed to the flow)",
+        "reach_share": 0.7561,
+        "rate": "conservative",
+        "safe_automated_resolution_rate": 0.3648,
+        "human_minutes_per_dispute": 3.68,
+        "disputes_routed_per_year": 3090.8,
+        "safe_automated_per_year": 1127.5,
+        "handoffs_per_year": 1963.3,
+        "human_hours_routed_per_year": 189.6,
+        "hours_saved_per_year": 69.2,
+        "human_hours_left_per_year": 120.4,
+        "share_of_contact_center_hours": 0.00339,
+        "llm_usd_per_year": 0.53,
+        "money": [
+          {
+            "hourly_cost_usd": 5.0,
+            "human_cost_per_dispute_usd": 0.31,
+            "cost_per_routed_dispute_with_bot_usd": 0.195,
+            "net_saving_per_routed_dispute_usd": 0.1117,
+            "net_savings_per_year_usd": 345,
+            "break_even_bot_usd_per_conversation": 0.1119
+          },
+          {
+            "hourly_cost_usd": 10.0,
+            "human_cost_per_dispute_usd": 0.61,
+            "cost_per_routed_dispute_with_bot_usd": 0.3898,
+            "net_saving_per_routed_dispute_usd": 0.2236,
+            "net_savings_per_year_usd": 691,
+            "break_even_bot_usd_per_conversation": 0.2237
+          },
+          {
+            "hourly_cost_usd": 20.0,
+            "human_cost_per_dispute_usd": 1.23,
+            "cost_per_routed_dispute_with_bot_usd": 0.7793,
+            "net_saving_per_routed_dispute_usd": 0.4473,
+            "net_savings_per_year_usd": 1383,
+            "break_even_bot_usd_per_conversation": 0.4475
+          }
+        ]
+      },
+      {
+        "scenario": "low: transactional contact time, one contact",
+        "reach": "App, Web and call-center disputes (assumption: call center routed to the flow)",
+        "reach_share": 0.7561,
+        "rate": "optimistic",
+        "safe_automated_resolution_rate": 0.5691,
+        "human_minutes_per_dispute": 3.68,
+        "disputes_routed_per_year": 3090.8,
+        "safe_automated_per_year": 1759.0,
+        "handoffs_per_year": 1331.8,
+        "human_hours_routed_per_year": 189.6,
+        "hours_saved_per_year": 107.9,
+        "human_hours_left_per_year": 81.7,
+        "share_of_contact_center_hours": 0.0053,
+        "llm_usd_per_year": 0.53,
+        "money": [
+          {
+            "hourly_cost_usd": 5.0,
+            "human_cost_per_dispute_usd": 0.31,
+            "cost_per_routed_dispute_with_bot_usd": 0.1323,
+            "net_saving_per_routed_dispute_usd": 0.1744,
+            "net_savings_per_year_usd": 539,
+            "break_even_bot_usd_per_conversation": 0.1745
+          },
+          {
+            "hourly_cost_usd": 10.0,
+            "human_cost_per_dispute_usd": 0.61,
+            "cost_per_routed_dispute_with_bot_usd": 0.2645,
+            "net_saving_per_routed_dispute_usd": 0.3489,
+            "net_savings_per_year_usd": 1078,
+            "break_even_bot_usd_per_conversation": 0.349
+          },
+          {
+            "hourly_cost_usd": 20.0,
+            "human_cost_per_dispute_usd": 1.23,
+            "cost_per_routed_dispute_with_bot_usd": 0.5287,
+            "net_saving_per_routed_dispute_usd": 0.6979,
+            "net_savings_per_year_usd": 2157,
+            "break_even_bot_usd_per_conversation": 0.6981
           }
         ]
       },
       {
         "scenario": "central: complaint contact time, one contact",
-        "handling_seconds": 434.6,
-        "contacts_per_dispute": 1,
+        "reach": "App and Web disputes (measured share)",
+        "reach_share": 0.2526,
+        "rate": "conservative",
+        "safe_automated_resolution_rate": 0.3648,
         "human_minutes_per_dispute": 7.24,
-        "human_hours_per_year": 493.5,
-        "hours_saved_per_year": 280.8,
+        "disputes_routed_per_year": 1032.6,
+        "safe_automated_per_year": 376.7,
+        "handoffs_per_year": 655.9,
+        "human_hours_routed_per_year": 124.7,
+        "hours_saved_per_year": 45.5,
+        "human_hours_left_per_year": 79.2,
+        "share_of_contact_center_hours": 0.00223,
+        "llm_usd_per_year": 0.18,
         "money": [
           {
             "hourly_cost_usd": 5.0,
             "human_cost_per_dispute_usd": 0.6,
-            "human_cost_per_year_usd": 2467,
-            "savings_per_year_usd": 1404,
-            "break_even_automation_cost_per_attempted_case_usd": 0.6
+            "cost_per_routed_dispute_with_bot_usd": 0.3836,
+            "net_saving_per_routed_dispute_usd": 0.22,
+            "net_savings_per_year_usd": 227,
+            "break_even_bot_usd_per_conversation": 0.2202
           },
           {
             "hourly_cost_usd": 10.0,
             "human_cost_per_dispute_usd": 1.21,
-            "human_cost_per_year_usd": 4935,
-            "savings_per_year_usd": 2808,
-            "break_even_automation_cost_per_attempted_case_usd": 1.2
+            "cost_per_routed_dispute_with_bot_usd": 0.767,
+            "net_saving_per_routed_dispute_usd": 0.4402,
+            "net_savings_per_year_usd": 455,
+            "break_even_bot_usd_per_conversation": 0.4404
           },
           {
             "hourly_cost_usd": 20.0,
             "human_cost_per_dispute_usd": 2.41,
-            "human_cost_per_year_usd": 9870,
-            "savings_per_year_usd": 5617,
-            "break_even_automation_cost_per_attempted_case_usd": 2.4
+            "cost_per_routed_dispute_with_bot_usd": 1.5338,
+            "net_saving_per_routed_dispute_usd": 0.8806,
+            "net_savings_per_year_usd": 909,
+            "break_even_bot_usd_per_conversation": 0.8808
+          }
+        ]
+      },
+      {
+        "scenario": "central: complaint contact time, one contact",
+        "reach": "App and Web disputes (measured share)",
+        "reach_share": 0.2526,
+        "rate": "optimistic",
+        "safe_automated_resolution_rate": 0.5691,
+        "human_minutes_per_dispute": 7.24,
+        "disputes_routed_per_year": 1032.6,
+        "safe_automated_per_year": 587.6,
+        "handoffs_per_year": 444.9,
+        "human_hours_routed_per_year": 124.7,
+        "hours_saved_per_year": 70.9,
+        "human_hours_left_per_year": 53.7,
+        "share_of_contact_center_hours": 0.00348,
+        "llm_usd_per_year": 0.18,
+        "money": [
+          {
+            "hourly_cost_usd": 5.0,
+            "human_cost_per_dispute_usd": 0.6,
+            "cost_per_routed_dispute_with_bot_usd": 0.2603,
+            "net_saving_per_routed_dispute_usd": 0.3433,
+            "net_savings_per_year_usd": 355,
+            "break_even_bot_usd_per_conversation": 0.3435
+          },
+          {
+            "hourly_cost_usd": 10.0,
+            "human_cost_per_dispute_usd": 1.21,
+            "cost_per_routed_dispute_with_bot_usd": 0.5204,
+            "net_saving_per_routed_dispute_usd": 0.6869,
+            "net_savings_per_year_usd": 709,
+            "break_even_bot_usd_per_conversation": 0.687
+          },
+          {
+            "hourly_cost_usd": 20.0,
+            "human_cost_per_dispute_usd": 2.41,
+            "cost_per_routed_dispute_with_bot_usd": 1.0406,
+            "net_saving_per_routed_dispute_usd": 1.3739,
+            "net_savings_per_year_usd": 1419,
+            "break_even_bot_usd_per_conversation": 1.3741
+          }
+        ]
+      },
+      {
+        "scenario": "central: complaint contact time, one contact",
+        "reach": "App, Web and call-center disputes (assumption: call center routed to the flow)",
+        "reach_share": 0.7561,
+        "rate": "conservative",
+        "safe_automated_resolution_rate": 0.3648,
+        "human_minutes_per_dispute": 7.24,
+        "disputes_routed_per_year": 3090.8,
+        "safe_automated_per_year": 1127.5,
+        "handoffs_per_year": 1963.3,
+        "human_hours_routed_per_year": 373.1,
+        "hours_saved_per_year": 136.1,
+        "human_hours_left_per_year": 237.0,
+        "share_of_contact_center_hours": 0.00668,
+        "llm_usd_per_year": 0.53,
+        "money": [
+          {
+            "hourly_cost_usd": 5.0,
+            "human_cost_per_dispute_usd": 0.6,
+            "cost_per_routed_dispute_with_bot_usd": 0.3836,
+            "net_saving_per_routed_dispute_usd": 0.22,
+            "net_savings_per_year_usd": 680,
+            "break_even_bot_usd_per_conversation": 0.2202
+          },
+          {
+            "hourly_cost_usd": 10.0,
+            "human_cost_per_dispute_usd": 1.21,
+            "cost_per_routed_dispute_with_bot_usd": 0.767,
+            "net_saving_per_routed_dispute_usd": 0.4402,
+            "net_savings_per_year_usd": 1361,
+            "break_even_bot_usd_per_conversation": 0.4404
+          },
+          {
+            "hourly_cost_usd": 20.0,
+            "human_cost_per_dispute_usd": 2.41,
+            "cost_per_routed_dispute_with_bot_usd": 1.5338,
+            "net_saving_per_routed_dispute_usd": 0.8806,
+            "net_savings_per_year_usd": 2722,
+            "break_even_bot_usd_per_conversation": 0.8808
+          }
+        ]
+      },
+      {
+        "scenario": "central: complaint contact time, one contact",
+        "reach": "App, Web and call-center disputes (assumption: call center routed to the flow)",
+        "reach_share": 0.7561,
+        "rate": "optimistic",
+        "safe_automated_resolution_rate": 0.5691,
+        "human_minutes_per_dispute": 7.24,
+        "disputes_routed_per_year": 3090.8,
+        "safe_automated_per_year": 1759.0,
+        "handoffs_per_year": 1331.8,
+        "human_hours_routed_per_year": 373.1,
+        "hours_saved_per_year": 212.3,
+        "human_hours_left_per_year": 160.8,
+        "share_of_contact_center_hours": 0.01042,
+        "llm_usd_per_year": 0.53,
+        "money": [
+          {
+            "hourly_cost_usd": 5.0,
+            "human_cost_per_dispute_usd": 0.6,
+            "cost_per_routed_dispute_with_bot_usd": 0.2603,
+            "net_saving_per_routed_dispute_usd": 0.3433,
+            "net_savings_per_year_usd": 1061,
+            "break_even_bot_usd_per_conversation": 0.3435
+          },
+          {
+            "hourly_cost_usd": 10.0,
+            "human_cost_per_dispute_usd": 1.21,
+            "cost_per_routed_dispute_with_bot_usd": 0.5204,
+            "net_saving_per_routed_dispute_usd": 0.6869,
+            "net_savings_per_year_usd": 2123,
+            "break_even_bot_usd_per_conversation": 0.687
+          },
+          {
+            "hourly_cost_usd": 20.0,
+            "human_cost_per_dispute_usd": 2.41,
+            "cost_per_routed_dispute_with_bot_usd": 1.0406,
+            "net_saving_per_routed_dispute_usd": 1.3739,
+            "net_savings_per_year_usd": 4246,
+            "break_even_bot_usd_per_conversation": 1.3741
           }
         ]
       },
       {
         "scenario": "high: complaint contact time, repeat contacts at complaint FCR",
-        "handling_seconds": 434.6,
-        "contacts_per_dispute": 2.294,
+        "reach": "App and Web disputes (measured share)",
+        "reach_share": 0.2526,
+        "rate": "conservative",
+        "safe_automated_resolution_rate": 0.3648,
         "human_minutes_per_dispute": 16.62,
-        "human_hours_per_year": 1132.1,
-        "hours_saved_per_year": 644.3,
+        "disputes_routed_per_year": 1032.6,
+        "safe_automated_per_year": 376.7,
+        "handoffs_per_year": 655.9,
+        "human_hours_routed_per_year": 286.0,
+        "hours_saved_per_year": 104.3,
+        "human_hours_left_per_year": 181.6,
+        "share_of_contact_center_hours": 0.00512,
+        "llm_usd_per_year": 0.18,
         "money": [
           {
             "hourly_cost_usd": 5.0,
             "human_cost_per_dispute_usd": 1.38,
-            "human_cost_per_year_usd": 5660,
-            "savings_per_year_usd": 3221,
-            "break_even_automation_cost_per_attempted_case_usd": 1.38
+            "cost_per_routed_dispute_with_bot_usd": 0.8797,
+            "net_saving_per_routed_dispute_usd": 0.505,
+            "net_savings_per_year_usd": 521,
+            "break_even_bot_usd_per_conversation": 0.5051
           },
           {
             "hourly_cost_usd": 10.0,
             "human_cost_per_dispute_usd": 2.77,
-            "human_cost_per_year_usd": 11321,
-            "savings_per_year_usd": 6443,
-            "break_even_automation_cost_per_attempted_case_usd": 2.76
+            "cost_per_routed_dispute_with_bot_usd": 1.7593,
+            "net_saving_per_routed_dispute_usd": 1.0101,
+            "net_savings_per_year_usd": 1043,
+            "break_even_bot_usd_per_conversation": 1.0103
           },
           {
             "hourly_cost_usd": 20.0,
             "human_cost_per_dispute_usd": 5.54,
-            "human_cost_per_year_usd": 22641,
-            "savings_per_year_usd": 12885,
-            "break_even_automation_cost_per_attempted_case_usd": 5.51
+            "cost_per_routed_dispute_with_bot_usd": 3.5184,
+            "net_saving_per_routed_dispute_usd": 2.0204,
+            "net_savings_per_year_usd": 2086,
+            "break_even_bot_usd_per_conversation": 2.0205
+          }
+        ]
+      },
+      {
+        "scenario": "high: complaint contact time, repeat contacts at complaint FCR",
+        "reach": "App and Web disputes (measured share)",
+        "reach_share": 0.2526,
+        "rate": "optimistic",
+        "safe_automated_resolution_rate": 0.5691,
+        "human_minutes_per_dispute": 16.62,
+        "disputes_routed_per_year": 1032.6,
+        "safe_automated_per_year": 587.6,
+        "handoffs_per_year": 444.9,
+        "human_hours_routed_per_year": 286.0,
+        "hours_saved_per_year": 162.7,
+        "human_hours_left_per_year": 123.2,
+        "share_of_contact_center_hours": 0.00799,
+        "llm_usd_per_year": 0.18,
+        "money": [
+          {
+            "hourly_cost_usd": 5.0,
+            "human_cost_per_dispute_usd": 1.38,
+            "cost_per_routed_dispute_with_bot_usd": 0.5968,
+            "net_saving_per_routed_dispute_usd": 0.7879,
+            "net_savings_per_year_usd": 814,
+            "break_even_bot_usd_per_conversation": 0.788
+          },
+          {
+            "hourly_cost_usd": 10.0,
+            "human_cost_per_dispute_usd": 2.77,
+            "cost_per_routed_dispute_with_bot_usd": 1.1935,
+            "net_saving_per_routed_dispute_usd": 1.5759,
+            "net_savings_per_year_usd": 1627,
+            "break_even_bot_usd_per_conversation": 1.576
+          },
+          {
+            "hourly_cost_usd": 20.0,
+            "human_cost_per_dispute_usd": 5.54,
+            "cost_per_routed_dispute_with_bot_usd": 2.3868,
+            "net_saving_per_routed_dispute_usd": 3.1519,
+            "net_savings_per_year_usd": 3255,
+            "break_even_bot_usd_per_conversation": 3.1521
+          }
+        ]
+      },
+      {
+        "scenario": "high: complaint contact time, repeat contacts at complaint FCR",
+        "reach": "App, Web and call-center disputes (assumption: call center routed to the flow)",
+        "reach_share": 0.7561,
+        "rate": "conservative",
+        "safe_automated_resolution_rate": 0.3648,
+        "human_minutes_per_dispute": 16.62,
+        "disputes_routed_per_year": 3090.8,
+        "safe_automated_per_year": 1127.5,
+        "handoffs_per_year": 1963.3,
+        "human_hours_routed_per_year": 856.0,
+        "hours_saved_per_year": 312.3,
+        "human_hours_left_per_year": 543.7,
+        "share_of_contact_center_hours": 0.01533,
+        "llm_usd_per_year": 0.53,
+        "money": [
+          {
+            "hourly_cost_usd": 5.0,
+            "human_cost_per_dispute_usd": 1.38,
+            "cost_per_routed_dispute_with_bot_usd": 0.8797,
+            "net_saving_per_routed_dispute_usd": 0.505,
+            "net_savings_per_year_usd": 1561,
+            "break_even_bot_usd_per_conversation": 0.5051
+          },
+          {
+            "hourly_cost_usd": 10.0,
+            "human_cost_per_dispute_usd": 2.77,
+            "cost_per_routed_dispute_with_bot_usd": 1.7593,
+            "net_saving_per_routed_dispute_usd": 1.0101,
+            "net_savings_per_year_usd": 3122,
+            "break_even_bot_usd_per_conversation": 1.0103
+          },
+          {
+            "hourly_cost_usd": 20.0,
+            "human_cost_per_dispute_usd": 5.54,
+            "cost_per_routed_dispute_with_bot_usd": 3.5184,
+            "net_saving_per_routed_dispute_usd": 2.0204,
+            "net_savings_per_year_usd": 6245,
+            "break_even_bot_usd_per_conversation": 2.0205
+          }
+        ]
+      },
+      {
+        "scenario": "high: complaint contact time, repeat contacts at complaint FCR",
+        "reach": "App, Web and call-center disputes (assumption: call center routed to the flow)",
+        "reach_share": 0.7561,
+        "rate": "optimistic",
+        "safe_automated_resolution_rate": 0.5691,
+        "human_minutes_per_dispute": 16.62,
+        "disputes_routed_per_year": 3090.8,
+        "safe_automated_per_year": 1759.0,
+        "handoffs_per_year": 1331.8,
+        "human_hours_routed_per_year": 856.0,
+        "hours_saved_per_year": 487.1,
+        "human_hours_left_per_year": 368.8,
+        "share_of_contact_center_hours": 0.02391,
+        "llm_usd_per_year": 0.53,
+        "money": [
+          {
+            "hourly_cost_usd": 5.0,
+            "human_cost_per_dispute_usd": 1.38,
+            "cost_per_routed_dispute_with_bot_usd": 0.5968,
+            "net_saving_per_routed_dispute_usd": 0.7879,
+            "net_savings_per_year_usd": 2435,
+            "break_even_bot_usd_per_conversation": 0.788
+          },
+          {
+            "hourly_cost_usd": 10.0,
+            "human_cost_per_dispute_usd": 2.77,
+            "cost_per_routed_dispute_with_bot_usd": 1.1935,
+            "net_saving_per_routed_dispute_usd": 1.5759,
+            "net_savings_per_year_usd": 4871,
+            "break_even_bot_usd_per_conversation": 1.576
+          },
+          {
+            "hourly_cost_usd": 20.0,
+            "human_cost_per_dispute_usd": 5.54,
+            "cost_per_routed_dispute_with_bot_usd": 2.3868,
+            "net_saving_per_routed_dispute_usd": 3.1519,
+            "net_savings_per_year_usd": 9742,
+            "break_even_bot_usd_per_conversation": 3.1521
           }
         ]
       }
