@@ -133,3 +133,24 @@ describe("narrateTurn on turns captured from the live service", () => {
     expect(narrateTurn(runs.normal![2]!, { kind: "confirm", accept: true }).stage).toBe("resolved, case open");
   });
 });
+
+describe("a request after the handoff", () => {
+  const base = runs.normal![0]!;
+  const withStep = (outcome: string): TurnResponse => ({
+    ...base,
+    trail: [{ step: "handoff.follow_up", outcome, rule_ids: [],
+      detail: { handoff_id: "ho_0123456789abcdef", transfer_reason: "amount_above_threshold", open_questions: 2 } }],
+  } as unknown as TurnResponse);
+
+  it("says what was added to the handoff and that the transfer reason stays", () => {
+    expect(texts(withStep("block_card"))).toEqual([
+      "After the handoff the customer asked to block a card; no card was blocked in this conversation. Added to handoff ho_0123456789abcdef as an open question (2 open questions now); the transfer reason stays amount at or above USD 450.",
+    ]);
+  });
+
+  it("never prints the raw step name", () => {
+    for (const outcome of ["customer_requested_human", "out_of_scope", "new_charge", "not_added", "something_new"]) {
+      expect(texts(withStep(outcome)).join(" ")).not.toMatch(/handoff\.follow_up/);
+    }
+  });
+});

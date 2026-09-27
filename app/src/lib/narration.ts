@@ -299,6 +299,31 @@ function reply(step: Step): NarrationStep {
   return { icon: "reply", tone: "quiet", text: `Reply from the fixed template${named}${why}.`, rules: [] };
 }
 
+/** What the customer asked after the handoff (agent/orchestrator/followup.py kinds). */
+const FOLLOW_UP: Record<string, string> = {
+  customer_requested_human: "asked again to talk to a person",
+  out_of_scope: "raised a request outside dispute intake",
+  block_card: "asked to block a card; no card was blocked in this conversation",
+  new_charge: "described another charge; nothing was searched or written for it",
+};
+
+/** A request after the handoff is added to that handoff as an open question; the first transfer reason stays. */
+function followUp(step: Step, turn: TurnResponse): NarrationStep {
+  const d = step.detail;
+  const id = str(d.handoff_id);
+  const where = id ? `handoff ${id}` : "the handoff";
+  if (step.outcome === "not_added") {
+    return { icon: "handoff", tone: "quiet", text: `After the handoff the customer repeated a request already on ${where}, or reached the limit of follow-ups; nothing was added.`, rules: ruleNotes(step.rule_ids, turn) };
+  }
+  const what = FOLLOW_UP[step.outcome] ?? `made a new request (${step.outcome.replace(/_/g, " ")})`;
+  const reasonCode = str(d.transfer_reason);
+  const reason = reasonCode ? REASON[reasonCode as keyof typeof REASON]?.label ?? reasonCode : null;
+  const count = num(d.open_questions);
+  const added = `Added to ${where} as an open question${count !== null ? ` (${plural(count, "open question")} now)` : ""}`;
+  const kept = reason ? `; the transfer reason stays ${lowerFirst(reason)}` : "";
+  return { icon: "handoff", tone: "human", text: `After the handoff the customer ${what}. ${added}${kept}.`, rules: ruleNotes(step.rule_ids, turn) };
+}
+
 function wroteNothing(trail: Step[]): boolean {
   return !trail.some((s) => s.step.startsWith("tool.") && WRITE_TOOLS.has(s.step.slice(5)) && s.outcome === "ok");
 }
@@ -351,6 +376,8 @@ function one(step: Step, turn: TurnResponse, run: Step[]): NarrationStep | null 
       const carry = facts !== null && actions !== null ? ` The handoff file carries ${plural(facts, "verified fact")} and ${plural(actions, "action")}.` : "";
       return { icon: "handoff", tone: "human", text: `Handed off to a person: ${lowerFirst(reason)}${str(d.handoff_id) ? ` (handoff ${str(d.handoff_id)})` : ""}.${carry}`, rules: ruleNotes(step.rule_ids, turn) };
     }
+    case "handoff.follow_up":
+      return followUp(step, turn);
     case "security":
       return { icon: "security", tone: "bad", text: `Security flag raised: ${step.outcome.replace(/_/g, " ")}.`, rules: ruleNotes(step.rule_ids, turn) };
     case "reply":
