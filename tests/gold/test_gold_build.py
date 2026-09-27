@@ -12,7 +12,7 @@ from data_engineering.gold.run import run_gold
 from .conftest import gold_rows, query
 
 ROW_TABLES = {"customer_profile": "customers", "customer_transactions": "transactions",
-              "complaint_facts": "complaints"}
+              "customer_products": "products", "complaint_facts": "complaints"}
 
 
 def test_every_table_builds_and_passes_every_check(gold_db, gold_contracts):

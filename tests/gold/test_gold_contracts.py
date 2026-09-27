@@ -5,7 +5,7 @@ from pydantic import ValidationError
 
 from data_engineering.gold.contract import GoldContract, build_order
 
-SERVING = {"customer_profile", "customer_transactions", "dispute_policy_inputs"}
+SERVING = {"customer_profile", "customer_transactions", "customer_products", "dispute_policy_inputs"}
 ANALYTICS = {"complaint_facts", "complaint_outcomes", "interaction_outcomes", "demand_by_hour", "demand_by_day",
              "workflow_selection"}
 

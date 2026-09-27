@@ -289,6 +289,7 @@ Gold is built from silver inside the same warehouse, in the `gold` schema. Each 
 |---|---|---|---|
 | `customer_profile` | row | `get_customer_profile` | one customer: country, segment, status, product and card counts; no contact details |
 | `customer_transactions` | row | `list_recent_transactions`, `get_transaction`, `find_candidate_charges` | one transaction with merchant, channel and the product it moved |
+| `customer_products` | row | product reads and the product ownership check (once the tool repository switches to it, see below) | one product with owner, type, number, currency and status |
 | `dispute_policy_inputs` | view | `get_dispute_policy` | one transaction with the customer country and segment and the product state the policy rules read |
 | `complaint_facts` | row | analytics, ML | one complaint with the workflow label, country, segment, timing and measured repeat contact |
 | `complaint_outcomes` | aggregate | analytics | complaint type by overall, country, segment and reception channel: SLA breach, escalation, resolution time, repeat contact |
@@ -297,7 +298,7 @@ Gold is built from silver inside the same warehouse, in the `gold` schema. Each 
 | `demand_by_day` | aggregate | analytics | contacts by source, workflow, country, channel and calendar day |
 | `workflow_selection` | view | analytics | one complaint type with volume, share and outcomes, ranked by volume |
 
-The agent tools in `agent/tools/repository.py` read `customer_profile`, `customer_transactions` and `dispute_policy_inputs`, and refuse to start when gold is missing or older than silver. They still read `silver.customers` for the identity directory and `silver.products` for products: a product-level serving table (number, currency, status) is the missing piece.
+The agent tools in `agent/tools/repository.py` read `customer_profile`, `customer_transactions` and `dispute_policy_inputs`, and refuse to start when gold is missing or older than silver. They still read `silver.customers` for the identity directory, which gold leaves out on purpose, and `silver.products` for products and product ownership. `customer_products` is the gold table for those product reads: one row per silver product with the columns the repository reads, the same blocking checks as every gold table, and a reconciliation that fails the build when any owner, type, number, currency or status differs from silver. The freshness status covers it like any materialized table. `tests/gold/test_gold_products.py` checks that it answers each repository product query exactly as silver does. It is not built on the organizer warehouse yet (the next `make gold-real` builds it), and the repository has not been switched to it.
 
 **Workflow label.** `is_unrecognized_charge` matches the literal "Cargo no reconocido" in `category` or `subcategory`. The organizer data puts it in `subcategory` under category "Transactions" (12,297 complaints); the fixture puts it in `category`. The 1,283 "Transactions" complaints without a subcategory are not counted, since nothing says what they are.
 

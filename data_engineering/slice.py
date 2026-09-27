@@ -4,13 +4,13 @@
         --customers CUST1 CUST2
 
 Used for the public demo (deploy/bundle.py): the demo serves real organizer rows for a handful of customers, and
-the full warehouse (1.8 GB) never leaves the laptop. Rows are copied as they are, never rebuilt:
+the full warehouse (4.2 GB) never leaves the laptop. Rows are copied as they are, never rebuilt:
 
   * bronze, silver: customers, products and transactions of the chosen customers, with `_source_file`,
     `_ingested_at` and `_run_id` untouched;
-  * gold: the serving tables the tools read (`customer_profile`, `customer_transactions`) with `_source_table`,
-    `_source_key`, `_source_run_ids` and `_gold_run_id`, and the `dispute_policy_inputs` view recreated from the
-    source's own definition;
+  * gold: the serving tables the tools read (`customer_profile`, `customer_transactions`, `customer_products`) with
+    `_source_table`, `_source_key`, `_source_run_ids` and `_gold_run_id`, and the `dispute_policy_inputs` view
+    recreated from the source's own definition;
   * control: every silver and gold run (so the repository's freshness check sees the same history), and the file
     ledger rows of the source files the copied bronze rows came from;
   * control.demo_slice: one row per customer saying which scenario it was chosen for and from which warehouse.
@@ -30,9 +30,9 @@ import duckdb
 
 CUSTOMER_TABLES = (("bronze", "customers"), ("bronze", "products"), ("bronze", "transactions"),
                    ("silver", "customers"), ("silver", "products"), ("silver", "transactions"),
-                   ("gold", "customer_profile"), ("gold", "customer_transactions"))
+                   ("gold", "customer_profile"), ("gold", "customer_transactions"), ("gold", "customer_products"))
 ORDER = {"customers": "customer_id", "products": "product_id", "transactions": "transaction_id",
-         "customer_profile": "customer_id", "customer_transactions": "transaction_id"}
+         "customer_profile": "customer_id", "customer_transactions": "transaction_id", "customer_products": "product_id"}
 VIEWS = (("gold", "dispute_policy_inputs"),)
 CONTROL = (("control", "runs"), ("control", "gold_runs"), ("control", "file_ledger"))
 

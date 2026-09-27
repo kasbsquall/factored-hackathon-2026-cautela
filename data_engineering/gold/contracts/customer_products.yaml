@@ -1,0 +1,32 @@
+# Serving table for the product reads of the tools (get_customer_profile products, get_product) and for the product
+# ownership check of the permission layer. SQL: ../sql/customer_products.sql
+table: customer_products
+kind: row
+purpose: serving
+description: One row per silver product with its owner, type, number, currency and status.
+primary_key: [product_id]
+sources: [products]
+lineage_source: products
+changed_keys:
+  products: "SELECT product_id FROM silver.products WHERE _ingested_at > {wm}"
+notes:
+  - The permission layer decides who may act on a product from customer_id here, so every build checks each owner and served field against silver.
+  - product_number is kept in full, as in silver; the tool masks it to the last four digits before it leaves the service.
+columns:
+  - {name: product_id, classification: none, type: VARCHAR, nullable: false, description: Product ID}
+  - {name: customer_id, classification: pii_quasi, type: VARCHAR, nullable: false, description: Owner of the product}
+  - {name: product_type, classification: none, type: VARCHAR, nullable: false, description: Product type (normalized in silver; values outside the decoded list only warn there)}
+  - {name: product_number, classification: sensitive_financial, type: VARCHAR, nullable: false, description: "Account, card or policy number"}
+  - {name: currency, classification: none, type: VARCHAR, nullable: false, allowed_values: [MXN, COP, ARS, USD], description: Product currency}
+  - {name: product_status, classification: none, type: VARCHAR, nullable: false, allowed_values: [Active, Blocked, Closed, Suspended], description: Product status as delivered (card blocks made by the service live in the sandbox)}
+reconciliation:
+  - name: one_row_per_silver_product
+    description: Gold has exactly the silver products.
+    sql: "SELECT abs((SELECT count(*) FROM silver.products) - (SELECT count(*) FROM gold.customer_products))"
+  - name: served_fields_match_silver
+    description: Owner, type, number, currency and status equal the silver product row, so an ownership decision never reads a stale owner.
+    sql: >-
+      SELECT count(*) FROM gold.customer_products g LEFT JOIN silver.products s USING (product_id)
+      WHERE s.product_id IS NULL OR g.customer_id IS DISTINCT FROM s.customer_id
+         OR g.product_type IS DISTINCT FROM s.product_type OR g.product_number IS DISTINCT FROM s.product_number
+         OR g.currency IS DISTINCT FROM s.currency OR g.product_status IS DISTINCT FROM s.product_status
