@@ -1,4 +1,4 @@
-import { ChatCircleDots, Eye, HandTap, Signpost, UserSwitch, type Icon } from "@phosphor-icons/react";
+import { ArrowsHorizontal, ChatCircleDots, Eye, HandTap, Signpost, UserSwitch, type Icon } from "@phosphor-icons/react";
 import { DECISION, type RuleSource } from "@/lib/insights";
 import styles from "./decides.module.css";
 
@@ -123,6 +123,7 @@ export function Decides() {
       <div className={styles.tables}>
         <div className={styles.tableBlock}>
           <h3 className={styles.h3}>Thresholds</h3>
+          <p className={styles.swipe}><ArrowsHorizontal aria-hidden />Scroll sideways inside the table for all 5 columns.</p>
           <div className={styles.scroll} role="region" aria-label="Thresholds" tabIndex={0}>
             <table className={`${styles.table} num`}>
               <thead><tr><th scope="col">Threshold</th><th scope="col">Value</th><th scope="col">Governs</th><th scope="col">Kind</th><th scope="col">Source</th></tr></thead>
@@ -143,6 +144,7 @@ export function Decides() {
 
         <div className={styles.tableBlock}>
           <h3 className={styles.h3}>Claim windows</h3>
+          <p className={styles.swipe}><ArrowsHorizontal aria-hidden />Scroll sideways inside the table for all 6 columns.</p>
           <div className={styles.scroll} role="region" aria-label="Claim windows" tabIndex={0}>
             <table className={`${styles.table} num`}>
               <thead><tr><th scope="col">Rule</th><th scope="col">Country</th><th scope="col">Applies to</th><th scope="col">Customer has</th><th scope="col">Bank answers within</th><th scope="col">Verification</th></tr></thead>

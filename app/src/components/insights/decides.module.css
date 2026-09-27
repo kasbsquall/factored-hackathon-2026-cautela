@@ -159,9 +159,34 @@
   font-weight: 700;
 }
 
+/*
+ * Scroll shadows: the two local layers travel with the content and cover the fixed edge shades at either end, so a
+ * shade shows only on a side that has more columns to reveal.
+ */
 .scroll {
   overflow-x: auto;
+  overscroll-behavior-x: contain;
   border-radius: var(--r-data);
+  background:
+    linear-gradient(to right, var(--bg) 40%, transparent) left center / 32px 100% no-repeat local,
+    linear-gradient(to left, var(--bg) 40%, transparent) right center / 32px 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, rgba(234, 229, 214, 0.16), transparent) left center / 14px 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, rgba(234, 229, 214, 0.16), transparent) right center / 14px 100% no-repeat scroll;
+}
+
+.swipe {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-6);
+  margin: 0;
+  font-size: var(--t-12);
+  color: var(--ink2);
+}
+
+.swipe svg {
+  width: 16px;
+  height: 16px;
+  color: var(--ring);
 }
 
 .scroll:focus-visible {
@@ -221,6 +246,13 @@
   color: var(--ink2);
   overflow-wrap: anywhere;
   text-wrap: pretty;
+}
+
+@media (min-width: 900px) {
+  /* The tables (min 720px) fit their box from here on. */
+  .swipe {
+    display: none;
+  }
 }
 
 @media (min-width: 768px) {
