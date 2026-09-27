@@ -15,6 +15,8 @@ from typing import Literal
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from data_engineering.contracts.loader import Classification
+
 GOLD_DIR = Path(__file__).resolve().parent
 CONTRACTS_DIR = GOLD_DIR / "contracts"
 SQL_DIR = GOLD_DIR / "sql"
@@ -32,6 +34,7 @@ class GoldColumn(BaseModel):
 
     name: str
     type: str
+    classification: Classification
     nullable: bool = True
     allowed_values: list[str] | None = None
     min: float | None = None
@@ -110,8 +113,9 @@ class GoldContract(BaseModel):
 
     @property
     def definition_hash(self) -> str:
-        """Changes when the contract or its SQL changes; a changed definition forces a full rebuild."""
-        payload = self.model_dump_json() + self.sql
+        """Changes when the contract or its SQL changes; a changed definition forces a full rebuild. The column
+        classification is governance metadata that does not change a row, so it is left out."""
+        payload = self.model_dump_json(exclude={"columns": {"__all__": {"classification"}}}) + self.sql
         return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
 
 

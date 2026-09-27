@@ -19,20 +19,20 @@ notes:
   - Email, phones, address and document number stay in silver; only the identity service reads them.
   - registration_branch_known is false for 149,995 of 150,000 organizer customers (orphan branch ids, see the reconciliation table).
 columns:
-  - {name: customer_id, type: VARCHAR, nullable: false, description: Customer ID}
-  - {name: first_name, type: VARCHAR, nullable: false, description: First name}
-  - {name: last_name, type: VARCHAR, nullable: false, description: Last name}
-  - {name: country, type: VARCHAR, nullable: false, description: Country of residence (normalized in silver)}
-  - {name: state, type: VARCHAR, nullable: false, description: State or department}
-  - {name: city, type: VARCHAR, nullable: false, description: City}
-  - {name: segment, type: VARCHAR, nullable: false, allowed_values: [Premium, Plus, Basic, Student], description: Customer segment}
-  - {name: customer_status, type: VARCHAR, nullable: false, allowed_values: [Active, Inactive, Suspended, Closed], description: Customer status}
-  - {name: registration_date, type: TIMESTAMP, nullable: false, description: Registration date}
-  - {name: products_total, type: BIGINT, nullable: false, min: 0, description: Products held}
-  - {name: products_active, type: BIGINT, nullable: false, min: 0, description: Products with status Active}
-  - {name: cards_total, type: BIGINT, nullable: false, min: 0, description: Credit and debit cards held}
-  - {name: product_currencies, type: "VARCHAR[]", nullable: false, description: Distinct currencies of the customer's products}
-  - {name: registration_branch_known, type: BOOLEAN, nullable: false, description: The registration branch id exists in branches}
+  - {name: customer_id, classification: pii_quasi, type: VARCHAR, nullable: false, description: Customer ID}
+  - {name: first_name, classification: pii_direct, type: VARCHAR, nullable: false, description: First name}
+  - {name: last_name, classification: pii_direct, type: VARCHAR, nullable: false, description: Last name}
+  - {name: country, classification: none, type: VARCHAR, nullable: false, description: Country of residence (normalized in silver)}
+  - {name: state, classification: pii_quasi, type: VARCHAR, nullable: false, description: State or department}
+  - {name: city, classification: pii_quasi, type: VARCHAR, nullable: false, description: City}
+  - {name: segment, classification: none, type: VARCHAR, nullable: false, allowed_values: [Premium, Plus, Basic, Student], description: Customer segment}
+  - {name: customer_status, classification: none, type: VARCHAR, nullable: false, allowed_values: [Active, Inactive, Suspended, Closed], description: Customer status}
+  - {name: registration_date, classification: none, type: TIMESTAMP, nullable: false, description: Registration date}
+  - {name: products_total, classification: none, type: BIGINT, nullable: false, min: 0, description: Products held}
+  - {name: products_active, classification: none, type: BIGINT, nullable: false, min: 0, description: Products with status Active}
+  - {name: cards_total, classification: none, type: BIGINT, nullable: false, min: 0, description: Credit and debit cards held}
+  - {name: product_currencies, classification: none, type: "VARCHAR[]", nullable: false, description: Distinct currencies of the customer's products}
+  - {name: registration_branch_known, classification: none, type: BOOLEAN, nullable: false, description: The registration branch id exists in branches}
 reconciliation:
   - name: one_row_per_silver_customer
     description: Gold has exactly the silver customers.

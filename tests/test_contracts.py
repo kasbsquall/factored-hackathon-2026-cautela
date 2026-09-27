@@ -62,13 +62,13 @@ def test_every_normalization_target_is_an_accepted_value(contracts):
 
 def test_normalize_cannot_widen_a_value_list():
     with pytest.raises(ValidationError, match="outside the value list"):
-        ColumnContract(name="x", type="VARCHAR(10)", nullable=False, allowed_values=["Urban"], enum_status="listed",
+        ColumnContract(name="x", classification="none", type="VARCHAR(10)", nullable=False, allowed_values=["Urban"], enum_status="listed",
                        normalize={"Urbana": "Urbano"}, severity="error", description="x")
 
 
 def test_observed_values_need_a_note():
     with pytest.raises(ValidationError, match="note"):
-        ColumnContract(name="x", type="VARCHAR(10)", nullable=False, allowed_values=["Phone"], enum_status="listed",
+        ColumnContract(name="x", classification="none", type="VARCHAR(10)", nullable=False, allowed_values=["Phone"], enum_status="listed",
                        observed_values=["Web"], severity="error", description="x")
 
 
@@ -104,23 +104,23 @@ def test_dependency_order_rejects_unknown_table(contracts):
 
 def test_primary_key_cannot_be_nullable():
     with pytest.raises(ValidationError):
-        ColumnContract(name="x", type="VARCHAR(10)", nullable=True, pk=True, severity="error", description="x")
+        ColumnContract(name="x", classification="none", type="VARCHAR(10)", nullable=True, pk=True, severity="error", description="x")
 
 
 def test_unknown_enum_requires_note():
     with pytest.raises(ValidationError):
-        ColumnContract(name="x", type="VARCHAR(10)", nullable=False, enum_status="unknown", profile=True,
+        ColumnContract(name="x", classification="none", type="VARCHAR(10)", nullable=False, enum_status="unknown", profile=True,
                        severity="error", description="x")
 
 
 def test_bad_fk_format_rejected():
     with pytest.raises(ValidationError):
-        ColumnContract(name="x", type="VARCHAR(10)", nullable=True, fk="customers", severity="warn", description="x")
+        ColumnContract(name="x", classification="none", type="VARCHAR(10)", nullable=True, fk="customers", severity="warn", description="x")
 
 
 def test_range_on_text_rejected():
     with pytest.raises(ValidationError):
-        ColumnContract(name="x", type="VARCHAR(10)", nullable=True, min=1, severity="warn", description="x")
+        ColumnContract(name="x", classification="none", type="VARCHAR(10)", nullable=True, min=1, severity="warn", description="x")
 
 
 def test_table_name_must_match_file(tmp_path: Path):

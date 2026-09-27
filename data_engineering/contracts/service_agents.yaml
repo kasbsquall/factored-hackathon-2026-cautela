@@ -16,17 +16,18 @@ notes:
   - No update timestamp exists, so duplicates are resolved by the latest source file (snapshot path order).
   - The summary PDF row-count column is misaligned (it prints 350 next to service_agents); the dictionary says 1,200.
 columns:
-  - {name: agent_id, type: VARCHAR(20), nullable: false, pk: true, severity: error, provenance: realigned, description: Unique agent ID}
-  - {name: employee_code, type: VARCHAR(15), nullable: false, unique: true, severity: error, provenance: realigned, description: Employee code}
-  - {name: first_name, type: VARCHAR(100), nullable: false, severity: error, provenance: realigned, description: Agent first name (in Spanish)}
-  - {name: last_name, type: VARCHAR(100), nullable: false, severity: error, provenance: realigned, description: Agent last name (in Spanish)}
-  - {name: email, type: VARCHAR(100), nullable: false, severity: error, provenance: realigned, description: Corporate email}
-  - {name: phone, type: VARCHAR(20), nullable: true, severity: warn, provenance: realigned, description: Contact phone}
-  - {name: native_accent, type: VARCHAR(50), nullable: false, allowed_values: [mexican, colombian, argentine], enum_status: listed, severity: error, provenance: realigned, description: Native Spanish accent}
-  - {name: country_of_origin, type: VARCHAR(50), nullable: false, profile: true, severity: error, provenance: realigned, description: Country of origin}
-  - {name: assigned_branch_id, type: VARCHAR(20), nullable: true, fk: branches.branch_id, severity: warn, provenance: realigned, description: Assigned branch}
-  - {name: agent_type, type: VARCHAR(30), nullable: false, allowed_values: [Phone, In-Person, Digital, Hybrid], enum_status: listed, severity: error, provenance: realigned, description: Agent type}
+  - {name: agent_id, classification: pii_quasi, type: VARCHAR(20), nullable: false, pk: true, severity: error, provenance: realigned, description: Unique agent ID}
+  - {name: employee_code, classification: pii_quasi, type: VARCHAR(15), nullable: false, unique: true, severity: error, provenance: realigned, description: Employee code}
+  - {name: first_name, classification: pii_direct, type: VARCHAR(100), nullable: false, severity: error, provenance: realigned, description: Agent first name (in Spanish)}
+  - {name: last_name, classification: pii_direct, type: VARCHAR(100), nullable: false, severity: error, provenance: realigned, description: Agent last name (in Spanish)}
+  - {name: email, classification: pii_direct, type: VARCHAR(100), nullable: false, severity: error, provenance: realigned, description: Corporate email}
+  - {name: phone, classification: pii_direct, type: VARCHAR(20), nullable: true, severity: warn, provenance: realigned, description: Contact phone}
+  - {name: native_accent, classification: pii_quasi, type: VARCHAR(50), nullable: false, allowed_values: [mexican, colombian, argentine], enum_status: listed, severity: error, provenance: realigned, description: Native Spanish accent}
+  - {name: country_of_origin, classification: pii_quasi, type: VARCHAR(50), nullable: false, profile: true, severity: error, provenance: realigned, description: Country of origin}
+  - {name: assigned_branch_id, classification: none, type: VARCHAR(20), nullable: true, fk: branches.branch_id, severity: warn, provenance: realigned, description: Assigned branch}
+  - {name: agent_type, classification: none, type: VARCHAR(30), nullable: false, allowed_values: [Phone, In-Person, Digital, Hybrid], enum_status: listed, severity: error, provenance: realigned, description: Agent type}
   - name: experience_level
+    classification: none
     type: VARCHAR(20)
     nullable: false
     allowed_values: [Junior, Mid-Senior, Senior, Specialist]
@@ -39,10 +40,10 @@ columns:
     note: >-
       Listed as "Junior, Mid-Senior, Senior, Specialist". Having both "Mid-Senior" and "Senior" is unusual and may be
       an extraction artifact (for example "Mid, Senior"). Enum violations are reported only until confirmed.
-  - {name: languages, type: VARCHAR(100), nullable: false, severity: error, provenance: realigned, description: Languages spoken}
-  - {name: specialty, type: VARCHAR(100), nullable: true, profile: true, severity: warn, provenance: realigned, description: Specialty}
-  - {name: hire_date, type: DATE, nullable: false, severity: error, provenance: realigned, description: Hire date}
-  - {name: avg_csat, type: "DECIMAL(3,2)", nullable: true, min: 1, max: 5, severity: error, provenance: realigned, description: Average CSAT score (1-5)}
-  - {name: total_monthly_interactions, type: INTEGER, nullable: true, severity: warn, provenance: realigned, description: Total interactions in last month}
-  - {name: agent_status, type: VARCHAR(20), nullable: false, allowed_values: [Active, Vacation, Leave, Inactive], enum_status: listed, severity: error, provenance: realigned, description: Agent status}
-  - {name: work_shift, type: VARCHAR(20), nullable: false, allowed_values: [Morning, Afternoon, Night, Rotating], enum_status: listed, severity: error, provenance: realigned, description: Work shift}
+  - {name: languages, classification: none, type: VARCHAR(100), nullable: false, severity: error, provenance: realigned, description: Languages spoken}
+  - {name: specialty, classification: none, type: VARCHAR(100), nullable: true, profile: true, severity: warn, provenance: realigned, description: Specialty}
+  - {name: hire_date, classification: none, type: DATE, nullable: false, severity: error, provenance: realigned, description: Hire date}
+  - {name: avg_csat, classification: none, type: "DECIMAL(3,2)", nullable: true, min: 1, max: 5, severity: error, provenance: realigned, description: Average CSAT score (1-5)}
+  - {name: total_monthly_interactions, classification: none, type: INTEGER, nullable: true, severity: warn, provenance: realigned, description: Total interactions in last month}
+  - {name: agent_status, classification: none, type: VARCHAR(20), nullable: false, allowed_values: [Active, Vacation, Leave, Inactive], enum_status: listed, severity: error, provenance: realigned, description: Agent status}
+  - {name: work_shift, classification: none, type: VARCHAR(20), nullable: false, allowed_values: [Morning, Afternoon, Night, Rotating], enum_status: listed, severity: error, provenance: realigned, description: Work shift}

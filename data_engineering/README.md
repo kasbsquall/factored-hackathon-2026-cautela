@@ -97,7 +97,7 @@ Each column records its type, nullability, primary key, uniqueness, foreign key,
 | `realigned` | The extraction printed descriptions and constraints below the column list; they were matched by position after checking that the counts agree (for example 22 columns and 22 descriptions in `transactions`) |
 | `decoded` | The value list was interleaved with the constraint text (`AdNjuOsTtmNeUntL)L` is "Adjustment" plus "NOT NULL") and was decoded by removing the known constraint letters |
 
-A value list that is truncated is marked `enum_status: unknown`, carries a note, and is profiled in the quality report instead of being guessed. Nothing was invented to fill a gap.
+Each column also carries a data `classification` (see the data classification section). A value list that is truncated is marked `enum_status: unknown`, carries a note, and is profiled in the quality report instead of being guessed. Nothing was invented to fill a gap.
 
 ### Severity: what quarantines and what only reports
 
@@ -361,6 +361,35 @@ The rewrite path is tested on the fixture in `tests/test_freshness.py`: seed 42 
 **Update test on organizer data.** The bucket holds the current delivery under `data/` and an earlier generation of the dataset under `data_backup_20260831/`. `make freshness-demo` loads the earlier generation, overwrites the landing directory with the current one and loads again into the same warehouse, then compares it with a warehouse built in one load. The earlier generation is not an incremental predecessor: 2,650 of the 2,653 paths the two states share hold different bytes and most keys were regenerated, so the run exercises the rewrite path at full volume (2,653 files rewritten, 2,838 new, 1,839,229 transaction rows and 581,513 quarantined interaction rows withdrawn) rather than a daily increment. The updated warehouse matched the single load in all 31 compared objects, every gold table that reads a rewritten table was rebuilt in full, and a rerun read nothing. Replay was not exercised there (every file of a table was rewritten); the fixture tests cover it. Full numbers and what the run does not prove: `reports/freshness_backup_vs_current.md`.
 
 One conservative effect showed up in that run: a silver run that loads nothing still counts as a newer silver run, so the repository refuses to start until gold runs again. Gold then skips every table in a few seconds.
+
+## Data classification and data at rest
+
+Every column of the 13 silver contracts and of the gold contracts carries a `classification`. The loaders refuse a column without one, and `tests/test_classification.py` checks the classes below.
+
+| Class | Rule | Examples |
+|---|---|---|
+| `pii_direct` | Identifies a person on its own, or is free text a person wrote or said | document number, first and last name, email, phones, address; call transcripts, complaint descriptions and resolutions, survey comments; agent names and contacts |
+| `pii_quasi` | Identifies a person only in combination with other data, or links a row to a person | customer and agent ids, employee code, date of birth, gender, city, state, postal code, accent, occupation, marital status, education, IP address and IP location, session id, transaction city and coordinates |
+| `sensitive_financial` | An account or card number, balance, limit, rate, income, credit or fraud score, or a money amount of a person | product number, balance, credit limit, interest rate, days past due, credit score, monthly income, transaction and claimed amounts |
+| `none` | Everything else | statuses, categories, event dates, bank reference data (branches, campaigns, exchange rates) |
+
+Of the 260 silver columns, 18 are `pii_direct`, 36 `pii_quasi`, 15 `sensitive_financial` and 191 `none`. The gold serving tables hold two direct identifiers, the customer's first and last name in `customer_profile`: the agent uses them for the "First L." display name and to mask the name in free text. A test fails if any other direct identifier reaches a gold table, or if a gold column copied from silver carries a weaker class than its source. The classification changes no row, so it is left out of the gold definition hash and adding it forced no rebuild.
+
+**What is stored where.** The classification is recorded, and storage does not act on it yet: nothing is masked, tokenized or encrypted at rest in this build.
+
+| Location | What it holds, in clear | Who can read it |
+|---|---|---|
+| `data/raw/` | The delivered CSV files: every column, including document numbers, names, dates of birth, email, phones, addresses, transcripts and complaint texts | Anyone with access to the machine account that ran `make mirror`. Git-ignored, never committed |
+| `data/warehouse_real.duckdb`: bronze and silver | Every delivered column, as text in bronze and typed in silver | Same. The DuckDB file is not encrypted |
+| `quarantine.records` | The raw record of every quarantined row, as received (0 rows in the current organizer warehouse) | Same |
+| gold | Customer names, state and city; customer ids, amounts and fraud scores; no document number or contact details | Same. The agent opens the warehouse read-only |
+| Other files under `data/` (freshness caches and scratch warehouses, eval slices) | Copies of the same organizer rows | Same |
+| `data/reports/*.json` | Counts, null rates and value profiles of listed columns (document type, country, accent, marital status, education) | Same. The committed files in `reports/` hold aggregates only |
+| The demo slice on the VPS (`warehouse.duckdb` in the demo bundle) | Bronze and silver customers, products and transactions of the eight demo customers, with names, document numbers, dates of birth and contact details, plus their gold serving rows | The container that serves the demo, and anyone with shell access to the VPS host, where the bundle tarball is copied and unpacked (`deploy/README.md`) |
+
+Today the protection is on the serving path: tools take the customer from the session and never from their arguments, the warehouse is opened read-only, and document, email and phone are masked before they reach the model, the audit log and the handoff (top-level `SECURITY.md`).
+
+**Production alternative.** In a bank deployment the classification would drive storage. Direct identifiers would leave the analytical layers: `document_number` stored as a keyed HMAC in silver (the identity lookup already normalizes the document before comparing, so it can compare keyed hashes instead), and names and contact details kept in an identity store that only the identity service reads, or behind column-level masking policies by role in the warehouse engine. The warehouse files, the landing copy and the bucket would be encrypted at rest with keys held in a key management service, quarantine raw records would carry a retention limit, and the demo slice would carry synthetic names, documents and contacts. None of this is built here.
 
 ## Capacity limits and route to production
 

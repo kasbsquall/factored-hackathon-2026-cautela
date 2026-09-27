@@ -10,32 +10,32 @@ notes:
   - resolution_days exists only for Resolved and Closed complaints; with_resolution_days is the denominator of its percentiles.
   - is_escalated reflects the current status (a snapshot), not whether the case was ever escalated.
 columns:
-  - {name: complaint_type, type: VARCHAR, nullable: false, description: "category / subcategory, or (all complaints)"}
-  - {name: is_unrecognized_charge, type: BOOLEAN, description: Null on the (all complaints) rows}
-  - {name: dimension, type: VARCHAR, nullable: false, allowed_values: [overall, customer_country, customer_segment, reception_channel], description: Breakdown}
-  - {name: dimension_value, type: VARCHAR, nullable: false, description: "Breakdown value, all for overall"}
-  - {name: complaints, type: BIGINT, nullable: false, min: 1, description: Complaints in the group}
-  - {name: distinct_customers, type: BIGINT, nullable: false, min: 1, description: Distinct customers}
-  - {name: sla_breached, type: BIGINT, nullable: false, min: 0, description: Complaints with sla_breached}
-  - {name: sla_breach_rate, type: DOUBLE, nullable: false, min: 0, max: 1, description: sla_breached / complaints}
-  - {name: escalated, type: BIGINT, nullable: false, min: 0, description: Complaints whose status is Escalated}
-  - {name: escalation_rate, type: DOUBLE, nullable: false, min: 0, max: 1, description: escalated / complaints}
-  - {name: with_resolution_days, type: BIGINT, nullable: false, min: 0, description: Complaints with resolution_days}
-  - {name: resolution_days_p50, type: DOUBLE, min: 0, description: Median resolution days over with_resolution_days}
-  - {name: resolution_days_p90, type: DOUBLE, min: 0, description: 90th percentile resolution days}
-  - {name: with_first_response, type: BIGINT, nullable: false, min: 0, description: Complaints with a first response date}
-  - {name: first_response_hours_p50, type: DOUBLE, description: Median hours to first response}
-  - {name: first_response_hours_p90, type: DOUBLE, description: 90th percentile hours to first response}
-  - {name: repeat_flag_delivered, type: BIGINT, nullable: false, min: 0, description: Complaints flagged is_repeat_complainer}
-  - {name: prior_complaint_90d, type: BIGINT, nullable: false, min: 0, description: Complaints with a measured earlier complaint within 90 days}
-  - {name: repeat_flag_confirmed, type: BIGINT, nullable: false, min: 0, description: Flagged and confirmed by the history}
-  - {name: next_complaint_30d, type: BIGINT, nullable: false, min: 0, description: Complaints followed by another within 30 days}
-  - {name: repeat_30d_rate, type: DOUBLE, nullable: false, min: 0, max: 1, description: next_complaint_30d / complaints}
-  - {name: with_claimed_amount, type: BIGINT, nullable: false, min: 0, description: Complaints with a claimed amount}
-  - {name: with_satisfaction, type: BIGINT, nullable: false, min: 0, description: Complaints with a satisfaction score}
-  - {name: satisfaction_mean, type: DOUBLE, min: 1, max: 5, description: Mean satisfaction over with_satisfaction}
-  - {name: first_date, type: DATE, nullable: false, description: First creation date in the group}
-  - {name: last_date, type: DATE, nullable: false, description: Last creation date in the group}
+  - {name: complaint_type, classification: none, type: VARCHAR, nullable: false, description: "category / subcategory, or (all complaints)"}
+  - {name: is_unrecognized_charge, classification: none, type: BOOLEAN, description: Null on the (all complaints) rows}
+  - {name: dimension, classification: none, type: VARCHAR, nullable: false, allowed_values: [overall, customer_country, customer_segment, reception_channel], description: Breakdown}
+  - {name: dimension_value, classification: none, type: VARCHAR, nullable: false, description: "Breakdown value, all for overall"}
+  - {name: complaints, classification: none, type: BIGINT, nullable: false, min: 1, description: Complaints in the group}
+  - {name: distinct_customers, classification: none, type: BIGINT, nullable: false, min: 1, description: Distinct customers}
+  - {name: sla_breached, classification: none, type: BIGINT, nullable: false, min: 0, description: Complaints with sla_breached}
+  - {name: sla_breach_rate, classification: none, type: DOUBLE, nullable: false, min: 0, max: 1, description: sla_breached / complaints}
+  - {name: escalated, classification: none, type: BIGINT, nullable: false, min: 0, description: Complaints whose status is Escalated}
+  - {name: escalation_rate, classification: none, type: DOUBLE, nullable: false, min: 0, max: 1, description: escalated / complaints}
+  - {name: with_resolution_days, classification: none, type: BIGINT, nullable: false, min: 0, description: Complaints with resolution_days}
+  - {name: resolution_days_p50, classification: none, type: DOUBLE, min: 0, description: Median resolution days over with_resolution_days}
+  - {name: resolution_days_p90, classification: none, type: DOUBLE, min: 0, description: 90th percentile resolution days}
+  - {name: with_first_response, classification: none, type: BIGINT, nullable: false, min: 0, description: Complaints with a first response date}
+  - {name: first_response_hours_p50, classification: none, type: DOUBLE, description: Median hours to first response}
+  - {name: first_response_hours_p90, classification: none, type: DOUBLE, description: 90th percentile hours to first response}
+  - {name: repeat_flag_delivered, classification: none, type: BIGINT, nullable: false, min: 0, description: Complaints flagged is_repeat_complainer}
+  - {name: prior_complaint_90d, classification: none, type: BIGINT, nullable: false, min: 0, description: Complaints with a measured earlier complaint within 90 days}
+  - {name: repeat_flag_confirmed, classification: none, type: BIGINT, nullable: false, min: 0, description: Flagged and confirmed by the history}
+  - {name: next_complaint_30d, classification: none, type: BIGINT, nullable: false, min: 0, description: Complaints followed by another within 30 days}
+  - {name: repeat_30d_rate, classification: none, type: DOUBLE, nullable: false, min: 0, max: 1, description: next_complaint_30d / complaints}
+  - {name: with_claimed_amount, classification: none, type: BIGINT, nullable: false, min: 0, description: Complaints with a claimed amount}
+  - {name: with_satisfaction, classification: none, type: BIGINT, nullable: false, min: 0, description: Complaints with a satisfaction score}
+  - {name: satisfaction_mean, classification: none, type: DOUBLE, min: 1, max: 5, description: Mean satisfaction over with_satisfaction}
+  - {name: first_date, classification: none, type: DATE, nullable: false, description: First creation date in the group}
+  - {name: last_date, classification: none, type: DATE, nullable: false, description: Last creation date in the group}
 reconciliation:
   - name: total_matches_silver
     description: The overall total equals the silver complaint count.

@@ -13,13 +13,14 @@ layout: clean
 notes:
   - mentioned_products holds comma-separated product IDs; it is not a declared foreign key and is not checked.
 columns:
-  - {name: interaction_id, type: VARCHAR(30), nullable: false, pk: true, severity: error, description: Unique interaction ID}
-  - {name: interaction_date, type: TIMESTAMP, nullable: false, severity: error, description: Interaction date and time}
-  - {name: process_date, type: DATE, nullable: false, severity: error, description: Process date (partition key)}
-  - {name: customer_id, type: VARCHAR(20), nullable: false, fk: customers.customer_id, severity: error, description: Customer ID}
-  - {name: agent_id, type: VARCHAR(20), nullable: true, fk: service_agents.agent_id, severity: warn, description: Agent ID who attended}
-  - {name: interaction_type, type: VARCHAR(30), nullable: false, allowed_values: [Inbound Call, Outbound Call, Chat, Email, Video], enum_status: listed, severity: error, description: Interaction type}
+  - {name: interaction_id, classification: none, type: VARCHAR(30), nullable: false, pk: true, severity: error, description: Unique interaction ID}
+  - {name: interaction_date, classification: none, type: TIMESTAMP, nullable: false, severity: error, description: Interaction date and time}
+  - {name: process_date, classification: none, type: DATE, nullable: false, severity: error, description: Process date (partition key)}
+  - {name: customer_id, classification: pii_quasi, type: VARCHAR(20), nullable: false, fk: customers.customer_id, severity: error, description: Customer ID}
+  - {name: agent_id, classification: pii_quasi, type: VARCHAR(20), nullable: true, fk: service_agents.agent_id, severity: warn, description: Agent ID who attended}
+  - {name: interaction_type, classification: none, type: VARCHAR(30), nullable: false, allowed_values: [Inbound Call, Outbound Call, Chat, Email, Video], enum_status: listed, severity: error, description: Interaction type}
   - name: channel
+    classification: none
     type: VARCHAR(30)
     nullable: false
     allowed_values: [Phone, Web Chat, WhatsApp, Email, App]
@@ -31,8 +32,9 @@ columns:
     note: >-
       "Web" (3,395 rows) is not in the dictionary. It may or may not mean "Web Chat", so it is accepted as its own
       observed value instead of being mapped.
-  - {name: contact_reason, type: VARCHAR(100), nullable: false, profile: true, severity: error, description: Main contact reason (no values listed)}
+  - {name: contact_reason, classification: none, type: VARCHAR(100), nullable: false, profile: true, severity: error, description: Main contact reason (no values listed)}
   - name: reason_category
+    classification: none
     type: VARCHAR(50)
     nullable: false
     allowed_values: [Transactional, Product, Technical, Commercial, Complaint]
@@ -48,11 +50,12 @@ columns:
       Extracted text ends with "CoNmOpTlaNinUt)LL", decoded as "Complaint" and NOT NULL. The delivered values are
       Spanish; five map one to one onto the documented English values. "Retención" (20,578 rows) has no
       documented counterpart and is kept as delivered rather than translated.
-  - {name: duration_seconds, type: INTEGER, nullable: true, severity: warn, description: Duration in seconds}
-  - {name: wait_time_seconds, type: INTEGER, nullable: true, severity: warn, description: Wait time before service}
-  - {name: was_resolved, type: BOOLEAN, nullable: true, severity: warn, description: Resolved on first call (FCR)}
-  - {name: requires_followup, type: BOOLEAN, nullable: false, severity: error, description: Requires follow-up}
+  - {name: duration_seconds, classification: none, type: INTEGER, nullable: true, severity: warn, description: Duration in seconds}
+  - {name: wait_time_seconds, classification: none, type: INTEGER, nullable: true, severity: warn, description: Wait time before service}
+  - {name: was_resolved, classification: none, type: BOOLEAN, nullable: true, severity: warn, description: Resolved on first call (FCR)}
+  - {name: requires_followup, classification: none, type: BOOLEAN, nullable: false, severity: error, description: Requires follow-up}
   - name: detected_sentiment
+    classification: none
     type: VARCHAR(20)
     nullable: true
     allowed_values: [Positive, Neutral, Negative, Very Negative]
@@ -65,10 +68,10 @@ columns:
     note: >-
       Delivered in Spanish except "Neutral". Positivo, Negativo and Muy Negativo map onto documented values.
       "Muy Positivo" (18,973 rows) has no documented counterpart and is kept as delivered.
-  - {name: sentiment_score, type: "DECIMAL(3,2)", nullable: true, min: -1, max: 1, severity: error, description: Sentiment score (-1 to 1)}
-  - {name: customer_detected_accent, type: VARCHAR(50), nullable: true, profile: true, severity: warn, description: Customer's detected accent}
-  - {name: agent_used_accent, type: VARCHAR(50), nullable: true, severity: warn, description: Accent used by agent in response}
-  - {name: was_escalated, type: BOOLEAN, nullable: false, severity: error, description: Was escalated to supervisor}
-  - {name: mentioned_products, type: VARCHAR(200), nullable: true, severity: warn, description: Product IDs mentioned (comma-separated)}
-  - {name: has_transcript, type: BOOLEAN, nullable: false, severity: error, description: Has transcript available}
-  - {name: has_recording, type: BOOLEAN, nullable: false, severity: error, description: Has audio recording}
+  - {name: sentiment_score, classification: none, type: "DECIMAL(3,2)", nullable: true, min: -1, max: 1, severity: error, description: Sentiment score (-1 to 1)}
+  - {name: customer_detected_accent, classification: pii_quasi, type: VARCHAR(50), nullable: true, profile: true, severity: warn, description: Customer's detected accent}
+  - {name: agent_used_accent, classification: none, type: VARCHAR(50), nullable: true, severity: warn, description: Accent used by agent in response}
+  - {name: was_escalated, classification: none, type: BOOLEAN, nullable: false, severity: error, description: Was escalated to supervisor}
+  - {name: mentioned_products, classification: none, type: VARCHAR(200), nullable: true, severity: warn, description: Product IDs mentioned (comma-separated)}
+  - {name: has_transcript, classification: none, type: BOOLEAN, nullable: false, severity: error, description: Has transcript available}
+  - {name: has_recording, classification: none, type: BOOLEAN, nullable: false, severity: error, description: Has audio recording}

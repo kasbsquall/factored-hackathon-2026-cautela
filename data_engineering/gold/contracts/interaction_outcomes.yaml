@@ -10,24 +10,24 @@ notes:
   - FCR is the dictionary's was_resolved ("Resolved on first call"); fcr_denominator counts non-null values.
   - duration_seconds is the only handling-time field in the data; it is null in some rows (with_duration is its denominator).
 columns:
-  - {name: reason_category, type: VARCHAR, nullable: false, description: "Reason category (normalized in silver), or (all reasons)"}
-  - {name: contact_reason, type: VARCHAR, nullable: false, description: "Contact reason as delivered, or (all reasons)"}
-  - {name: dimension, type: VARCHAR, nullable: false, allowed_values: [overall, customer_country, customer_segment, channel], description: Breakdown}
-  - {name: dimension_value, type: VARCHAR, nullable: false, description: "Breakdown value, all for overall"}
-  - {name: interactions, type: BIGINT, nullable: false, min: 1, description: Interactions in the group}
-  - {name: fcr_denominator, type: BIGINT, nullable: false, min: 0, description: Interactions with a non-null was_resolved}
-  - {name: resolved_first_contact, type: BIGINT, nullable: false, min: 0, description: Interactions with was_resolved true}
-  - {name: fcr_rate, type: DOUBLE, min: 0, max: 1, description: resolved_first_contact / fcr_denominator}
-  - {name: escalated, type: BIGINT, nullable: false, min: 0, description: Interactions escalated to a supervisor}
-  - {name: escalation_rate, type: DOUBLE, nullable: false, min: 0, max: 1, description: escalated / interactions}
-  - {name: requires_followup, type: BIGINT, nullable: false, min: 0, description: Interactions that require follow-up}
-  - {name: with_duration, type: BIGINT, nullable: false, min: 0, description: Interactions with duration_seconds}
-  - {name: duration_p50_seconds, type: DOUBLE, min: 0, description: Median handling duration}
-  - {name: duration_p90_seconds, type: DOUBLE, min: 0, description: 90th percentile handling duration}
-  - {name: duration_mean_seconds, type: DOUBLE, min: 0, description: Mean handling duration}
-  - {name: with_wait, type: BIGINT, nullable: false, min: 0, description: Interactions with wait_time_seconds}
-  - {name: wait_p50_seconds, type: DOUBLE, min: 0, description: Median wait before service}
-  - {name: wait_p90_seconds, type: DOUBLE, min: 0, description: 90th percentile wait before service}
+  - {name: reason_category, classification: none, type: VARCHAR, nullable: false, description: "Reason category (normalized in silver), or (all reasons)"}
+  - {name: contact_reason, classification: none, type: VARCHAR, nullable: false, description: "Contact reason as delivered, or (all reasons)"}
+  - {name: dimension, classification: none, type: VARCHAR, nullable: false, allowed_values: [overall, customer_country, customer_segment, channel], description: Breakdown}
+  - {name: dimension_value, classification: none, type: VARCHAR, nullable: false, description: "Breakdown value, all for overall"}
+  - {name: interactions, classification: none, type: BIGINT, nullable: false, min: 1, description: Interactions in the group}
+  - {name: fcr_denominator, classification: none, type: BIGINT, nullable: false, min: 0, description: Interactions with a non-null was_resolved}
+  - {name: resolved_first_contact, classification: none, type: BIGINT, nullable: false, min: 0, description: Interactions with was_resolved true}
+  - {name: fcr_rate, classification: none, type: DOUBLE, min: 0, max: 1, description: resolved_first_contact / fcr_denominator}
+  - {name: escalated, classification: none, type: BIGINT, nullable: false, min: 0, description: Interactions escalated to a supervisor}
+  - {name: escalation_rate, classification: none, type: DOUBLE, nullable: false, min: 0, max: 1, description: escalated / interactions}
+  - {name: requires_followup, classification: none, type: BIGINT, nullable: false, min: 0, description: Interactions that require follow-up}
+  - {name: with_duration, classification: none, type: BIGINT, nullable: false, min: 0, description: Interactions with duration_seconds}
+  - {name: duration_p50_seconds, classification: none, type: DOUBLE, min: 0, description: Median handling duration}
+  - {name: duration_p90_seconds, classification: none, type: DOUBLE, min: 0, description: 90th percentile handling duration}
+  - {name: duration_mean_seconds, classification: none, type: DOUBLE, min: 0, description: Mean handling duration}
+  - {name: with_wait, classification: none, type: BIGINT, nullable: false, min: 0, description: Interactions with wait_time_seconds}
+  - {name: wait_p50_seconds, classification: none, type: DOUBLE, min: 0, description: Median wait before service}
+  - {name: wait_p90_seconds, classification: none, type: DOUBLE, min: 0, description: 90th percentile wait before service}
 reconciliation:
   - name: total_matches_silver
     description: The overall total equals the silver interaction count.

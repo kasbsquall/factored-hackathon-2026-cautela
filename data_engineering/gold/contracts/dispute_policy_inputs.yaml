@@ -10,23 +10,23 @@ notes:
   - A view over two gold tables, so it is always as fresh as they are and needs no incremental logic of its own.
   - Transaction age is not stored because it depends on the request time; the policy engine computes it.
 columns:
-  - {name: transaction_id, type: VARCHAR, nullable: false, description: Transaction ID}
-  - {name: customer_id, type: VARCHAR, nullable: false, description: Owner of the transaction}
-  - {name: customer_country, type: VARCHAR, description: Customer country; selects the claim window rule}
-  - {name: customer_segment, type: VARCHAR, description: "Customer segment, for segment-level reporting"}
-  - {name: customer_status, type: VARCHAR, description: Customer status}
-  - {name: product_id, type: VARCHAR, nullable: false, description: Product moved}
-  - {name: product_type, type: VARCHAR, description: Product type; some windows apply to cards only}
-  - {name: product_status, type: VARCHAR, description: Product status as delivered (sandbox blocks are overlaid by the tool)}
-  - {name: channel, type: VARCHAR, nullable: false, description: Transaction channel; some windows apply to remote channels only}
-  - {name: transaction_type, type: VARCHAR, nullable: false, description: Transaction type}
-  - {name: transaction_status, type: VARCHAR, nullable: false, description: Transaction status}
-  - {name: transaction_date, type: TIMESTAMP, nullable: false, description: Anchor for the claim window}
-  - {name: amount, type: "DECIMAL(15,2)", nullable: false, description: Amount in the transaction currency}
-  - {name: currency, type: VARCHAR, nullable: false, description: Transaction currency}
-  - {name: amount_usd, type: "DECIMAL(15,2)", description: Amount in USD; drives the human-review threshold}
-  - {name: fraud_score, type: "DECIMAL(5,2)", min: 0, max: 100, description: Fraud score; drives forced escalation}
-  - {name: is_fraud, type: BOOLEAN, nullable: false, description: Fraud label as delivered}
+  - {name: transaction_id, classification: none, type: VARCHAR, nullable: false, description: Transaction ID}
+  - {name: customer_id, classification: pii_quasi, type: VARCHAR, nullable: false, description: Owner of the transaction}
+  - {name: customer_country, classification: none, type: VARCHAR, description: Customer country; selects the claim window rule}
+  - {name: customer_segment, classification: none, type: VARCHAR, description: "Customer segment, for segment-level reporting"}
+  - {name: customer_status, classification: none, type: VARCHAR, description: Customer status}
+  - {name: product_id, classification: none, type: VARCHAR, nullable: false, description: Product moved}
+  - {name: product_type, classification: none, type: VARCHAR, description: Product type; some windows apply to cards only}
+  - {name: product_status, classification: none, type: VARCHAR, description: Product status as delivered (sandbox blocks are overlaid by the tool)}
+  - {name: channel, classification: none, type: VARCHAR, nullable: false, description: Transaction channel; some windows apply to remote channels only}
+  - {name: transaction_type, classification: none, type: VARCHAR, nullable: false, description: Transaction type}
+  - {name: transaction_status, classification: none, type: VARCHAR, nullable: false, description: Transaction status}
+  - {name: transaction_date, classification: none, type: TIMESTAMP, nullable: false, description: Anchor for the claim window}
+  - {name: amount, classification: sensitive_financial, type: "DECIMAL(15,2)", nullable: false, description: Amount in the transaction currency}
+  - {name: currency, classification: none, type: VARCHAR, nullable: false, description: Transaction currency}
+  - {name: amount_usd, classification: sensitive_financial, type: "DECIMAL(15,2)", description: Amount in USD; drives the human-review threshold}
+  - {name: fraud_score, classification: sensitive_financial, type: "DECIMAL(5,2)", min: 0, max: 100, description: Fraud score; drives forced escalation}
+  - {name: is_fraud, classification: sensitive_financial, type: BOOLEAN, nullable: false, description: Fraud label as delivered}
 reconciliation:
   - name: one_row_per_gold_transaction
     description: The view neither drops nor duplicates transactions.

@@ -9,13 +9,13 @@ lineage_source: gold.complaint_facts
 notes:
   - Days without contacts have no row; a daily series must be densified against the calendar before computing percentiles.
 columns:
-  - {name: source_system, type: VARCHAR, nullable: false, allowed_values: [complaints, interactions], description: Where the contact was recorded}
-  - {name: workflow, type: VARCHAR, nullable: false, description: Complaint type or contact reason}
-  - {name: is_unrecognized_charge, type: BOOLEAN, nullable: false, description: The workflow is the unrecognized-charge workflow}
-  - {name: country, type: VARCHAR, nullable: false, description: "Customer country, Unknown when the customer is not in silver"}
-  - {name: channel, type: VARCHAR, nullable: false, description: Reception or contact channel}
-  - {name: event_date, type: DATE, nullable: false, description: Calendar day of the event time}
-  - {name: contacts, type: BIGINT, nullable: false, min: 1, description: Contacts in the cell}
+  - {name: source_system, classification: none, type: VARCHAR, nullable: false, allowed_values: [complaints, interactions], description: Where the contact was recorded}
+  - {name: workflow, classification: none, type: VARCHAR, nullable: false, description: Complaint type or contact reason}
+  - {name: is_unrecognized_charge, classification: none, type: BOOLEAN, nullable: false, description: The workflow is the unrecognized-charge workflow}
+  - {name: country, classification: none, type: VARCHAR, nullable: false, description: "Customer country, Unknown when the customer is not in silver"}
+  - {name: channel, classification: none, type: VARCHAR, nullable: false, description: Reception or contact channel}
+  - {name: event_date, classification: none, type: DATE, nullable: false, description: Calendar day of the event time}
+  - {name: contacts, classification: none, type: BIGINT, nullable: false, min: 1, description: Contacts in the cell}
 reconciliation:
   - name: complaints_add_up
     description: Complaint contacts equal the silver complaint count.

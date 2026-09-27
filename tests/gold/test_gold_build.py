@@ -112,7 +112,7 @@ def test_a_failing_check_rolls_the_table_back(gold_copy, gold_contracts):
 def test_sql_that_disagrees_with_the_contract_is_refused(gold_copy, gold_contracts):
     contract = gold_contracts["customer_profile"]
     wrong = contract.model_copy(update={"columns": [
-        GoldColumn(name="products_total", type="DOUBLE", nullable=False, description="wrong type")
+        GoldColumn(name="products_total", classification="none", type="DOUBLE", nullable=False, description="wrong type")
         if c.name == "products_total" else c for c in contract.columns]})
     with duckdb.connect(str(gold_copy)) as con, pytest.raises(GoldQualityError, match="products_total"):
         build_table(con, wrong, "run-with-wrong-schema")

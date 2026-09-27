@@ -39,7 +39,7 @@ def _base(**overrides) -> dict:
     spec = {"table": "t", "kind": "row", "purpose": "serving", "description": "d", "primary_key": ["id"],
             "sources": ["customers"], "lineage_source": "customers",
             "changed_keys": {"customers": "SELECT customer_id FROM silver.customers WHERE _ingested_at > {wm}"},
-            "columns": [{"name": "id", "type": "VARCHAR", "nullable": False, "description": "key"}]}
+            "columns": [{"name": "id", "classification": "none", "type": "VARCHAR", "nullable": False, "description": "key"}]}
     spec.update(overrides)
     return spec
 
@@ -51,10 +51,10 @@ def test_valid_minimal_contract():
 @pytest.mark.parametrize("overrides", [
     {"changed_keys": {}},  # row table without incremental key queries
     {"changed_keys": {"customers": "SELECT customer_id FROM silver.customers"}},  # no watermark filter
-    {"columns": [{"name": "id", "type": "VARCHAR", "nullable": True, "description": "key"}]},  # nullable key
-    {"columns": [{"name": "id", "type": "VARCHAR", "nullable": False, "min": 0, "description": "key"}]},
-    {"columns": [{"name": "id", "type": "TEXT", "nullable": False, "description": "key"}]},  # type not allowed
-    {"columns": [{"name": "_id", "type": "VARCHAR", "nullable": False, "description": "key"}]},  # reserved name
+    {"columns": [{"name": "id", "classification": "none", "type": "VARCHAR", "nullable": True, "description": "key"}]},  # nullable key
+    {"columns": [{"name": "id", "classification": "none", "type": "VARCHAR", "nullable": False, "min": 0, "description": "key"}]},
+    {"columns": [{"name": "id", "classification": "none", "type": "TEXT", "nullable": False, "description": "key"}]},  # type not allowed
+    {"columns": [{"name": "_id", "classification": "none", "type": "VARCHAR", "nullable": False, "description": "key"}]},  # reserved name
     {"kind": "aggregate"},  # changed_keys only belong to row tables
     {"primary_key": ["id", "other"]},  # undeclared key column
 ])

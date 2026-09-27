@@ -18,6 +18,11 @@ CONTRACTS_DIR = Path(__file__).resolve().parent
 
 Severity = Literal["error", "warn"]
 CheckName = Literal["not_null", "bad_enum", "out_of_range", "orphan_fk"]
+# Data classification of a column (README "Data at rest"): pii_direct identifies a person on its own or is free text a
+# person wrote or said; pii_quasi identifies a person only in combination, or links a row to one (person keys, date of
+# birth, residence, device and location data); sensitive_financial is an account or card number, balance, limit,
+# income, credit or fraud score, or a money amount of a person; none is everything else.
+Classification = Literal["pii_direct", "pii_quasi", "sensitive_financial", "none"]
 
 _TYPE_PATTERN = re.compile(r"^(VARCHAR\(\d+\)|TEXT|DATE|TIMESTAMP|TIME|BOOLEAN|INTEGER|DECIMAL\(\d+,\d+\))$")
 _NUMERIC_PREFIXES = ("INTEGER", "DECIMAL")
@@ -36,6 +41,7 @@ class ColumnContract(BaseModel):
     name: str
     type: str
     nullable: bool
+    classification: Classification
     pk: bool = False
     unique: bool = False
     fk: str | None = None

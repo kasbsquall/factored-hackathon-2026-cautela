@@ -12,25 +12,25 @@ expected_rows: 2000000
 layout: clean
 notes: []
 columns:
-  - {name: send_id, type: VARCHAR(30), nullable: false, pk: true, severity: error, description: Unique send ID}
-  - {name: send_date, type: TIMESTAMP, nullable: false, severity: error, description: Send date and time}
-  - {name: process_date, type: DATE, nullable: false, severity: error, description: Process date (partition key)}
-  - {name: campaign_id, type: VARCHAR(20), nullable: false, fk: marketing_campaigns.campaign_id, severity: error, description: Campaign ID}
-  - {name: customer_id, type: VARCHAR(20), nullable: false, fk: customers.customer_id, severity: error, description: Recipient customer ID}
-  - {name: send_channel, type: VARCHAR(30), nullable: false, allowed_values: [Email, SMS, Push, WhatsApp, Voice], enum_status: listed, severity: error, description: Channel}
-  - {name: template_used, type: VARCHAR(100), nullable: true, severity: warn, description: Template used}
-  - {name: subject, type: VARCHAR(200), nullable: true, severity: warn, description: Message subject}
-  - {name: send_status, type: VARCHAR(20), nullable: false, allowed_values: [Sent, Failed, Bounced, Blocked], enum_status: listed, severity: error, description: Send status}
-  - {name: was_delivered, type: BOOLEAN, nullable: false, severity: error, description: Was delivered successfully}
-  - {name: was_opened, type: BOOLEAN, nullable: true, severity: warn, description: Was opened/read}
-  - {name: open_date, type: TIMESTAMP, nullable: true, severity: warn, description: Open date}
-  - {name: was_clicked, type: BOOLEAN, nullable: true, severity: warn, description: Clicked on any link}
-  - {name: click_date, type: TIMESTAMP, nullable: true, severity: warn, description: First click date}
-  - {name: click_count, type: INTEGER, nullable: true, severity: warn, description: Total click count}
-  - {name: had_conversion, type: BOOLEAN, nullable: false, severity: error, description: Converted (completed desired action)}
-  - {name: conversion_date, type: TIMESTAMP, nullable: true, severity: warn, description: Conversion date}
-  - {name: conversion_value, type: "DECIMAL(15,2)", nullable: true, severity: warn, description: Conversion monetary value}
-  - {name: open_device, type: VARCHAR(30), nullable: true, severity: warn, description: Device used to open}
-  - {name: open_country, type: VARCHAR(50), nullable: true, severity: warn, description: Country where opened}
-  - {name: failure_reason, type: VARCHAR(200), nullable: true, severity: warn, description: Failure reason (if applicable)}
-  - {name: send_cost, type: "DECIMAL(10,4)", nullable: true, severity: warn, description: Individual send cost}
+  - {name: send_id, classification: none, type: VARCHAR(30), nullable: false, pk: true, severity: error, description: Unique send ID}
+  - {name: send_date, classification: none, type: TIMESTAMP, nullable: false, severity: error, description: Send date and time}
+  - {name: process_date, classification: none, type: DATE, nullable: false, severity: error, description: Process date (partition key)}
+  - {name: campaign_id, classification: none, type: VARCHAR(20), nullable: false, fk: marketing_campaigns.campaign_id, severity: error, description: Campaign ID}
+  - {name: customer_id, classification: pii_quasi, type: VARCHAR(20), nullable: false, fk: customers.customer_id, severity: error, description: Recipient customer ID}
+  - {name: send_channel, classification: none, type: VARCHAR(30), nullable: false, allowed_values: [Email, SMS, Push, WhatsApp, Voice], enum_status: listed, severity: error, description: Channel}
+  - {name: template_used, classification: none, type: VARCHAR(100), nullable: true, severity: warn, description: Template used}
+  - {name: subject, classification: none, type: VARCHAR(200), nullable: true, severity: warn, description: Message subject}
+  - {name: send_status, classification: none, type: VARCHAR(20), nullable: false, allowed_values: [Sent, Failed, Bounced, Blocked], enum_status: listed, severity: error, description: Send status}
+  - {name: was_delivered, classification: none, type: BOOLEAN, nullable: false, severity: error, description: Was delivered successfully}
+  - {name: was_opened, classification: none, type: BOOLEAN, nullable: true, severity: warn, description: Was opened/read}
+  - {name: open_date, classification: none, type: TIMESTAMP, nullable: true, severity: warn, description: Open date}
+  - {name: was_clicked, classification: none, type: BOOLEAN, nullable: true, severity: warn, description: Clicked on any link}
+  - {name: click_date, classification: none, type: TIMESTAMP, nullable: true, severity: warn, description: First click date}
+  - {name: click_count, classification: none, type: INTEGER, nullable: true, severity: warn, description: Total click count}
+  - {name: had_conversion, classification: none, type: BOOLEAN, nullable: false, severity: error, description: Converted (completed desired action)}
+  - {name: conversion_date, classification: none, type: TIMESTAMP, nullable: true, severity: warn, description: Conversion date}
+  - {name: conversion_value, classification: sensitive_financial, type: "DECIMAL(15,2)", nullable: true, severity: warn, description: Conversion monetary value}
+  - {name: open_device, classification: none, type: VARCHAR(30), nullable: true, severity: warn, description: Device used to open}
+  - {name: open_country, classification: pii_quasi, type: VARCHAR(50), nullable: true, severity: warn, description: Country where opened}
+  - {name: failure_reason, classification: none, type: VARCHAR(200), nullable: true, severity: warn, description: Failure reason (if applicable)}
+  - {name: send_cost, classification: none, type: "DECIMAL(10,4)", nullable: true, severity: warn, description: Individual send cost}

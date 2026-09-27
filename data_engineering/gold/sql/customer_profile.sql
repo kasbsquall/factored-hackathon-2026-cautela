@@ -1,5 +1,8 @@
--- One row per silver customer: identity-free profile for get_customer_profile. Contact details (email, phones,
--- address, document number) are left out on purpose; the identity service reads them from silver.
+-- One row per silver customer for get_customer_profile: names, residence (state, city), country, segment, status and
+-- product counts. It is a profile without contact details: email, phones, address and document number are left out
+-- on purpose, and the identity service reads them from silver. Names and residence are personal data (see the
+-- column classification in the contract): the agent uses the names for the "First L." display name and to mask them
+-- in free text, and no tool returns state or city.
 WITH products AS (
     SELECT customer_id,
            count(*) AS products_total,

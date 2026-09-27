@@ -14,10 +14,10 @@ notes:
   - The table is partitioned daily but has no process_date column; the rate date is used as the partition column.
   - The direction of exchange_rate (source per target or target per source) is not documented.
 columns:
-  - {name: date, type: DATE, nullable: false, pk: true, severity: error, description: Exchange rate date}
-  - {name: source_currency, type: VARCHAR(3), nullable: false, pk: true, profile: true, severity: error, description: Source currency}
-  - {name: target_currency, type: VARCHAR(3), nullable: false, pk: true, profile: true, severity: error, description: Target currency}
-  - {name: exchange_rate, type: "DECIMAL(12,6)", nullable: false, severity: error, description: Exchange rate}
-  - {name: buy_rate, type: "DECIMAL(12,6)", nullable: true, severity: warn, description: Bank buy rate}
-  - {name: sell_rate, type: "DECIMAL(12,6)", nullable: true, severity: warn, description: Bank sell rate}
-  - {name: source, type: VARCHAR(50), nullable: true, profile: true, severity: warn, description: Exchange rate source}
+  - {name: date, classification: none, type: DATE, nullable: false, pk: true, severity: error, description: Exchange rate date}
+  - {name: source_currency, classification: none, type: VARCHAR(3), nullable: false, pk: true, profile: true, severity: error, description: Source currency}
+  - {name: target_currency, classification: none, type: VARCHAR(3), nullable: false, pk: true, profile: true, severity: error, description: Target currency}
+  - {name: exchange_rate, classification: none, type: "DECIMAL(12,6)", nullable: false, severity: error, description: Exchange rate}
+  - {name: buy_rate, classification: none, type: "DECIMAL(12,6)", nullable: true, severity: warn, description: Bank buy rate}
+  - {name: sell_rate, classification: none, type: "DECIMAL(12,6)", nullable: true, severity: warn, description: Bank sell rate}
+  - {name: source, classification: none, type: VARCHAR(50), nullable: true, profile: true, severity: warn, description: Exchange rate source}

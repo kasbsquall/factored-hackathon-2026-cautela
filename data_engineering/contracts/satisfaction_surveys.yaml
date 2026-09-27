@@ -16,15 +16,16 @@ notes:
   - Constraints re-aligned by ordinal position (20 columns, 20 constraints).
   - campaign_response_rate looks out of place in a survey table; its meaning is unclear.
 columns:
-  - {name: survey_id, type: VARCHAR(30), nullable: false, pk: true, severity: error, provenance: realigned, description: Unique survey ID}
-  - {name: survey_date, type: TIMESTAMP, nullable: false, severity: error, provenance: realigned, description: Response date and time}
-  - {name: process_date, type: DATE, nullable: false, severity: error, provenance: realigned, description: Process date (partition key)}
-  - {name: interaction_id, type: VARCHAR(30), nullable: true, fk: call_center_interactions.interaction_id, severity: warn, provenance: realigned, description: Evaluated interaction ID}
-  - {name: customer_id, type: VARCHAR(20), nullable: false, fk: customers.customer_id, severity: error, provenance: realigned, description: Customer ID}
-  - {name: agent_id, type: VARCHAR(20), nullable: true, fk: service_agents.agent_id, severity: warn, provenance: realigned, description: Evaluated agent ID}
-  - {name: survey_type, type: VARCHAR(20), nullable: false, allowed_values: [CSAT, NPS, CES], enum_status: listed, severity: error, provenance: realigned, description: Survey type}
-  - {name: send_channel, type: VARCHAR(30), nullable: false, allowed_values: [Email, SMS, IVR, App, Web], enum_status: listed, severity: error, provenance: realigned, description: Send channel}
+  - {name: survey_id, classification: none, type: VARCHAR(30), nullable: false, pk: true, severity: error, provenance: realigned, description: Unique survey ID}
+  - {name: survey_date, classification: none, type: TIMESTAMP, nullable: false, severity: error, provenance: realigned, description: Response date and time}
+  - {name: process_date, classification: none, type: DATE, nullable: false, severity: error, provenance: realigned, description: Process date (partition key)}
+  - {name: interaction_id, classification: none, type: VARCHAR(30), nullable: true, fk: call_center_interactions.interaction_id, severity: warn, provenance: realigned, description: Evaluated interaction ID}
+  - {name: customer_id, classification: pii_quasi, type: VARCHAR(20), nullable: false, fk: customers.customer_id, severity: error, provenance: realigned, description: Customer ID}
+  - {name: agent_id, classification: pii_quasi, type: VARCHAR(20), nullable: true, fk: service_agents.agent_id, severity: warn, provenance: realigned, description: Evaluated agent ID}
+  - {name: survey_type, classification: none, type: VARCHAR(20), nullable: false, allowed_values: [CSAT, NPS, CES], enum_status: listed, severity: error, provenance: realigned, description: Survey type}
+  - {name: send_channel, classification: none, type: VARCHAR(30), nullable: false, allowed_values: [Email, SMS, IVR, App, Web], enum_status: listed, severity: error, provenance: realigned, description: Send channel}
   - name: main_score
+    classification: none
     type: INTEGER
     nullable: false
     min: 0
@@ -36,14 +37,14 @@ columns:
     note: >-
       The dictionary states 1-5 for CSAT and 0-10 for NPS and gives no range for CES. The contract checks the union
       0-10 and reports violations only, because the CES scale is unknown.
-  - {name: nps_category, type: VARCHAR(20), nullable: true, allowed_values: [Promoter, Passive, Detractor], enum_status: listed, severity: warn, provenance: realigned, description: NPS category}
-  - {name: question_1_text, type: TEXT, nullable: true, severity: warn, provenance: realigned, description: Question 1 text}
-  - {name: question_1_response, type: INTEGER, nullable: true, min: 1, max: 5, severity: error, provenance: realigned, description: Question 1 response (1-5)}
-  - {name: question_2_text, type: TEXT, nullable: true, severity: warn, provenance: realigned, description: Question 2 text}
-  - {name: question_2_response, type: INTEGER, nullable: true, min: 1, max: 5, severity: error, provenance: realigned, description: Question 2 response (1-5)}
-  - {name: question_3_text, type: TEXT, nullable: true, severity: warn, provenance: realigned, description: Question 3 text}
-  - {name: question_3_response, type: INTEGER, nullable: true, min: 1, max: 5, severity: error, provenance: realigned, description: Question 3 response (1-5)}
-  - {name: open_comments, type: TEXT, nullable: true, severity: warn, provenance: realigned, description: Customer comments (in Spanish)}
-  - {name: comment_sentiment, type: VARCHAR(20), nullable: true, profile: true, severity: warn, provenance: realigned, description: Comment sentiment (no values listed)}
-  - {name: response_time_hours, type: "DECIMAL(8,2)", nullable: true, severity: warn, provenance: realigned, description: Hours between interaction and response}
-  - {name: campaign_response_rate, type: "DECIMAL(5,2)", nullable: true, severity: warn, provenance: realigned, description: Campaign response rate (%)}
+  - {name: nps_category, classification: none, type: VARCHAR(20), nullable: true, allowed_values: [Promoter, Passive, Detractor], enum_status: listed, severity: warn, provenance: realigned, description: NPS category}
+  - {name: question_1_text, classification: none, type: TEXT, nullable: true, severity: warn, provenance: realigned, description: Question 1 text}
+  - {name: question_1_response, classification: none, type: INTEGER, nullable: true, min: 1, max: 5, severity: error, provenance: realigned, description: Question 1 response (1-5)}
+  - {name: question_2_text, classification: none, type: TEXT, nullable: true, severity: warn, provenance: realigned, description: Question 2 text}
+  - {name: question_2_response, classification: none, type: INTEGER, nullable: true, min: 1, max: 5, severity: error, provenance: realigned, description: Question 2 response (1-5)}
+  - {name: question_3_text, classification: none, type: TEXT, nullable: true, severity: warn, provenance: realigned, description: Question 3 text}
+  - {name: question_3_response, classification: none, type: INTEGER, nullable: true, min: 1, max: 5, severity: error, provenance: realigned, description: Question 3 response (1-5)}
+  - {name: open_comments, classification: pii_direct, type: TEXT, nullable: true, severity: warn, provenance: realigned, description: Customer comments (in Spanish)}
+  - {name: comment_sentiment, classification: none, type: VARCHAR(20), nullable: true, profile: true, severity: warn, provenance: realigned, description: Comment sentiment (no values listed)}
+  - {name: response_time_hours, classification: none, type: "DECIMAL(8,2)", nullable: true, severity: warn, provenance: realigned, description: Hours between interaction and response}
+  - {name: campaign_response_rate, classification: none, type: "DECIMAL(5,2)", nullable: true, severity: warn, provenance: realigned, description: Campaign response rate (%)}
