@@ -26,7 +26,7 @@ Nothing of this project listens on a public interface, and no firewall rule is o
 
 - The FastAPI service (`api/`) over the orchestrator, in demo mode: eight demo logins, the mock one-time-code
   outbox, conversations, confirmation, read-back, handoff queue, and `/console/*` behind `X-Console-Key`. `/docs` is
-  public.
+  public. Every console route is a read, and console reads are rate limited per visitor.
 - Data: eight customers of the organizer dataset (LATAM Bank dataset v1.0.0, synthetic, organizer-supplied), sliced
   with their bronze, silver and gold rows and lineage into a 3.9 MB warehouse. One customer per scenario:
 
@@ -65,7 +65,8 @@ Nothing of this project listens on a public interface, and no firewall rule is o
 - The frontend (`app/`) on this server. This runbook deploys the API only; the frontend is on Vercel
   (https://cautela-eight.vercel.app). The Next.js live mode reaches the API through its own
   server-side proxy (`CAUTELA_API_URL`), so `CAUTELA_CORS_ORIGINS` matters only for browsers calling the API
-  directly.
+  directly. Vercel environment for the proxy: `NEXT_PUBLIC_API_MODE=live`, `CAUTELA_API_URL`,
+  `CAUTELA_CONSOLE_PROXY=enabled`, `CAUTELA_CONSOLE_KEY` and `CAUTELA_PROXY_KEY` (the same values as on this server).
 - Any real banking system: the case store is the in-memory sandbox.
 
 ## Known limits
@@ -86,16 +87,32 @@ Nothing of this project listens on a public interface, and no firewall rule is o
   `api/models.py` and the orchestrator had uncommitted work by another author. Only the deployed process is capped;
   `python -m api` and `python -m agent.demo` are not. TODO in `serve.py`: move both into `llm_setup.py` and
   `HealthResponse`.
-- **Rate limits depend on X-Forwarded-For.** The API trusts that header only from the Docker gateway
-  (`10.83.30.1`), which is where OpenLiteSpeed's connections arrive. If OpenLiteSpeed does not send it (check the
-  logs, step 5), every visitor shares one bucket: the `CAUTELA_RATE_AUTH` and `CAUTELA_RATE_TURN` limits then
-  apply to everyone together (60 logins and 120 turns per minute with the demo values below).
+- **Rate limits depend on X-Forwarded-For and on the proxy key.** The API trusts X-Forwarded-For only from the
+  Docker gateway (`10.83.30.1`), which is where OpenLiteSpeed's connections arrive. If OpenLiteSpeed does not send it
+  (check the logs, step 5), every visitor shares one bucket: the `CAUTELA_RATE_AUTH` and `CAUTELA_RATE_TURN` limits
+  then apply to everyone together (60 logins and 120 turns per minute with the demo values below). Visitors who come
+  through the Vercel frontend reach OpenLiteSpeed from Vercel's addresses, so X-Forwarded-For names Vercel for them.
+  The frontend then names the visitor in `X-Cautela-Client`, and the API believes it only when the request also
+  carries `CAUTELA_PROXY_KEY` in `X-Cautela-Proxy-Key`. Without that key on both sides, every judge who uses the
+  frontend shares one bucket.
 - Demo mode publishes the demo logins and their one-time codes, so anyone can log in as the synthetic customers.
   That is the point of the demo; none of them is a real person.
-- The console key is one shared secret, and the console endpoints are reachable from the internet (key-gated).
+- **The console is public on purpose, and bounded (a demo decision).** The API's console endpoints need the console
+  key. The Vercel frontend adds that key for every visitor (`CAUTELA_CONSOLE_PROXY=enabled`) so judges can open the
+  agent console and the audit trail without an account. The proxy forwards console requests only as GET, every
+  console route is a read, and `CAUTELA_RATE_CONSOLE` limits reads per visitor. Anyone can read the handoff queue
+  and the audit trail of the synthetic customers; there are no per-agent accounts and no record of who read what.
+  In production the flag stays off and the console sits behind the bank's single sign-on with per-agent accounts,
+  roles and an audit of reads (SECURITY.md, "Console").
+- The console key is one shared secret.
 - One process, one lock: turns are serialized. Memory after startup and two conversations was 130 to 150 MB
   locally; the 640 MB ceiling kills and restarts the container if it is reached, rather than letting it swap.
-- The audit trail is emptied at every reset. It is demo evidence, not the retention the code describes.
+- The audit trail is emptied at every reset. It is demo evidence, not the retention the code describes: the
+  service purges audit day files older than `AUDIT_RETENTION_DAYS` at every start and every new UTC day, and the demo
+  start deletes them all before that.
+- Reviewer translation (`/conversations/{id}/translate`) calls the model only for a whole message of the caller's
+  conversation, once per message, within `CAUTELA_TRANSLATE_PER_SESSION` per login and `CAUTELA_RATE_TRANSLATE`
+  across all visitors, and outside the lock conversation turns wait on. A turn's own model calls still run inside it.
 - Image: about 216 MB compressed, 920 MB on disk (scipy, scikit-learn, pyarrow and duckdb are most of it), measured
   on the fixture image of 3647a2f. The bundle image adds 4.8 MB of data and drops the fixture build step; it is the
   image the public demo runs, but its size and its memory with the learned model loaded are not recorded in this
@@ -166,12 +183,14 @@ Create the environment file once, outside any release, and fill it with an edito
 SHA=<sha>
 sudo tar -xzf /tmp/cautela-$SHA.tar.gz -C /opt/cautela/releases
 sudo install -m 600 /opt/cautela/releases/cautela-$SHA/deploy/.env.example /opt/cautela/shared/cautela.env
-python3 -c "import secrets; print(secrets.token_urlsafe(48))"   # once for SESSION_SECRET, once for CAUTELA_CONSOLE_KEY
+python3 -c "import secrets; print(secrets.token_urlsafe(48))"   # once each: SESSION_SECRET, CAUTELA_CONSOLE_KEY, CAUTELA_PROXY_KEY
 sudo nano /opt/cautela/shared/cautela.env
 ```
 
 Values: `LLM_PROVIDER=openai`, `LLM_MODEL=gpt-6-luna`, `LLM_REASONING_EFFORT=none`, the OpenAI project key,
-the two generated secrets, `CAUTELA_CORS_ORIGINS` (the frontend's https origin, or leave empty), `CAUTELA_DEMO_MODE=1`.
+the three generated secrets (set `CAUTELA_CONSOLE_KEY` and `CAUTELA_PROXY_KEY` to the same values in the Vercel
+project), `CAUTELA_CORS_ORIGINS` (the frontend's https origin, or leave empty), `CAUTELA_DEMO_MODE=1`. The service
+keeps demo mode off unless it is set; the compose file sets 1 when the env file leaves it empty.
 Leave the caps empty for 2000 calls and USD 1.00, or set smaller ones.
 
 Throttles of the public demo (none of them is a secret):
@@ -244,7 +263,9 @@ sudo docker logs --tail 5 cautela-api      # client addresses must be real visit
 
 The exit code is the number of failed checks. A deploy is finished when the audit is clean and the log shows
 visitor addresses. If the log shows only `10.83.30.1`, OpenLiteSpeed is not sending X-Forwarded-For: the rate limits
-are then shared by everyone (see known limits).
+are then shared by everyone (see known limits). Requests that come through the Vercel frontend show Vercel's
+addresses in this log; their rate-limit bucket is the visitor address the frontend sends with the proxy key, which
+the log does not show.
 
 ## Operating it
 

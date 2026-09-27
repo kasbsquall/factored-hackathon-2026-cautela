@@ -8,7 +8,7 @@ tests exercise.
 ```bash
 uv sync
 make fixture pipeline gold             # synthetic warehouse at data/warehouse.duckdb (team-generated, seed 42)
-uv run python -m api                   # http://127.0.0.1:8000, docs at /docs
+CAUTELA_DEMO_MODE=1 uv run python -m api   # http://127.0.0.1:8000, docs at /docs, demo logins on
 uv run python -m api.export_openapi    # rewrite docs/schemas/openapi.json after changing a route or model
 uv run python -m api.seed              # rewrite api/seed/demo_customers.json from the fixture
 uv run pytest tests/api
@@ -21,8 +21,9 @@ listed in `api/settings.py`; `SESSION_SECRET` and `LLM_*` are read from `.env` (
 
 ## Try a case in under a minute (demo mode)
 
-Demo mode is on by default (`CAUTELA_DEMO_MODE=1`). It exposes the seeded identities and the mock one-time-code
-outbox, which stand in for the customer's phone. Turn it off with `CAUTELA_DEMO_MODE=0`.
+Demo mode is off unless `CAUTELA_DEMO_MODE=1`. It exposes the seeded identities and the mock one-time-code
+outbox, which stand in for the customer's phone. The outbox shows codes of the seeded identities only: any other
+customer in the loaded warehouse gets a challenge whose code stays in the mock channel.
 
 1. `GET /demo/identities` lists the demo logins with suggested messages in Spanish and Portuguese.
 2. `POST /auth/challenge {"document_number": "..."}` returns a `challenge_id`.
@@ -74,8 +75,14 @@ git-ignored, and loaded with `CAUTELA_SEED_FILE`; `api.seed` refuses to write it
 | `GET /cases/{case_id}` | Bearer | Case status through `get_case_status` (ownership checked) |
 | `GET /console/handoffs` | `X-Console-Key` | Handoff queue for the human-agent console, newest first |
 | `GET /console/handoffs/{handoff_id}` | `X-Console-Key` | One handoff (schema: `docs/schemas/handoff.schema.json`) |
-| `GET /console/conversations/{id}/audit` | `X-Console-Key` | Decision trail and audit records of a conversation, chain status |
-| `GET /console/traces/{trace_id}` | `X-Console-Key` | Audit records of one trace id |
+| `GET /console/conversations` | `X-Console-Key` | Every conversation of the process, newest first, resolved ones included |
+| `GET /console/conversations/{id}/audit` | `X-Console-Key` | Decision trail and every audit record of every turn of a conversation, chain status |
+| `GET /console/traces/{trace_id}` | `X-Console-Key` | Audit records of one trace id, its conversation id and every trace of that conversation |
+
+Every console route is a read and is rate limited per address (`CAUTELA_RATE_CONSOLE`). Every audit record of a
+conversation carries its `conversation_id`. The `chain` object says what was verified: `source` is `stored_files`
+when the audit files on disk were re-hashed, or `memory` when the service runs without an audit directory, with
+`records_checked`, `files_checked` and `first_bad_seq`.
 
 The console key comes from `CAUTELA_CONSOLE_KEY`. In demo mode without it, the process generates one and writes it
 to `data/demo/console_key.txt` (git-ignored); the value is never logged.
@@ -100,8 +107,11 @@ ranker, never from model text (`agent/orchestrator/evidence.py`):
   `case`).
 
 `POST /conversations/{id}/translate {"role": "customer" | "assistant", "text": "..."}` is for hackathon reviewers
-who read English; the conversation itself stays in Spanish or Portuguese. The text must be part of a transcript line
-of that role in the caller's own conversation (404 `not_found` otherwise), so the route is no general translator.
+who read English; the conversation itself stays in Spanish or Portuguese. The text must be a whole message of that
+role in the caller's own conversation, exactly as the transcript holds it (404 `not_found` otherwise, a part of a
+message included), so the route is no general translator. A model call counts against `CAUTELA_TRANSLATE_PER_SESSION`
+per login session and `CAUTELA_RATE_TRANSLATE` across all callers (429 `rate_limited` past either); cached answers
+do not count. The call runs outside the lock conversation turns wait on.
 It goes through the LLM port like every other model call: PII is masked before the adapter sees the text (`masked`
 says whether masking changed it), usage and cost are recorded, the audit entry `llm.translate` carries no text, and
 the daily cap of `agent/llm/budget.py` applies when the adapter is wrapped (as `deploy/serve.py` does). Each message
@@ -130,6 +140,7 @@ case answers 404, the same as a missing one.
   takes tens of milliseconds on the fixture; with a local model, seconds). Scaling out needs a shared store for
   all of them and the bank's case system instead of the DuckDB sandbox.
 - Rate limits key on the client address seen by the process. Behind a proxy that address must come from a
-  trusted forwarding header.
+  trusted forwarding header. The frontend proxy may name the visitor in `X-Cautela-Client`, which counts only when
+  the request carries `CAUTELA_PROXY_KEY` in `X-Cautela-Proxy-Key`.
 - The console key is a single shared secret. A real console needs per-agent identity, roles and its own audit.
 - TLS, a firewall and a reverse proxy are required before binding to anything but loopback.
