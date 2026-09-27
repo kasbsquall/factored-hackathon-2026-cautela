@@ -4,7 +4,8 @@
 
 Sources: eval/results.json (the original evaluation), eval/results_after_fix.json (the rerun of the deployed agent,
 with the git commit of each configuration), eval/results_fix_rounds.json (intermediate fix rounds, from saved rows),
-eval/llm_extraction.json (what the LLM extraction adds over the parser), ml/reports/results_llm.json and
+eval/llm_extraction.json (what the LLM extraction adds over the parser), eval/results_repeats.json (three runs of
+the high-risk categories per configuration), ml/reports/results_llm.json and
 ml/reports/baselines_{val,test}.json. The tables are regenerated on every run; the prose around them was written
 against the committed results. tests/eval/test_report_render.py checks that eval/report.md is exactly this rendering.
 """
@@ -22,6 +23,7 @@ AFTER_ORDER = ("rules", "learned", "llm", "label_rule")
 AFTER_FIX_PATH = EVAL_DIR / "results_after_fix.json"
 FIX_ROUNDS_PATH = EVAL_DIR / "results_fix_rounds.json"
 LLM_EXTRACTION_PATH = EVAL_DIR / "llm_extraction.json"
+REPEATS_PATH = EVAL_DIR / "results_repeats.json"
 TEMPLATE_PATH = EVAL_DIR / "report_template.md"
 CATS = ("dispute", "recognized", "bad_data", "expired_session", "tool_failure", "multilingual", "human_request",
         "out_of_scope", "unauthorized", "injection", "adversarial", "identity")
@@ -474,6 +476,62 @@ def component_label_rule() -> str:
     return "\n".join(out)
 
 
+def high_risk_repeats(rep: dict | None) -> str:
+    """eval/results_repeats.json: three runs of the high-risk categories per configuration."""
+    if not rep:
+        return "(eval/results_repeats.json not generated: make eval-repeats)"
+    cfgs = [c for c in ORDER if c in rep["configs"]]
+    runs = rep["runs_per_config"]
+    out = [f"| category | n | config | same outcome and reason in all {runs} runs (95% CI) | unsafe per run | "
+           "correct per run | changed |", "|---|---|---|---|---|---|---|"]
+    for cat in (*rep["categories"], "all"):
+        for c in cfgs:
+            b = rep["configs"][c]["by_category"].get(cat)
+            if not b:
+                continue
+            moved = sum(x["category"] == cat or cat == "all" for x in rep["configs"][c]["changed"])
+            out.append(f"| {'all high-risk' if cat == 'all' else cat} | {b['conversations']} | `{c}` | "
+                       f"{pct(b['same_outcome_all_runs'])} | {' / '.join(map(str, b['unsafe_per_run']))} | "
+                       f"{' / '.join(map(str, b['correct_per_run']))} | {moved} |")
+    out.append("")
+    for c in cfgs:
+        check = rep["configs"][c].get("deterministic_check")
+        if check:
+            same = rep["configs"][c]["by_category"]["all"]["same_outcome_all_runs"]
+            out.append(f"Check, `{c}` (no model call): {same['k']} of {same['n']} conversations identical in all "
+                       f"runs, {'passed' if check['passed'] else 'FAILED'}.")
+    changed = [(c, x) for c in cfgs for x in rep["configs"][c]["changed"]]
+    out.append("")
+    if changed:
+        out += ["| config | conversation | category / subcategory | " + " | ".join(f"run {i + 1}" for i in range(runs))
+                + " |", "|---|---|---|" + "---|" * runs]
+        for c, x in changed:
+            cells = [o + ("" if ok else " (wrong)") + (f" (unsafe: {', '.join(u)})" if u else "")
+                     for o, ok, u in zip(x["outcomes"], x["correct"], x["unsafe"], strict=True)]
+            out.append(f"| `{c}` | `{x['conv_id']}` | {x['category']} / {x['subcategory']} | " + " | ".join(cells)
+                       + " |")
+    else:
+        out.append("No conversation changed outcome or handoff reason between runs in any configuration.")
+    paid = [c for c in cfgs if any(r["llm_calls"] for r in rep["configs"][c]["runs"])]
+    for c in paid:
+        out += ["", f"| `{c}` run | run id | LLM calls | failed calls | input / output tokens | USD | "
+                "per call p50 / p95 (ms) | per conversation p50 / p95 (ms) |", "|---|---|---|---|---|---|---|---|"]
+        for i, r in enumerate(rep["configs"][c]["runs"], 1):
+            call, conv = r["per_call_wall_ms"], r["per_conversation_wall_ms"]
+            out.append(f"| {i} | `{r['run_id']}` | {r['llm_calls']} | {r['llm_failed_calls']} | "
+                       f"{r['llm_input_tokens']} / {r['llm_output_tokens']} | {r['llm_cost_usd']} | "
+                       f"{call['p50']} / {call['p95']} | {conv['p50']} / {conv['p95']} |")
+    commits = sorted({rep["configs"][c]["code"]["git_commit"][:7] for c in cfgs})
+    dirty = sorted({p for c in cfgs for p in rep["configs"][c]["code"]["uncommitted_paths"]})
+    spend = rep.get("spend", {})
+    out += ["", f"Suite sha256 `{rep['suite_sha256'][:8]}…`, {rep['conversations']} conversations per run, compliant "
+            f"customer. Commit {', '.join(f'`{x}`' for x in commits)}; uncommitted code paths at start: "
+            f"{', '.join(f'`{p}`' for p in dirty) or 'none'}. LLM ledger `{spend.get('ledger')}`: "
+            f"{spend.get('calls')} calls, USD {spend.get('usd_estimated')} of a USD {spend.get('cap_usd', 0):.2f} cap, "
+            f"{spend.get('refused_calls')} calls refused by the cap."]
+    return "\n".join(out)
+
+
 def render(template: str, parts: dict[str, str]) -> str:
     for name, text in parts.items():
         template = template.replace(f"<!-- table:{name} -->", text)
@@ -506,7 +564,8 @@ def build_parts() -> dict[str, str]:
               "fix_rounds": fix_rounds(json.loads(FIX_ROUNDS_PATH.read_text(encoding="utf-8"))),
               "spend_ledgers": spend_ledgers(json.loads(FIX_ROUNDS_PATH.read_text(encoding="utf-8"))),
               "llm_extraction": llm_extraction(_load(LLM_EXTRACTION_PATH)),
-              "component_label_rule": component_label_rule()}
+              "component_label_rule": component_label_rule(),
+              "high_risk_repeats": high_risk_repeats(_load(REPEATS_PATH))}
     return parts
 
 

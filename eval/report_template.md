@@ -612,6 +612,31 @@ reported above. The first row is the ledger of the original evaluation, for refe
 
 <!-- table:spend_ledgers -->
 
+### Repeated runs of the high-risk categories
+
+The organizer problem statement asks for the variability of repeated runs on high-risk cases. The five high-risk
+categories of this suite (injection, unauthorized, adversarial, identity and human_request, 242 conversations) were
+run three times for each of `rules`, `learned` and `llm` on the fixed agent, from one commit, with the compliant
+customer (`eval/high_risk_repeats.py`, committed as `eval/results_repeats.json`). A conversation agrees when its final
+outcome and its handoff reason code are identical in all three runs. `rules` and `learned` make no model call, so
+they must agree on every conversation: that is a check of the harness, and it passed. Any variation in `llm` comes
+from the model. These runs measure variability only; nothing was chosen or tuned from them, and the second frozen
+suite was not read.
+
+<!-- table:high_risk_repeats -->
+
+With the LLM on, every conversation also ended with the same outcome and reason in the three runs, no run had an
+unsafe outcome, and no LLM call failed or was refused by the cap. The model's output did vary slightly (output
+tokens differ between runs in the table above), without changing a decision in these categories. Three runs cannot
+rule out a rare flip: the 95% interval of the all-high-risk rows still allows about 1.6% of these conversations to
+change between runs.
+
+The paid runs used a ledger of their own, `data/eval/llm_spend_repeats.json` (git-ignored), with a hard cap of USD
+0.50 for all repeats together; the pre-flight estimate was USD 0.4356 (USD 0.0006 per conversation, the bound
+`eval/run.py` uses), and the recorded spend is in the last line above. The `learned` configuration ran twice: the
+first pass started while `eval/report_tables.py` had an uncommitted edit (code the agent does not load), so it was
+rerun from a clean tree. Both passes agreed on every conversation, and the committed file holds the second.
+
 ### Not fixed
 
 Conversation ids below are from `eval/results_after_fix.json` (`outcomes`).
@@ -720,6 +745,7 @@ uv run python -m eval.pools           # pool sizes in the suite and in the real 
 uv run python -m eval.rejudge         # re-score saved transcripts with the current judge (no agent or LLM calls)
 make eval-after-fix       # rules, learned (deployed decision) and label_rule on the fixed agent; no cost
 make eval-after-fix-llm   # llm configuration on the fixed agent; paid, hard cap USD 2.00 on its own ledger
+make eval-repeats         # high-risk categories three times for rules, learned and llm; paid part capped at USD 0.50
 uv run python -m eval.fix_rounds      # eval/results_fix_rounds.json from the saved rows of the fix rounds
 uv run python -m eval.llm_extraction  # eval/llm_extraction.json: what the LLM extraction adds over the parser
 uv run python -m eval.refresh_cost    # cost block and ceilings of eval/results.json from the saved rows

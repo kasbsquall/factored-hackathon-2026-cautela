@@ -1113,6 +1113,63 @@ reported above. The first row is the ledger of the original evaluation, for refe
 | `data/eval/llm_spend_fixes.json` | 2.00 | 10045 | 0 | 0 | 0.5993 |
 | `data/eval/llm_spend_after_fix.json` | 2.00 | 5054 | 0 | 0 | 0.3023 |
 
+### Repeated runs of the high-risk categories
+
+The organizer problem statement asks for the variability of repeated runs on high-risk cases. The five high-risk
+categories of this suite (injection, unauthorized, adversarial, identity and human_request, 242 conversations) were
+run three times for each of `rules`, `learned` and `llm` on the fixed agent, from one commit, with the compliant
+customer (`eval/high_risk_repeats.py`, committed as `eval/results_repeats.json`). A conversation agrees when its final
+outcome and its handoff reason code are identical in all three runs. `rules` and `learned` make no model call, so
+they must agree on every conversation: that is a check of the harness, and it passed. Any variation in `llm` comes
+from the model. These runs measure variability only; nothing was chosen or tuned from them, and the second frozen
+suite was not read.
+
+| category | n | config | same outcome and reason in all 3 runs (95% CI) | unsafe per run | correct per run | changed |
+|---|---|---|---|---|---|---|
+| injection | 62 | `rules` | 62/62 = 100.0% [94.2, 100.0] | 0 / 0 / 0 | 62 / 62 / 62 | 0 |
+| injection | 62 | `learned` | 62/62 = 100.0% [94.2, 100.0] | 0 / 0 / 0 | 62 / 62 / 62 | 0 |
+| injection | 62 | `llm` | 62/62 = 100.0% [94.2, 100.0] | 0 / 0 / 0 | 62 / 62 / 62 | 0 |
+| unauthorized | 56 | `rules` | 56/56 = 100.0% [93.6, 100.0] | 0 / 0 / 0 | 56 / 56 / 56 | 0 |
+| unauthorized | 56 | `learned` | 56/56 = 100.0% [93.6, 100.0] | 0 / 0 / 0 | 56 / 56 / 56 | 0 |
+| unauthorized | 56 | `llm` | 56/56 = 100.0% [93.6, 100.0] | 0 / 0 / 0 | 56 / 56 / 56 | 0 |
+| adversarial | 48 | `rules` | 48/48 = 100.0% [92.6, 100.0] | 0 / 0 / 0 | 48 / 48 / 48 | 0 |
+| adversarial | 48 | `learned` | 48/48 = 100.0% [92.6, 100.0] | 0 / 0 / 0 | 48 / 48 / 48 | 0 |
+| adversarial | 48 | `llm` | 48/48 = 100.0% [92.6, 100.0] | 0 / 0 / 0 | 48 / 48 / 48 | 0 |
+| identity | 30 | `rules` | 30/30 = 100.0% [88.6, 100.0] | 0 / 0 / 0 | 30 / 30 / 30 | 0 |
+| identity | 30 | `learned` | 30/30 = 100.0% [88.6, 100.0] | 0 / 0 / 0 | 30 / 30 / 30 | 0 |
+| identity | 30 | `llm` | 30/30 = 100.0% [88.6, 100.0] | 0 / 0 / 0 | 30 / 30 / 30 | 0 |
+| human_request | 46 | `rules` | 46/46 = 100.0% [92.3, 100.0] | 0 / 0 / 0 | 46 / 46 / 46 | 0 |
+| human_request | 46 | `learned` | 46/46 = 100.0% [92.3, 100.0] | 0 / 0 / 0 | 46 / 46 / 46 | 0 |
+| human_request | 46 | `llm` | 46/46 = 100.0% [92.3, 100.0] | 0 / 0 / 0 | 46 / 46 / 46 | 0 |
+| all high-risk | 242 | `rules` | 242/242 = 100.0% [98.4, 100.0] | 0 / 0 / 0 | 242 / 242 / 242 | 0 |
+| all high-risk | 242 | `learned` | 242/242 = 100.0% [98.4, 100.0] | 0 / 0 / 0 | 242 / 242 / 242 | 0 |
+| all high-risk | 242 | `llm` | 242/242 = 100.0% [98.4, 100.0] | 0 / 0 / 0 | 242 / 242 / 242 | 0 |
+
+Check, `rules` (no model call): 242 of 242 conversations identical in all runs, passed.
+Check, `learned` (no model call): 242 of 242 conversations identical in all runs, passed.
+
+No conversation changed outcome or handoff reason between runs in any configuration.
+
+| `llm` run | run id | LLM calls | failed calls | input / output tokens | USD | per call p50 / p95 (ms) | per conversation p50 / p95 (ms) |
+|---|---|---|---|---|---|---|---|
+| 1 | `llm-compliant-hr1-20260927T053834Z` | 516 | 0 | 210111 / 18445 | 0.030197 | 2084.0 / 2678.8 | 2634.2 / 4623.8 |
+| 2 | `llm-compliant-hr2-20260927T054011Z` | 516 | 0 | 210111 / 18480 | 0.03022 | 1973.3 / 2420.1 | 2249.5 / 4445.2 |
+| 3 | `llm-compliant-hr3-20260927T054142Z` | 516 | 0 | 210111 / 18438 | 0.030195 | 1954.4 / 2440.1 | 2336.2 / 4403.5 |
+
+Suite sha256 `83f62ce2…`, 242 conversations per run, compliant customer. Commit `b56da1b`; uncommitted code paths at start: none. LLM ledger `data/eval/llm_spend_repeats.json`: 1548 calls, USD 0.090715 of a USD 0.50 cap, 0 calls refused by the cap.
+
+With the LLM on, every conversation also ended with the same outcome and reason in the three runs, no run had an
+unsafe outcome, and no LLM call failed or was refused by the cap. The model's output did vary slightly (output
+tokens differ between runs in the table above), without changing a decision in these categories. Three runs cannot
+rule out a rare flip: the 95% interval of the all-high-risk rows still allows about 1.6% of these conversations to
+change between runs.
+
+The paid runs used a ledger of their own, `data/eval/llm_spend_repeats.json` (git-ignored), with a hard cap of USD
+0.50 for all repeats together; the pre-flight estimate was USD 0.4356 (USD 0.0006 per conversation, the bound
+`eval/run.py` uses), and the recorded spend is in the last line above. The `learned` configuration ran twice: the
+first pass started while `eval/report_tables.py` had an uncommitted edit (code the agent does not load), so it was
+rerun from a clean tree. Both passes agreed on every conversation, and the committed file holds the second.
+
 ### Not fixed
 
 Conversation ids below are from `eval/results_after_fix.json` (`outcomes`).
@@ -1221,6 +1278,7 @@ uv run python -m eval.pools           # pool sizes in the suite and in the real 
 uv run python -m eval.rejudge         # re-score saved transcripts with the current judge (no agent or LLM calls)
 make eval-after-fix       # rules, learned (deployed decision) and label_rule on the fixed agent; no cost
 make eval-after-fix-llm   # llm configuration on the fixed agent; paid, hard cap USD 2.00 on its own ledger
+make eval-repeats         # high-risk categories three times for rules, learned and llm; paid part capped at USD 0.50
 uv run python -m eval.fix_rounds      # eval/results_fix_rounds.json from the saved rows of the fix rounds
 uv run python -m eval.llm_extraction  # eval/llm_extraction.json: what the LLM extraction adds over the parser
 uv run python -m eval.refresh_cost    # cost block and ceilings of eval/results.json from the saved rows
