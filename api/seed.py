@@ -1,7 +1,7 @@
 """Write the demo identities the API offers in demo mode.
 
     uv run python -m api.seed                                   # from data/warehouse.duckdb (the fixture)
-    uv run python -m api.seed --warehouse data/warehouse_s3.duckdb --out data/demo/demo_customers.json
+    uv run python -m api.seed --warehouse data/warehouse_real.duckdb --out data/demo/demo_customers.json
 
 The committed api/seed/demo_customers.json comes from the team-generated synthetic fixture (seed 42), so it holds
 test values only. A seed built from organizer data must go to a git-ignored path (anything under data/) and be

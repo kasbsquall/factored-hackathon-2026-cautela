@@ -37,8 +37,8 @@ def _pct(x) -> str:
 
 
 def main_table(res: dict) -> str:
-    rows = ["| system | top-1 (match) | MRR | top-3, pools >= 4 | ECE | correct decisions | unsafe | safe automated "
-            "resolution | automation attempted | containment |", "|" + "---|" * 10]
+    rows = ["| system | top-1 (match) | MRR | top-3, pools >= 4 | ECE | correct decisions | unsafe | safe act "
+            "rate | automation attempted | containment |", "|" + "---|" * 10]
     for name, body in res["systems"].items():
         s = body["summary"]
         rows.append(f"| `{name}` | {_v(s['top1_accuracy'])} | {_v(s['mrr'], False)} | {_v(s['top3_recall_pool_ge4'])} "
@@ -151,7 +151,7 @@ def render() -> str:
                     f"{rung['provider']} `{rung['model']}`, reasoning effort {rung['reasoning_effort']}, prompt "
                     f"`{rung['prompt_version']}`, {len(rung['runs'])} runs on all {r1['n_cases']} {rung['split']} "
                     f"cases. Run 1: correct decisions {_v(r1['correct_decision_rate'])}, unsafe "
-                    f"{_frac(r1['unsafe'])}, safe automated resolution {_v(r1['safe_automated_resolution_rate'])}. "
+                    f"{_frac(r1['unsafe'])}, safe act rate {_v(r1['safe_automated_resolution_rate'])}. "
                     "Full tables in `results_llm.md`.")
     head = [
         "# Results: which charge is the customer disputing?\n",

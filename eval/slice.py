@@ -57,7 +57,7 @@ def content_hash(con: duckdb.DuckDBPyConnection) -> str:
 def build_slice(source: Path = REAL_WAREHOUSE, out: Path = SLICE_PATH, refs: set[str] | None = None) -> dict:
     refs = refs if refs is not None else test_customer_refs()
     if not source.exists():
-        raise SystemExit(f"{source} not found: build the organizer warehouse first (make pipeline-s3 gold)")
+        raise SystemExit(f"{source} not found: build the organizer warehouse first (make mirror pipeline-real gold-real)")
     out.parent.mkdir(parents=True, exist_ok=True)
     tmp = out.with_suffix(".tmp.duckdb")
     tmp.unlink(missing_ok=True)

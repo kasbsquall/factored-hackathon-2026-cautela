@@ -35,8 +35,8 @@ def previous_run(res: dict) -> str:
     prev = _load(PREVIOUS_DIR / "results.json")
     if prev is None:
         return "No previous run snapshot in `ml/reports/previous/`."
-    rows = ["| system | top-1 before / now | correct decisions before / now | unsafe before / now | safe automated "
-            "resolution before / now |", "|---|---|---|---|---|"]
+    rows = ["| system | top-1 before / now | correct decisions before / now | unsafe before / now | safe act "
+            "rate before / now |", "|---|---|---|---|---|"]
     for name, body in res["systems"].items():
         s, p = body["summary"], prev["systems"].get(name, {}).get("summary")
         if p is None:
@@ -82,8 +82,8 @@ def parser_readback() -> str:
 
 
 def floor_ablation(res: dict) -> str:
-    rows = ["| system | val t_act | act floor | unsafe with floor | unsafe without | safe automated resolution with "
-            "/ without | difference in unsafe rate | difference in safe automated resolution |",
+    rows = ["| system | val t_act | act floor | unsafe with floor | unsafe without | safe act rate with "
+            "/ without | difference in unsafe rate | difference in safe act rate |",
             "|---|---|---|---|---|---|---|---|"]
     for name, d in res.get("act_floor_ablation", {}).items():
         w, wo, diff = d["with_floor"], d["without_floor"], d["with_minus_without"]

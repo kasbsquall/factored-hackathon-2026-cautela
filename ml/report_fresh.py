@@ -35,7 +35,7 @@ def _unsafe(u: dict) -> str:
 
 
 def headline_table(res: dict) -> str:
-    rows = ["| system | correct decisions | unsafe (count / cases, acted) | unsafe rate | safe automated resolution "
+    rows = ["| system | correct decisions | unsafe (count / cases, acted) | unsafe rate | safe act rate "
             "| top-1 (match) | automation attempted |", "|---|---|---|---|---|---|---|"]
     for name, body in res["systems"].items():
         s = body["summary"]
@@ -54,7 +54,7 @@ def overall_diffs(res: dict, comp: str) -> str:
 
 def group_table(res: dict, key: str) -> str:
     rows = [f"| {key} | cases (bootstrap groups) | unsafe, baseline | unsafe, proposed | correct, baseline / proposed "
-            "| correct diff | unsafe diff | safe automated diff |", "|---|---|---|---|---|---|---|---|"]
+            "| correct diff | unsafe diff | safe act rate diff |", "|---|---|---|---|---|---|---|---|"]
     for value, g in res["paired_by_group"][key].items():
         d, r = g["proposed_minus_baseline"], g["rates"]
         rows.append(f"| {value} | {g['n']} ({g['n_groups']}) | {_unsafe(g['unsafe']['baseline'])} "
@@ -65,7 +65,7 @@ def group_table(res: dict, key: str) -> str:
 
 
 def versus_old_test(fresh: dict, old: dict) -> str:
-    rows = ["| system | correct: test / test_fresh | unsafe: test / test_fresh | safe automated: test / test_fresh |",
+    rows = ["| system | correct: test / test_fresh | unsafe: test / test_fresh | safe act rate: test / test_fresh |",
             "|---|---|---|---|"]
     for name, body in fresh["systems"].items():
         f, o = body["summary"], old["systems"].get(name, {}).get("summary")

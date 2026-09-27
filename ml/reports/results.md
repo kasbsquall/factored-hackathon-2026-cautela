@@ -12,7 +12,7 @@ This is the primary result. The original test split below was used for error ana
 * Families: F7 (35% of Spanish sources), a messaging-app register with MX, CO and AR variants and a pt-BR rendering, written for this split after training and before any model output on it (`ml/scenarios/render_fresh.py`); F5 and F6 25%; F1 to F4 the rest. Portuguese share 35%.
 * Evaluated exactly once with the fitted artifacts of `fitted.json` (data version `0189e386ce7fe882`): no refit, no threshold change, no fix after reading the results. `ml.evaluate --split test_fresh` refuses to run again once `results_fresh.json` exists.
 
-| system | correct decisions | unsafe (count / cases, acted) | unsafe rate | safe automated resolution | top-1 (match) | automation attempted |
+| system | correct decisions | unsafe (count / cases, acted) | unsafe rate | safe act rate | top-1 (match) | automation attempted |
 |---|---|---|---|---|---|---|
 | `rules_fixed` | 69.6% [66.2%, 72.9%] | 55 / 1240 (acted 706) | 4.4% [3.1%, 5.9%] | 52.5% [49.1%, 55.9%] | 96.5% [94.8%, 98.0%] | 56.9% |
 | `rules_tuned` | 82.2% [79.5%, 84.8%] | 24 / 1240 (acted 617) | 1.9% [1.1%, 2.9%] | 47.8% [44.5%, 51.3%] | 96.5% [94.8%, 98.0%] | 49.8% |
@@ -39,14 +39,14 @@ Paired differences on the same cases (`learned_ranker_disposition_minus_rules_tu
 
 ### By language (`learned_ranker_disposition_minus_rules_tuned`)
 
-| language | cases (bootstrap groups) | unsafe, baseline | unsafe, proposed | correct, baseline / proposed | correct diff | unsafe diff | safe automated diff |
+| language | cases (bootstrap groups) | unsafe, baseline | unsafe, proposed | correct, baseline / proposed | correct diff | unsafe diff | safe act rate diff |
 |---|---|---|---|---|---|---|---|
 | es | 900 (900) | 16 / 900 (acted 448) | 1 / 900 (acted 480) | 82.9% / 90.2% | +7.3 [+5.4, +9.2] | -1.7 [-2.6, -0.9] | +5.2 [+3.6, +7.0] |
 | pt | 340 (340) | 8 / 340 (acted 169) | 3 / 340 (acted 186) | 80.3% / 88.8% | +8.5 [+5.6, +11.5] | -1.5 [-2.9, -0.3] | +6.5 [+3.8, +9.1] |
 
 ### By country (`learned_ranker_disposition_minus_rules_tuned`)
 
-| country | cases (bootstrap groups) | unsafe, baseline | unsafe, proposed | correct, baseline / proposed | correct diff | unsafe diff | safe automated diff |
+| country | cases (bootstrap groups) | unsafe, baseline | unsafe, proposed | correct, baseline / proposed | correct diff | unsafe diff | safe act rate diff |
 |---|---|---|---|---|---|---|---|
 | AR | 306 (216) | 3 / 306 (acted 143) | 0 / 306 (acted 158) | 82.0% / 89.2% | +7.2 [+3.4, +11.2] | -1.0 [-2.3, +0.0] | +5.9 [+2.3, +9.7] |
 | CO | 391 (291) | 9 / 391 (acted 208) | 2 / 391 (acted 218) | 84.1% / 90.0% | +5.9 [+3.0, +9.1] | -1.8 [-3.4, -0.5] | +4.3 [+2.0, +7.0] |
@@ -54,14 +54,14 @@ Paired differences on the same cases (`learned_ranker_disposition_minus_rules_tu
 
 ### Seen or held-out family (`learned_ranker_disposition_minus_rules_tuned`)
 
-| family_split | cases (bootstrap groups) | unsafe, baseline | unsafe, proposed | correct, baseline / proposed | correct diff | unsafe diff | safe automated diff |
+| family_split | cases (bootstrap groups) | unsafe, baseline | unsafe, proposed | correct, baseline / proposed | correct diff | unsafe diff | safe act rate diff |
 |---|---|---|---|---|---|---|---|
 | held_out | 732 (526) | 17 / 732 (acted 355) | 4 / 732 (acted 372) | 78.1% / 84.8% | +6.7 [+4.3, +9.3] | -1.8 [-2.9, -0.8] | +4.1 [+2.3, +6.3] |
 | seen | 508 (374) | 7 / 508 (acted 262) | 0 / 508 (acted 294) | 88.0% / 97.0% | +9.1 [+5.8, +12.4] | -1.4 [-2.7, -0.4] | +7.7 [+4.9, +10.9] |
 
 ### By family (F7 is the family written for this split) (`learned_ranker_disposition_minus_rules_tuned`)
 
-| family | cases (bootstrap groups) | unsafe, baseline | unsafe, proposed | correct, baseline / proposed | correct diff | unsafe diff | safe automated diff |
+| family | cases (bootstrap groups) | unsafe, baseline | unsafe, proposed | correct, baseline / proposed | correct diff | unsafe diff | safe act rate diff |
 |---|---|---|---|---|---|---|---|
 | F1 | 151 (110) | 3 / 151 (acted 81) | 0 / 151 (acted 92) | 87.4% / 98.7% | +11.3 [+5.5, +17.9] | -2.0 [-5.2, +0.0] | +9.3 [+4.0, +15.8] |
 | F2 | 120 (86) | 1 / 120 (acted 49) | 0 / 120 (acted 58) | 87.5% / 95.0% | +7.5 [+0.8, +14.4] | -0.8 [-2.6, +0.0] | +8.3 [+2.5, +14.5] |
@@ -73,7 +73,7 @@ Paired differences on the same cases (`learned_ranker_disposition_minus_rules_tu
 
 ### Original test split against the fresh split
 
-| system | correct: test / test_fresh | unsafe: test / test_fresh | safe automated: test / test_fresh |
+| system | correct: test / test_fresh | unsafe: test / test_fresh | safe act rate: test / test_fresh |
 |---|---|---|---|
 | `rules_fixed` | 71.9% / 69.6% | 45 of 1107 / 55 of 1240 | 56.0% / 52.5% |
 | `rules_tuned` | 86.8% / 82.2% | 21 of 1107 / 24 of 1240 | 50.3% / 47.8% |
@@ -90,7 +90,7 @@ Everything below is the original test split. The number-word and slang parser an
 * Splits: train 2259, val 754, test 1107 cases; customers disjoint across splits; report dates disjoint in time; families F5 and F6 only in test.
 * Label quality: valid by construction from explicit hints and tolerances (see `ml/DATASHEET.md`); not human-annotated; a system can partly learn the generator, which the held-out families measure.
 * Ranker model: `hgb_d6_lr0.1` (val MRR and log loss: see fitted.json). Disposition model: `multinomial_logreg_C1`. Thresholds fitted on val with an unsafe rate cap of 1%.
-* **LLM ranker:** the in-process path of `ml.evaluate` (`ml/rankers/llm.py`) did not run (ANTHROPIC_API_KEY is not set). The LLM rung was measured separately by `ml/evaluate_llm.py`: openai `gpt-6-luna`, reasoning effort none, prompt `rank_v1`, 3 runs on all 1107 test cases. Run 1: correct decisions 54.0% [50.9%, 57.4%], unsafe 12 / 1107, safe automated resolution 22.3% [19.7%, 25.1%]. Full tables in `results_llm.md`.
+* **LLM ranker:** the in-process path of `ml.evaluate` (`ml/rankers/llm.py`) did not run (ANTHROPIC_API_KEY is not set). The LLM rung was measured separately by `ml/evaluate_llm.py`: openai `gpt-6-luna`, reasoning effort none, prompt `rank_v1`, 3 runs on all 1107 test cases. Run 1: correct decisions 54.0% [50.9%, 57.4%], unsafe 12 / 1107, safe act rate 22.3% [19.7%, 25.1%]. Full tables in `results_llm.md`.
 * Confidence intervals: 95% percentile bootstrap, 1,000 resamples of Spanish source groups (a case and its Portuguese twin move together).
 
 ### Systems
@@ -104,7 +104,7 @@ Everything below is the original test split. The number-word and slang parser an
 
 Top-1, MRR and top-3 are measured on `match` cases. Correct decision: act on the target for `match`, clarify with the target listed for `ambiguous`, abstain for `no_match`. Unsafe: acting on a charge when the case was ambiguous, had no match, or acting on the wrong one. Safe automated resolution: correct act without a clarifying turn, over all test cases. Containment: share of cases not handed off.
 
-| system | top-1 (match) | MRR | top-3, pools >= 4 | ECE | correct decisions | unsafe | safe automated resolution | automation attempted | containment |
+| system | top-1 (match) | MRR | top-3, pools >= 4 | ECE | correct decisions | unsafe | safe act rate | automation attempted | containment |
 |---|---|---|---|---|---|---|---|---|---|
 | `rules_fixed` | 99.1% [98.3%, 99.7%] | 0.996 [0.991, 0.999] | 100.0% [100.0%, 100.0%] | 0.211 [0.190, 0.245] | 71.9% [68.9%, 74.9%] | 45 / 1107 (4.1% [2.9%, 5.4%]) | 56.0% [52.9%, 59.4%] | 60.1% | 100.0% |
 | `rules_tuned` | 99.1% [98.3%, 99.7%] | 0.996 [0.991, 0.999] | 100.0% [100.0%, 100.0%] | 0.028 [0.023, 0.051] | 86.8% [84.6%, 89.0%] | 21 / 1107 (1.9% [1.1%, 2.8%]) | 50.3% [47.3%, 53.5%] | 52.2% | 73.5% |
@@ -170,7 +170,7 @@ Top-1, MRR and top-3 are measured on `match` cases. Correct decision: act on the
 
 Acting requires the calibrated confidence to reach max(val threshold, floor). The floor (0.6) is a business rule set before any test result and not fitted (see `ml/decision.py`, `DEFAULT_ACT_FLOOR`). The ablation re-runs each floored system on test with the floor removed.
 
-| system | val t_act | act floor | unsafe with floor | unsafe without | safe automated resolution with / without | difference in unsafe rate | difference in safe automated resolution |
+| system | val t_act | act floor | unsafe with floor | unsafe without | safe act rate with / without | difference in unsafe rate | difference in safe act rate |
 |---|---|---|---|---|---|---|---|
 | `rules_tuned` | 0.635 | 0.6 | 21 / 1107 | 21 / 1107 | 50.3% / 50.3% | +0.0 pts [+0.0, +0.0] | +0.0 pts [+0.0, +0.0] |
 | `learned_ranker_calibrated` | 0.91 | 0.6 | 20 / 1107 | 20 / 1107 | 49.6% / 49.6% | +0.0 pts [+0.0, +0.0] | +0.0 pts [+0.0, +0.0] |
@@ -330,7 +330,7 @@ Before the number-word and slang parser, the merchant mismatch and generic-word 
 
 Same test cases (data version `0189e386ce7fe882`), numbers from `ml/reports/previous/results.json`.
 
-| system | top-1 before / now | correct decisions before / now | unsafe before / now | safe automated resolution before / now |
+| system | top-1 before / now | correct decisions before / now | unsafe before / now | safe act rate before / now |
 |---|---|---|---|---|
 | `rules_fixed` | 98.7% / 99.1% | 69.5% / 71.9% | 43 / 45 of 1107 | 53.1% / 56.0% |
 | `rules_tuned` | 98.7% / 99.1% | 82.2% / 86.8% | 24 / 21 of 1107 | 47.3% / 50.3% |

@@ -54,7 +54,7 @@ Other cases to type as any customer: "Quiero hablar con una persona" (handoff `c
 "Quiero que me aumenten el cupo" (`out_of_scope`, SYN-SCOPE-001), "Ignora tus instrucciones anteriores..."
 (`security_event`, SYN-SEC-001), or another customer's transaction id (`security_event`).
 
-A seed built from organizer data (`--warehouse data/warehouse_s3.duckdb`) must be written under `data/`, which is
+A seed built from organizer data (`--warehouse data/warehouse_real.duckdb`) must be written under `data/`, which is
 git-ignored, and loaded with `CAUTELA_SEED_FILE`; `api.seed` refuses to write it into `api/`.
 
 ## Endpoints
