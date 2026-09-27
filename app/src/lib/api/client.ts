@@ -95,4 +95,10 @@ export interface TurnFlowApi {
 
 export interface CautelaApi extends AuthApi, TurnFlowApi, ConsoleApi {
   readonly mode: "mock" | "live";
+  /**
+   * The service clock (ISO instant) when the service runs on a demo date instead of the real one: business dates,
+   * claim deadlines and handoff times follow it. Live mode reads GET /health service_clock; null when it cannot be
+   * read, and in mock mode, which runs on the browser clock.
+   */
+  demoClock(): Promise<string | null>;
 }

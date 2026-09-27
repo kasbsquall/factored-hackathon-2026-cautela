@@ -4,7 +4,11 @@ const es = {
   langSwitch: "Idioma",
   synthetic: "Datos sintéticos",
   testSession: "Sesión de prueba",
-  expires: (t: string) => `vence a las ${t}`,
+  expires: (t: string) => `vence a las ${t} (hora de tu equipo)`,
+  pageTitle: "Cliente",
+  demoDate: (d: string) => `Fecha de la demo: ${d}`,
+  demoDateNote: "Los plazos para reclamar se cuentan desde la fecha de la demo, la fecha en la que están fijados los datos de prueba. Las horas de la sesión y de la confirmación son las de tu equipo.",
+  deadlineFrom: (d: string) => `Contado desde la fecha de la demo, ${d}`,
   expiringSoon: "Tu sesión vence en menos de un minuto.",
   logout: "Salir",
 
@@ -98,7 +102,7 @@ const es = {
   confirmTitle: "Confirma antes de abrir la disputa",
   confirmBody: "Vamos a registrar una disputa por este cargo. Esto no bloquea tu tarjeta ni mueve dinero.",
   confirmReviewLive: "Una persona del banco revisará el caso antes de cerrarlo.",
-  confirmValid: (t: string) => `Esta confirmación vale hasta las ${t}.`,
+  confirmValid: (t: string) => `Esta confirmación vale hasta las ${t} (hora de tu equipo).`,
   confirm: "Confirmar disputa",
   cancel: "No, volver",
   confirmBlockTitle: "Confirma antes de bloquear la tarjeta",
@@ -163,6 +167,9 @@ const es = {
   askHuman: "Hablar con una persona",
   askHumanMessage: "Quiero hablar con una persona.",
   restart: "Revisar otro cargo",
+  closedNote: "Esta conversación terminó. Para revisar otro cargo, empieza una nueva revisión.",
+  handedOffNote: "Una persona del banco tiene tu caso. Lo que escribas aquí se agrega a él.",
+  handedOffPlaceholder: "Agrega algo a tu caso",
 
   loadFailTitle: "No pudimos consultar tus movimientos",
   loadFailBody: "No se hizo ningún cambio. Puedes reintentar o hablar con una persona.",
@@ -193,7 +200,11 @@ const pt: CustomerCopy = {
   langSwitch: "Idioma",
   synthetic: "Dados sintéticos",
   testSession: "Sessão de teste",
-  expires: (t) => `expira às ${t}`,
+  expires: (t) => `expira às ${t} (horário do seu aparelho)`,
+  pageTitle: "Cliente",
+  demoDate: (d) => `Data da demo: ${d}`,
+  demoDateNote: "Os prazos para contestar são contados a partir da data da demo, a data em que os dados de teste estão fixados. Os horários da sessão e da confirmação são os do seu aparelho.",
+  deadlineFrom: (d) => `Contado a partir da data da demo, ${d}`,
   expiringSoon: "Sua sessão expira em menos de um minuto.",
   logout: "Sair",
 
@@ -287,7 +298,7 @@ const pt: CustomerCopy = {
   confirmTitle: "Confirme antes de abrir a contestação",
   confirmBody: "Vamos registrar uma contestação desta cobrança. Isso não bloqueia seu cartão nem movimenta dinheiro.",
   confirmReviewLive: "Uma pessoa do banco vai revisar o caso antes de encerrá-lo.",
-  confirmValid: (t) => `Esta confirmação vale até as ${t}.`,
+  confirmValid: (t) => `Esta confirmação vale até as ${t} (horário do seu aparelho).`,
   confirm: "Confirmar contestação",
   cancel: "Não, voltar",
   confirmBlockTitle: "Confirme antes de bloquear o cartão",
@@ -350,6 +361,9 @@ const pt: CustomerCopy = {
   askHuman: "Falar com uma pessoa",
   askHumanMessage: "Quero falar com uma pessoa.",
   restart: "Revisar outra cobrança",
+  closedNote: "Esta conversa terminou. Para revisar outra cobrança, comece uma nova revisão.",
+  handedOffNote: "Uma pessoa do banco está com o seu caso. O que você escrever aqui é adicionado a ele.",
+  handedOffPlaceholder: "Adicione algo ao seu caso",
 
   loadFailTitle: "Não conseguimos consultar suas movimentações",
   loadFailBody: "Nada foi alterado. Você pode tentar de novo ou falar com uma pessoa.",
@@ -383,7 +397,11 @@ const en: CustomerCopy = {
   langSwitch: "Conversation language",
   synthetic: "Synthetic data",
   testSession: "Test session",
-  expires: (t) => `expires at ${t}`,
+  expires: (t) => `expires at ${t} (your device time)`,
+  pageTitle: "Customer view",
+  demoDate: (d) => `Demo date: ${d}`,
+  demoDateNote: "Claim deadlines are counted from the demo date, the date the test data is set at. Session and confirmation times use your device clock.",
+  deadlineFrom: (d) => `Counted from the demo date, ${d}`,
   expiringSoon: "Your session expires in less than a minute.",
   logout: "Log out",
 
@@ -473,7 +491,7 @@ const en: CustomerCopy = {
   confirmTitle: "Confirm before the dispute is opened",
   confirmBody: "We are going to file a dispute for this charge. This does not block your card or move money.",
   confirmReviewLive: "A person at the bank will review the case before closing it.",
-  confirmValid: (t) => `This confirmation is valid until ${t}.`,
+  confirmValid: (t) => `This confirmation is valid until ${t} (your device time).`,
   confirm: "Confirm dispute",
   cancel: "No, go back",
   confirmBlockTitle: "Confirm before the card is blocked",
@@ -536,6 +554,9 @@ const en: CustomerCopy = {
   askHuman: "Talk to a person",
   askHumanMessage: "I want to talk to a person.",
   restart: "Review another charge",
+  closedNote: "This conversation has ended. To check another charge, start a new review.",
+  handedOffNote: "A person at the bank has your case. What you write here is added to it.",
+  handedOffPlaceholder: "Add something to your case",
 
   loadFailTitle: "We could not look up your transactions",
   loadFailBody: "Nothing was changed. You can try again or talk to a person.",
@@ -565,3 +586,11 @@ export type UiLang = Language | "en";
 export const CUSTOMER_COPY: Record<UiLang, CustomerCopy> = { es, pt, en };
 
 export const LANGUAGE_LABEL: Record<Language, string> = { es: "Spanish", pt: "Portuguese" };
+
+/** Test scenarios whose conversation runs in a language other than Spanish (deploy/demo_select.py, "portuguese"). */
+const SCENARIO_LANGUAGE: Record<string, Language> = { portuguese: "pt" };
+
+/** The conversation language a test customer's scenario is written for, or null when it runs in either. */
+export function scenarioLanguage(scenario: string): Language | null {
+  return SCENARIO_LANGUAGE[scenario] ?? null;
+}

@@ -54,6 +54,20 @@ export function ReasonChips({ reasons, copy, lang }: { reasons: MatchReason[]; c
   );
 }
 
+/**
+ * "Food · MCC 5411". Some sources put a category name in merchant_category instead of an MCC code ("Food"): a name
+ * equal to the category is not repeated, and only a numeric code gets the MCC prefix.
+ */
+export function categoryText(category: string | null, merchantCategory: string | null, copy: CustomerCopy): string {
+  const main = category ? copy.category[category] ?? category : null;
+  const code = merchantCategory?.trim() || null;
+  const extra = !code ? null
+    : /^\d{3,4}$/.test(code) ? copy.mcc(code)
+      : code.toLowerCase() === category?.toLowerCase() ? null
+        : copy.category[code] ?? code;
+  return [main, extra].filter(Boolean).join(" · ");
+}
+
 export function chargeAmount(charge: ChargeView, lang: UiLang): string {
   return money(charge.amount, charge.currency, lang) || "?";
 }

@@ -13,12 +13,14 @@ interface Props {
   entry: Extract<Entry, { kind: "confirm" }>;
   copy: CustomerCopy;
   lang: UiLang;
+  /** The service's demo clock, or null: the claim deadline is counted from its date. */
+  demoClock: string | null;
   onConfirm: () => void;
   onCancel: () => void;
 }
 
 /** Explicit confirmation before a write. The service holds the token; this card only answers yes or no to its id. */
-export function ConfirmCard({ entry, copy, lang, onConfirm, onCancel }: Props) {
+export function ConfirmCard({ entry, copy, lang, demoClock, onConfirm, onCancel }: Props) {
   const { confirmation: c, state } = entry;
   const block = c.tool === "block_card";
   const locked = state !== "pending";
@@ -38,6 +40,7 @@ export function ConfirmCard({ entry, copy, lang, onConfirm, onCancel }: Props) {
       <p className={`${styles.valid} num`}>
         {copy.confirmValid(timeOnly(c.expires_at, lang))}
         {c.claim_window ? <> <WithRuleId text={copy.claimNote(dateOnly(c.claim_window.deadline, lang), c.claim_window.rule_id)} id={c.claim_window.rule_id} /></> : null}
+        {c.claim_window && demoClock ? <> {copy.deadlineFrom(dateOnly(demoClock, lang))}.</> : null}
       </p>
       <div className={styles.actions}>
         <Button loading={state === "working"} loadingLabel={copy.opening} aria-disabled={locked || undefined}

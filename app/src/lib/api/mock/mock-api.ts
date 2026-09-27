@@ -30,6 +30,11 @@ export class MockCautelaApi implements CautelaApi, MockBackend {
   private readonly handoffs: Handoff[] = [...SEEDED_HANDOFFS];
   private readonly orchestrator = new MockOrchestrator(this);
 
+  /** Mock mode runs on the browser clock, so there is no demo date to show. */
+  demoClock(): Promise<string | null> {
+    return Promise.resolve(null);
+  }
+
   constructor(options: MockOptions = {}) {
     this.latency = options.latency ?? [220, 640];
     for (const seed of SEEDED_TRACES) seedTrace(this.audit, seed.traceId, seed.customerRef, seed.start, seed.steps);

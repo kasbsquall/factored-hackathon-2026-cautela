@@ -16,6 +16,17 @@ interface TurnFlowOptions {
 }
 
 type ConfirmEntry = Extract<Entry, { kind: "confirm" }>;
+
+/** The reply without its numbered option lines ("1) ..."), and without the blank lines they leave behind. */
+export function withoutOptionLines(reply: string): string {
+  return reply
+    .split("\n")
+    .filter((line) => !/^\s*\d+\)\s/.test(line))
+    .join("\n")
+    .replace(/\n[ \t]*(?:\n[ \t]*)+/g, "\n")
+    .trim();
+}
+
 type RecognizeEntry = Extract<Entry, { kind: "recognize" }>;
 
 /**
@@ -52,9 +63,7 @@ export function useTurnFlow({ token, language, copy, onSessionEnd }: TurnFlowOpt
     setTurns((prev) => [...prev, { id: entryId(), cause, turn }]);
     const template = turn.trail.find((step) => step.step === "reply")?.detail.kind;
     // The options also come as numbered lines in the reply; they are shown once, as buttons.
-    const reply = turn.options.length
-      ? turn.reply.split("\n").filter((line) => !/^\d+\)\s/.test(line)).join("\n")
-      : turn.reply;
+    const reply = turn.options.length ? withoutOptionLines(turn.reply) : turn.reply;
     const items: Entry[] = [{ id: entryId(), kind: "system", say: () => reply,
       reply: { source: turn.reply_source, template: typeof template === "string" ? template : null, language: turn.language, raw: turn.reply } }];
     if (turn.options.length) items.push({ id: entryId(), kind: "options", options: turn.options });

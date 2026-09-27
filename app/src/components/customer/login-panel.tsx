@@ -12,11 +12,13 @@ import styles from "./login-panel.module.css";
 interface Props {
   copy: CustomerCopy;
   onAuthenticated: (auth: Auth) => void;
+  /** A test customer was picked: its scenario may set the conversation language. */
+  onPickIdentity: (identity: TestIdentity) => void;
 }
 
 type OtpError = keyof CustomerCopy["errOtp"];
 
-export function LoginPanel({ copy, onAuthenticated }: Props) {
+export function LoginPanel({ copy, onAuthenticated, onPickIdentity }: Props) {
   const api = getApi();
   // undefined while loading, null when the list could not be read.
   const [identities, setIdentities] = useState<TestIdentity[] | null | undefined>(undefined);
@@ -123,7 +125,7 @@ export function LoginPanel({ copy, onAuthenticated }: Props) {
                     className={`${styles.identity} rise-row`}
                     style={{ "--i": Math.min(i, 7) } as React.CSSProperties}
                     aria-pressed={doc === id.document}
-                    onClick={() => { setDoc(id.document); setError(null); }}
+                    onClick={() => { setDoc(id.document); setError(null); onPickIdentity(id); }}
                   >
                     <span className={styles.idName}>{copy.scenario[id.scenario] ?? id.label}</span>
                     <span className={`${styles.idDoc} mono`}>{id.document}</span>

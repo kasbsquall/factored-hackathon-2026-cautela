@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getApi } from "@/lib/api";
 import type { Language } from "@/lib/api/types";
 import type { TestIdentity } from "@/lib/api/client";
-import { CUSTOMER_COPY, type UiLang } from "@/lib/i18n/customer";
+import { CUSTOMER_COPY, scenarioLanguage, type UiLang } from "@/lib/i18n/customer";
 import type { TurnCause } from "@/lib/narration";
+import { useDemoClock } from "@/lib/use-demo-clock";
 import { CustomerHeader } from "./customer-header";
 import { LoginPanel } from "./login-panel";
 import { Conversation } from "./conversation";
@@ -35,6 +36,7 @@ const NO_TRAIL: TrailState = { turns: [], pending: null, failed: false };
 /** Warn this long before the session ends, so a customer mid-confirmation is not surprised. */
 const EXPIRY_WARNING_MS = 60_000;
 const REVIEW_KEY = "cautela.review-en";
+const LANG_KEY = "cautela.lang";
 
 /** ?review=en wins (a link for judges), then this browser's last choice. Storage can be missing or blocked. */
 function initialReview(): boolean {
@@ -45,6 +47,19 @@ function initialReview(): boolean {
     return window.localStorage.getItem(REVIEW_KEY) === "on";
   } catch {
     return false;
+  }
+}
+
+/**
+ * This browser's last conversation language, so it survives a reload or a new login, and whether a test customer set
+ * it ("pick") or the switch did. Stored as "pt" or "pt:pick".
+ */
+function initialLang(): { lang: Language; picked: boolean } {
+  try {
+    const [value, source] = (window.localStorage.getItem(LANG_KEY) ?? "").split(":");
+    return { lang: value === "pt" ? "pt" : "es", picked: source === "pick" };
+  } catch {
+    return { lang: "es", picked: false };
   }
 }
 
@@ -60,12 +75,42 @@ export function CustomerApp() {
   const ui: UiLang = reviewEn ? "en" : lang;
   const copy = CUSTOMER_COPY[ui];
   const talk = CUSTOMER_COPY[lang];
+  const demoClock = useDemoClock();
 
-  useEffect(() => setReviewEn(initialReview()), []);
+  /** True while the language was set by picking a test customer rather than by the switch. */
+  const langFromPick = useRef(false);
+
+  useEffect(() => {
+    setReviewEn(initialReview());
+    const saved = initialLang();
+    langFromPick.current = saved.picked;
+    setLang(saved.lang);
+  }, []);
 
   useEffect(() => {
     document.documentElement.lang = ui === "en" ? "en" : ui === "pt" ? "pt-BR" : "es";
-  }, [ui]);
+    document.title = `${copy.pageTitle} · Cautela`;
+  }, [ui, copy]);
+
+  const chooseLang = useCallback((next: Language, picked: boolean) => {
+    langFromPick.current = picked;
+    setLang(next);
+    try {
+      window.localStorage.setItem(LANG_KEY, picked ? `${next}:pick` : next);
+    } catch {
+      // Only a convenience: without storage the choice lasts for this page.
+    }
+  }, []);
+
+  const switchLang = useCallback((next: Language) => chooseLang(next, false), [chooseLang]);
+
+  // A scenario written for one language (the Portuguese customer) sets it; picking another customer afterwards goes
+  // back to Spanish, unless the language came from the switch, which always wins.
+  const pickIdentity = useCallback((identity: TestIdentity) => {
+    const wanted = scenarioLanguage(identity.scenario);
+    if (wanted) chooseLang(wanted, true);
+    else if (langFromPick.current) chooseLang("es", false);
+  }, [chooseLang]);
 
   const toggleReview = useCallback(() => {
     const next = !reviewEn;
@@ -109,17 +154,17 @@ export function CustomerApp() {
   return (
     <div className={styles.shell}>
       <a href="#conversation" className="skip-link">{ui === "en" ? "Skip to content" : ui === "pt" ? "Ir para o conteúdo" : "Ir al contenido"}</a>
-      <CustomerHeader copy={copy} lang={lang} ui={ui} onLang={setLang} reviewEn={reviewEn} onReview={toggleReview}
-        expiresAt={auth?.expiresAt ?? null} expiringSoon={Boolean(auth) && expiringSoon} onLogout={auth ? logout : undefined} />
+      <CustomerHeader copy={copy} lang={lang} ui={ui} onLang={switchLang} reviewEn={reviewEn} onReview={toggleReview}
+        expiresAt={auth?.expiresAt ?? null} expiringSoon={Boolean(auth) && expiringSoon} onLogout={auth ? logout : undefined} demoClock={demoClock} />
       <div className={styles.layout}>
         <main id="conversation" className={styles.phone}>
           {expired ? (
             <ExpiredState copy={copy} onAgain={() => setExpired(false)} />
           ) : auth ? (
-            <Conversation key={auth.token} auth={auth} copy={copy} talk={talk} lang={lang} ui={ui} onSessionEnd={endSession}
+            <Conversation key={auth.token} auth={auth} copy={copy} talk={talk} lang={lang} ui={ui} demoClock={demoClock} onSessionEnd={endSession}
               onStage={setStage} onTrail={setTrail} />
           ) : (
-            <LoginPanel copy={copy} onAuthenticated={(a) => { setAuth(a); setStage(1); setTrail(NO_TRAIL); }} />
+            <LoginPanel copy={copy} onPickIdentity={pickIdentity} onAuthenticated={(a) => { setAuth(a); setStage(1); setTrail(NO_TRAIL); }} />
           )}
         </main>
         <NarrationPanel className={styles.narration} turns={trail.turns} pending={trail.pending} failed={trail.failed} active={Boolean(auth)} />

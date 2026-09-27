@@ -32,19 +32,27 @@ function toCode(code: unknown): ApiErrorCode {
 export class LiveCautelaApi implements CautelaApi {
   readonly mode = "live" as const;
 
-  /** Service clock minus browser clock, in ms; read once from GET /health. */
-  private offset: Promise<number> | null = null;
+  /** The service clock and its offset from the browser clock (service minus browser, in ms); read once from GET /health. */
+  private clock: Promise<{ serviceClock: string; offset: number } | null> | null = null;
 
   constructor(private readonly baseUrl: string) {}
 
-  private clockOffset(): Promise<number> {
-    this.offset ??= this.request<Schemas["HealthResponse"]>("GET", "/health")
-      .then((h) => Date.parse(h.service_clock) - Date.now())
+  private readClock(): Promise<{ serviceClock: string; offset: number } | null> {
+    this.clock ??= this.request<Schemas["HealthResponse"]>("GET", "/health")
+      .then((h) => ({ serviceClock: h.service_clock, offset: Date.parse(h.service_clock) - Date.now() }))
       .catch(() => {
-        this.offset = null;
-        return 0;
+        this.clock = null;
+        return null;
       });
-    return this.offset;
+    return this.clock;
+  }
+
+  private async clockOffset(): Promise<number> {
+    return (await this.readClock())?.offset ?? 0;
+  }
+
+  async demoClock(): Promise<string | null> {
+    return (await this.readClock())?.serviceClock ?? null;
   }
 
   /** An instant on the service clock, expressed on the browser clock. */

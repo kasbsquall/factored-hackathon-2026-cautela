@@ -1,10 +1,10 @@
 "use client";
 
-import { Eyeglasses, Flask, LockSimple, SignOut } from "@phosphor-icons/react";
+import { CalendarDot, Eyeglasses, Flask, LockSimple, SignOut } from "@phosphor-icons/react";
 import { Wordmark } from "@/components/brand/wordmark";
 import type { Language } from "@/lib/api/types";
 import { LANGUAGE_LABEL, type CustomerCopy, type UiLang } from "@/lib/i18n/customer";
-import { timeOnly } from "@/lib/format";
+import { dateOnly, timeOnly } from "@/lib/format";
 import styles from "./customer-header.module.css";
 
 interface Props {
@@ -19,11 +19,13 @@ interface Props {
   expiresAt: string | null;
   expiringSoon: boolean;
   onLogout?: () => void;
+  /** The service's demo clock, or null (mock mode, or not read yet): the date every deadline is counted from. */
+  demoClock: string | null;
 }
 
 const LANGS: Language[] = ["es", "pt"];
 
-export function CustomerHeader({ copy, lang, ui, onLang, reviewEn, onReview, expiresAt, expiringSoon, onLogout }: Props) {
+export function CustomerHeader({ copy, lang, ui, onLang, reviewEn, onReview, expiresAt, expiringSoon, onLogout, demoClock }: Props) {
   return (
     <header className={styles.header}>
       <Wordmark size="sm" label={ui === "en" ? "Cautela, home" : lang === "pt" ? "Cautela, início" : "Cautela, inicio"} />
@@ -32,6 +34,13 @@ export function CustomerHeader({ copy, lang, ui, onLang, reviewEn, onReview, exp
           <Flask aria-hidden />
           {copy.synthetic}
         </span>
+        {demoClock ? (
+          <span className={`${styles.badge} ${styles.demoDate} num`} title={copy.demoDateNote}>
+            <CalendarDot aria-hidden />
+            {copy.demoDate(dateOnly(demoClock, ui))}
+            <span className="sr-only">. {copy.demoDateNote}</span>
+          </span>
+        ) : null}
         {expiresAt ? (
           <span className={`${styles.badge} ${expiringSoon ? styles.soon : ""} num`}>
             <LockSimple aria-hidden />

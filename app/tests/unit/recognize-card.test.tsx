@@ -16,12 +16,25 @@ const recognition: RecognitionView = {
   claim_window: { rule_id: "CO-WINDOW-001", deadline: "2026-09-29" },
 };
 
-function renderCard(state: RecognizeState, onAnswer: (r: boolean) => void = () => undefined, lang: "es" | "pt" = "es") {
-  const entry = { id: "e9", kind: "recognize" as const, recognition, conversationId: "cv_1", state };
-  return render(<RecognizeCard entry={entry} copy={CUSTOMER_COPY[lang]} lang={lang} onAnswer={onAnswer} />);
+function renderCard(state: RecognizeState, onAnswer: (r: boolean) => void = () => undefined, lang: "es" | "pt" = "es",
+  demoClock: string | null = null, charge: Partial<RecognitionView["charge"]> = {}) {
+  const entry = { id: "e9", kind: "recognize" as const, recognition: { ...recognition, charge: { ...recognition.charge, ...charge } },
+    conversationId: "cv_1", state };
+  return render(<RecognizeCard entry={entry} copy={CUSTOMER_COPY[lang]} lang={lang} demoClock={demoClock} onAnswer={onAnswer} />);
 }
 
 describe("RecognizeCard", () => {
+  it("does not repeat a category that the source also wrote as the merchant category", () => {
+    renderCard("pending", undefined, "es", null, { category: "Food", merchant_category: "Food" });
+    expect(screen.getByText("Alimentación")).toBeInTheDocument();
+    expect(screen.queryByText(/MCC/)).toBeNull();
+  });
+
+  it("says the claim deadline is counted from the demo date when the service runs on one", () => {
+    renderCard("pending", undefined, "es", "2026-06-19T12:16:58Z");
+    expect(screen.getByText(/Contado desde la fecha de la demo, 19 jun 2026/)).toBeInTheDocument();
+  });
+
   it("shows the verified charge, its evidence and the claim deadline before any dispute", () => {
     renderCard("pending");
     expect(screen.getByRole("heading", { name: "¿Reconoces este cargo?" })).toBeInTheDocument();

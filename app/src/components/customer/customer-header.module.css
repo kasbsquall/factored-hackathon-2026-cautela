@@ -25,6 +25,11 @@
   color: var(--ink2);
 }
 
+.demoDate {
+  color: var(--ink);
+  cursor: help;
+}
+
 .soon {
   color: var(--stop);
 }
@@ -129,6 +134,7 @@
   background: transparent;
   color: var(--ink2);
   font-size: var(--t-13);
+  white-space: nowrap;
   cursor: pointer;
   transition: color var(--d-ui) var(--ease-out), background-color var(--d-ui) var(--ease-out);
 }

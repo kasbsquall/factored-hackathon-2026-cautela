@@ -26,10 +26,12 @@ interface Props {
   lang: Language;
   /** Label and number format language of the cards. */
   ui: UiLang;
+  /** The service's demo clock, or null: claim deadlines are counted from its date. */
+  demoClock: string | null;
   canAskHuman: boolean;
 }
 
-export function EntryView({ entry, isLast, flow, copy, talk, lang, ui, canAskHuman }: Props) {
+export function EntryView({ entry, isLast, flow, copy, talk, lang, ui, demoClock, canAskHuman }: Props) {
   const translation = entry.kind === "user" || entry.kind === "system"
     ? <MessageTranslation entry={entry} talk={lang} translate={flow.translate} conversationId={flow.conversationId} />
     : null;
@@ -59,11 +61,11 @@ export function EntryView({ entry, isLast, flow, copy, talk, lang, ui, canAskHum
     case "options":
       return <OptionList entry={entry} copy={copy} lang={ui} disabled={flow.busy} onPick={(o) => flow.pickOption(entry.id, o)} />;
     case "recognize":
-      return <RecognizeCard entry={entry} copy={copy} lang={ui} onAnswer={(recognized) => flow.recognize(entry, recognized)} />;
+      return <RecognizeCard entry={entry} copy={copy} lang={ui} demoClock={demoClock} onAnswer={(recognized) => flow.recognize(entry, recognized)} />;
     case "confirm":
-      return <ConfirmCard entry={entry} copy={copy} lang={ui} onConfirm={() => flow.confirm(entry)} onCancel={() => flow.cancel(entry)} />;
+      return <ConfirmCard entry={entry} copy={copy} lang={ui} demoClock={demoClock} onConfirm={() => flow.confirm(entry)} onCancel={() => flow.cancel(entry)} />;
     case "receipt":
-      return <OutcomeReceipt entry={entry} copy={copy} lang={ui} />;
+      return <OutcomeReceipt entry={entry} copy={copy} lang={ui} demoClock={demoClock} />;
     case "error":
       return (
         <Notice tone="error" icon={<WarningOctagon aria-hidden />} title={entry.title?.(copy) ?? copy.loadFailTitle}

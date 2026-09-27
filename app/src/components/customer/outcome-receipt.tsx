@@ -27,12 +27,13 @@ function writeAttempts(turn: ReceiptEntry["turn"]): number | null {
  * The claim deadline the policy engine computed for this charge, with what its window rule says
  * (agent/policy/rules.yaml); without a computed date, the rule's window alone. Then every rule id with its source.
  */
-function ruleRows(ruleIds: string[], claim: ClaimWindow | null, copy: CustomerCopy, lang: UiLang): ReceiptRow[] {
+function ruleRows(ruleIds: string[], claim: ClaimWindow | null, copy: CustomerCopy, lang: UiLang, demoClock: string | null): ReceiptRow[] {
   const windows = claim
     ? [{ label: copy.rowClaimDeadline, value: (
       <span className={styles.deadline}>
         <span className="num">{copy.claimUntil(dateOnly(claim.deadline, lang))}</span>
         {copy.ruleWindow[claim.rule_id] ? <small>{copy.ruleWindow[claim.rule_id]}</small> : null}
+        {demoClock ? <small className="num">{copy.deadlineFrom(dateOnly(demoClock, lang))}</small> : null}
       </span>
     ) }]
     : ruleIds.filter((id) => copy.ruleWindow[id]).map((id) => ({ label: copy.rowClaimDeadline, value: copy.ruleWindow[id] ?? "" }));
@@ -40,7 +41,7 @@ function ruleRows(ruleIds: string[], claim: ClaimWindow | null, copy: CustomerCo
 }
 
 /** Built only from what the turn returned and what GET /cases/{id} read back. */
-export function OutcomeReceipt({ entry, copy, lang }: { entry: ReceiptEntry; copy: CustomerCopy; lang: UiLang }) {
+export function OutcomeReceipt({ entry, copy, lang, demoClock }: { entry: ReceiptEntry; copy: CustomerCopy; lang: UiLang; demoClock: string | null }) {
   const { turn, caseView } = entry;
   const reason = turn.transfer_reason;
   const charge: ReceiptRow[] = entry.charge || entry.chargeView
@@ -66,7 +67,7 @@ export function OutcomeReceipt({ entry, copy, lang }: { entry: ReceiptEntry; cop
             { label: copy.rowCase, value: <Mono>{turn.case.case_id}</Mono> },
             ...(caseView ? [{ label: copy.rowStatus, value: review ? copy.statusReview : copy.statusOpen }] : []),
             ...charge,
-            ...ruleRows(caseView?.policy_rule_ids ?? [], turn.case.claim_window, copy, lang),
+            ...ruleRows(caseView?.policy_rule_ids ?? [], turn.case.claim_window, copy, lang, demoClock),
             ...handoff,
           ]}
           foot={foot}

@@ -6,7 +6,7 @@ import type { CustomerCopy, UiLang } from "@/lib/i18n/customer";
 import { dateOnly } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import type { Entry } from "./flow-types";
-import { ReasonChips, cardText, channelIcon, chargeAmount, chargeDay } from "./charge-facts";
+import { ReasonChips, cardText, categoryText, channelIcon, chargeAmount, chargeDay } from "./charge-facts";
 import { WithRuleId } from "./rule-ref";
 import styles from "./recognize-card.module.css";
 
@@ -14,6 +14,8 @@ interface Props {
   entry: Extract<Entry, { kind: "recognize" }>;
   copy: CustomerCopy;
   lang: UiLang;
+  /** The service's demo clock, or null: the claim deadline is counted from its date. */
+  demoClock: string | null;
   onAnswer: (recognized: boolean) => void;
 }
 
@@ -30,14 +32,13 @@ function Fact({ icon, label, children }: { icon: ReactNode; label: string; child
  * "Do you recognize it?": the charge exactly as the tools read it, before any dispute. Recognizing it ends the
  * conversation with nothing written; not recognizing it asks for the dispute confirmation next.
  */
-export function RecognizeCard({ entry, copy, lang, onAnswer }: Props) {
+export function RecognizeCard({ entry, copy, lang, demoClock, onAnswer }: Props) {
   const { recognition: r, state } = entry;
   const c = r.charge;
   const locked = state !== "pending";
   const ChannelIcon = channelIcon(c.channel);
   const card = cardText(c, copy);
-  const category = [c.category ? copy.category[c.category] ?? c.category : null, c.merchant_category ? copy.mcc(c.merchant_category) : null]
-    .filter(Boolean).join(" · ");
+  const category = categoryText(c.category ?? null, c.merchant_category ?? null, copy);
   const place = [c.city, c.country].filter(Boolean).join(", ");
   const status = [c.transaction_type ? copy.txType[c.transaction_type] ?? c.transaction_type : null,
     c.transaction_status ? copy.txStatus[c.transaction_status] ?? c.transaction_status : null].filter(Boolean).join(" · ");
@@ -84,7 +85,7 @@ export function RecognizeCard({ entry, copy, lang, onAnswer }: Props) {
         </Button>
       </div>
       {r.claim_window ? (
-        <p className={`${styles.claim} num`}><WithRuleId text={copy.claimNote(dateOnly(r.claim_window.deadline, lang), r.claim_window.rule_id)} id={r.claim_window.rule_id} /></p>
+        <p className={`${styles.claim} num`}><WithRuleId text={copy.claimNote(dateOnly(r.claim_window.deadline, lang), r.claim_window.rule_id)} id={r.claim_window.rule_id} />{demoClock ? <> {copy.deadlineFrom(dateOnly(demoClock, lang))}.</> : null}</p>
       ) : null}
     </section>
   );
