@@ -161,7 +161,7 @@ def test_deployed_app_caps_the_model_and_reports_it_in_health(warehouse, tmp_pat
     seed_file = tmp_path / "seed.json"
     seed_file.write_text(json.dumps(seed.build_seed(warehouse, NOW)), encoding="utf-8")
     settings = ApiSettings(warehouse=warehouse, audit_dir=None, seed_file=seed_file,
-                           console_key="test-console-key-0123456789")
+                           console_key="test-console-key-0123456789", demo_mode=True)
     env = {"LLM_PROVIDER": "openai_compatible", "LLM_BASE_URL": "http://127.0.0.1:9/v1", "LLM_MODEL": "m",
            "LLM_API_KEY": "test-not-a-key", "LLM_TIMEOUT_S": "2", "LLM_DAILY_MAX_CALLS": "1"}
     app = build_app(settings, environ=env)

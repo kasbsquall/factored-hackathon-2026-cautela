@@ -6,6 +6,7 @@ only for translation, so the transcript under test is the same one the other API
 
 from __future__ import annotations
 
+import threading
 from dataclasses import dataclass, field
 
 from agent.llm.budget import BudgetedAdapter, BudgetLimits, DailyBudget
@@ -73,13 +74,73 @@ def test_translates_a_customer_message_once_and_then_from_cache(make_client):
     assert _translate(client, auth, turn["conversation_id"], "customer", message).json()["cached"] is True
 
 
-def test_part_of_an_assistant_reply_is_accepted(make_client):
+def test_only_a_whole_message_is_accepted(make_client):
+    """A part of a message answers 404 without a model call, so one long message cannot be translated piece by
+    piece with a paid call for each piece."""
     client, runtime = make_client()
-    _with_model(runtime, EchoAdapter())
+    adapter = EchoAdapter()
+    _with_model(runtime, adapter)
     auth, turn = _conversation(client)
-    first_line = turn["reply"].splitlines()[0].strip()
-    ok = _translate(client, auth, turn["conversation_id"], "assistant", first_line)
-    assert ok.status_code == 200 and ok.json()["source_language"] == "es"
+    reply = turn["reply"]
+    for part in (reply[: len(reply) // 2], reply[1:], reply.split()[0]):
+        response = _translate(client, auth, turn["conversation_id"], "assistant", part)
+        assert response.status_code == 404 and response.json()["error"]["code"] == "not_found", part
+    assert adapter.received == []
+    ok = _translate(client, auth, turn["conversation_id"], "assistant", reply)
+    assert ok.status_code == 200 and ok.json()["source_language"] == "es" and len(adapter.received) == 1
+
+
+def test_model_calls_are_capped_per_session_and_cached_answers_are_free(make_client):
+    client, runtime = make_client(translate_per_session=1)
+    adapter = EchoAdapter()
+    _with_model(runtime, adapter)
+    auth, turn = _conversation(client)
+    message = runtime.orchestrator.store.get_any(turn["conversation_id"]).transcript[0][1]
+    assert _translate(client, auth, turn["conversation_id"], "customer", message).status_code == 200
+    again = _translate(client, auth, turn["conversation_id"], "customer", message)
+    assert again.status_code == 200 and again.json()["cached"] is True
+    over = _translate(client, auth, turn["conversation_id"], "assistant", turn["reply"])
+    assert over.status_code == 429 and over.json()["error"]["code"] == "rate_limited"
+    assert len(adapter.received) == 1
+    other_auth, other = _conversation(client)  # a new login session has its own quota
+    assert _translate(client, other_auth, other["conversation_id"], "assistant", other["reply"]).status_code == 200
+
+
+def test_model_calls_are_capped_across_all_sessions(make_client):
+    client, runtime = make_client(translate_rate=(1, 3600))
+    adapter = EchoAdapter()
+    _with_model(runtime, adapter)
+    auth, turn = _conversation(client)
+    assert _translate(client, auth, turn["conversation_id"], "assistant", turn["reply"]).status_code == 200
+    other_auth, other = _conversation(client)
+    capped = _translate(client, other_auth, other["conversation_id"], "assistant", other["reply"])
+    assert capped.status_code == 429 and len(adapter.received) == 1
+
+
+def test_the_model_call_runs_outside_the_runtime_lock(make_client):
+    """While the provider answers, another visitor's request can take the lock every turn needs."""
+    client, runtime = make_client()
+    free: list[bool] = []
+
+    @dataclass
+    class ProbingAdapter(EchoAdapter):
+        def complete(self, prompt: MaskedPrompt, max_tokens: int) -> Completion:
+            def probe() -> None:
+                got = runtime.lock.acquire(timeout=2)
+                free.append(got)
+                if got:
+                    runtime.lock.release()
+            worker = threading.Thread(target=probe)
+            worker.start()
+            worker.join()
+            return super().complete(prompt, max_tokens)
+
+    _with_model(runtime, ProbingAdapter())
+    auth, turn = _conversation(client)
+    assert _translate(client, auth, turn["conversation_id"], "assistant", turn["reply"]).status_code == 200
+    assert free == [True]
+    records = [r for r in runtime.stack.audit.records() if r.step == "llm.translate"]
+    assert [r.conversation_id for r in records] == [turn["conversation_id"]], "the call is part of the conversation"
 
 
 def test_masking_happens_before_the_adapter_and_is_reported(make_client):
@@ -133,8 +194,11 @@ def test_another_customers_or_a_missing_conversation_is_not_found(make_client):
 
 def test_no_model_budget_reached_and_provider_failure_answer_503(make_client):
     client, runtime = make_client()
-    auth, turn = _conversation(client, "No reconozco un cargo. Fue en Marketplace Uno.")
+    auth, turn = _conversation(client, "No reconozco un cargo.")
     cid = turn["conversation_id"]
+    second = client.post("/conversations/turn", headers=auth,
+                         json={"message": "Fue en Marketplace Uno.", "conversation_id": cid})
+    assert second.status_code == 200, second.text
     none = _translate(client, auth, cid, "customer", "No reconozco un cargo.")
     assert none.status_code == 503 and none.json()["error"] == {
         "code": "translation_unavailable", "message": "Translation is not available right now.", "trace_id": None,

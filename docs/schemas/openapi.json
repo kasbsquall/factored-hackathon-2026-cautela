@@ -49,8 +49,21 @@
             "title": "Args Hash"
           },
           "attempts": {
+            "description": "Attempts of the most-retried single call in the step; 1 means no retry",
             "title": "Attempts",
             "type": "integer"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Shared by every record of every turn of one conversation; null outside a conversation",
+            "title": "Conversation Id"
           },
           "customer_ref": {
             "anyOf": [
@@ -227,9 +240,34 @@
             "title": "Checked At",
             "type": "string"
           },
+          "files_checked": {
+            "title": "Files Checked",
+            "type": "integer"
+          },
+          "first_bad_seq": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Sequence number of the first record that does not verify",
+            "title": "First Bad Seq"
+          },
           "records_checked": {
             "title": "Records Checked",
             "type": "integer"
+          },
+          "source": {
+            "description": "stored_files: the audit files on disk were read and re-hashed. memory: the service runs without an audit directory, so only the copy in process memory was checked",
+            "enum": [
+              "stored_files",
+              "memory"
+            ],
+            "title": "Source",
+            "type": "string"
           },
           "status": {
             "enum": [
@@ -243,7 +281,10 @@
         "required": [
           "status",
           "checked_at",
-          "records_checked"
+          "records_checked",
+          "source",
+          "files_checked",
+          "first_bad_seq"
         ],
         "title": "ChainStatus",
         "type": "object"
@@ -609,6 +650,107 @@
           "chain"
         ],
         "title": "ConversationAudit",
+        "type": "object"
+      },
+      "ConversationSummary": {
+        "description": "One conversation in the audit index: resolved, handed off or still open.",
+        "properties": {
+          "case_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Case Id"
+          },
+          "conversation_id": {
+            "title": "Conversation Id",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "handoff_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handoff Id"
+          },
+          "language": {
+            "enum": [
+              "es",
+              "pt"
+            ],
+            "title": "Language",
+            "type": "string"
+          },
+          "records": {
+            "description": "Audit records that carry this conversation id",
+            "title": "Records",
+            "type": "integer"
+          },
+          "stage": {
+            "enum": [
+              "collecting",
+              "clarifying",
+              "awaiting_recognition",
+              "awaiting_confirmation",
+              "resolved",
+              "recognized",
+              "handed_off",
+              "abstained",
+              "closed"
+            ],
+            "title": "Stage",
+            "type": "string"
+          },
+          "trace_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Trace Ids",
+            "type": "array"
+          },
+          "transfer_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transfer Reason"
+          },
+          "turns": {
+            "description": "Traces recorded for the conversation, one per turn",
+            "title": "Turns",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "conversation_id",
+          "created_at",
+          "language",
+          "stage",
+          "turns",
+          "trace_ids",
+          "records",
+          "case_id",
+          "handoff_id",
+          "transfer_reason"
+        ],
+        "title": "ConversationSummary",
         "type": "object"
       },
       "ConversationView": {
@@ -1248,6 +1390,26 @@
           "chain": {
             "$ref": "#/components/schemas/ChainStatus"
           },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The conversation this trace is one turn of, if any",
+            "title": "Conversation Id"
+          },
+          "conversation_trace_ids": {
+            "description": "Every trace of that conversation in turn order, this one included; empty outside a conversation",
+            "items": {
+              "type": "string"
+            },
+            "title": "Conversation Trace Ids",
+            "type": "array"
+          },
           "records": {
             "items": {
               "$ref": "#/components/schemas/AuditRecordView"
@@ -1262,6 +1424,8 @@
         },
         "required": [
           "trace_id",
+          "conversation_id",
+          "conversation_trace_ids",
           "records",
           "chain"
         ],
@@ -1376,7 +1540,7 @@
       },
       "TranslateRequest": {
         "additionalProperties": false,
-        "description": "One message of the conversation, as the transcript shows it (a part of it is accepted, since clients drop\nthe numbered option lines). Text that is not in the conversation answers 404, so this is no free translator.",
+        "description": "One whole message of the conversation, exactly as the transcript holds it (surrounding spaces aside). Any\nother text, a part of a message included, answers 404, so the route cannot be used as a free translator.",
         "properties": {
           "role": {
             "enum": [
@@ -2117,6 +2281,120 @@
         "summary": "Case Status",
         "tags": [
           "conversation"
+        ]
+      }
+    },
+    "/console/conversations": {
+      "get": {
+        "description": "Every conversation of this process, newest first: resolved, handed off or still open.",
+        "operationId": "conversation_index_console_conversations_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-console-key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Console-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ConversationSummary"
+                  },
+                  "title": "Response Conversation Index Console Conversations Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Conversation Index",
+        "tags": [
+          "console"
         ]
       }
     },

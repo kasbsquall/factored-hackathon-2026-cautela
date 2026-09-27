@@ -213,8 +213,8 @@ class ConversationView(BaseModel):
 
 
 class TranslateRequest(_Request):
-    """One message of the conversation, as the transcript shows it (a part of it is accepted, since clients drop
-    the numbered option lines). Text that is not in the conversation answers 404, so this is no free translator."""
+    """One whole message of the conversation, exactly as the transcript holds it (surrounding spaces aside). Any
+    other text, a part of a message included, answers 404, so the route cannot be used as a free translator."""
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
     role: Literal["customer", "assistant"]
@@ -300,21 +300,46 @@ class AuditRecordView(BaseModel):
     reason: str | None
     latency_ms: float
     customer_ref: str | None
-    attempts: int
+    attempts: int = Field(description="Attempts of the most-retried single call in the step; 1 means no retry")
     prev_hash: str
     record_hash: str
+    conversation_id: str | None = Field(
+        None, description="Shared by every record of every turn of one conversation; null outside a conversation")
 
 
 class ChainStatus(BaseModel):
     status: Literal["intact", "broken"]
     checked_at: datetime
     records_checked: int
+    source: Literal["stored_files", "memory"] = Field(
+        description="stored_files: the audit files on disk were read and re-hashed. memory: the service runs without "
+                    "an audit directory, so only the copy in process memory was checked")
+    files_checked: int
+    first_bad_seq: int | None = Field(description="Sequence number of the first record that does not verify")
 
 
 class TraceView(BaseModel):
     trace_id: str
+    conversation_id: str | None = Field(description="The conversation this trace is one turn of, if any")
+    conversation_trace_ids: list[str] = Field(
+        description="Every trace of that conversation in turn order, this one included; empty outside a conversation")
     records: list[AuditRecordView]
     chain: ChainStatus
+
+
+class ConversationSummary(BaseModel):
+    """One conversation in the audit index: resolved, handed off or still open."""
+
+    conversation_id: str
+    created_at: datetime
+    language: Language
+    stage: Stage
+    turns: int = Field(description="Traces recorded for the conversation, one per turn")
+    trace_ids: list[str]
+    records: int = Field(description="Audit records that carry this conversation id")
+    case_id: str | None
+    handoff_id: str | None
+    transfer_reason: str | None
 
 
 class ConversationAudit(BaseModel):

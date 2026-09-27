@@ -22,7 +22,7 @@ pytestmark = pytest.mark.skipif(not BUNDLE.is_dir(), reason="demo bundle not bui
 def client():
     env = {"CAUTELA_BUNDLE_DIR": str(BUNDLE), "CAUTELA_BUNDLE_LOCK": str(LOCK), "LLM_PROVIDER": "fake"}
     settings = ApiSettings(audit_dir=None, console_key="test-console-key-0123456789", auth_rate=(100, 60),
-                           turn_rate=(100, 60))
+                           turn_rate=(100, 60), demo_mode=True)
     app = serve.build_app(settings, environ=env)
     with TestClient(app) as c:
         yield c

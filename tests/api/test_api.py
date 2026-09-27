@@ -27,8 +27,8 @@ def make_client(warehouse, tmp_path):
     def build(**overrides) -> tuple[TestClient, Runtime]:
         seed_file = tmp_path / "seed.json"
         seed_file.write_text(json.dumps(seed.build_seed(warehouse, NOW)), encoding="utf-8")
-        settings = ApiSettings(warehouse=warehouse, audit_dir=None, seed_file=seed_file,
-                               console_key=CONSOLE["X-Console-Key"], **overrides)
+        settings = ApiSettings(warehouse=warehouse, seed_file=seed_file, console_key=CONSOLE["X-Console-Key"],
+                               **{"audit_dir": None, "demo_mode": True, **overrides})
         runtime = Runtime(settings, environ={}, clock=FrozenClock(NOW),
                           llm_choice=LLMChoice(None, "fake", None, "test"), disposition=RuleDisposition())
         client = TestClient(create_app(runtime), raise_server_exceptions=False)

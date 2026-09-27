@@ -143,7 +143,8 @@ def test_a_fixture_bundle_serves_with_the_learned_model_and_its_clock(warehouse,
     lock_path = tmp_path / "lock.json"
     write_lock(b, lock_path, model=name)
     env = {"CAUTELA_BUNDLE_DIR": str(b), "CAUTELA_BUNDLE_LOCK": str(lock_path)}
-    app = serve.build_app(ApiSettings(audit_dir=None, console_key="test-console-key-0123456789"), environ=env)
+    app = serve.build_app(ApiSettings(audit_dir=None, console_key="test-console-key-0123456789", demo_mode=True),
+                            environ=env)
     with TestClient(app) as client:
         health = client.get("/health").json()
         assert health["disposition_model"] == name and name.startswith("learned_ranker_disposition")

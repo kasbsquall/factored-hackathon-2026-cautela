@@ -7,13 +7,19 @@ Auth: POST /auth/challenge with a document number starts a login; the one-time c
 (in demo mode, readable at GET /demo/outbox/{challenge_id}); POST /auth/verify returns a session token for
 'Authorization: Bearer'. Conversation: POST /conversations/turn; when a turn carries `recognition`, POST
 /conversations/{id}/recognize with the customer's answer; when it carries `confirmation`, POST
-/conversations/{id}/confirm with the confirmation id. The human-agent console reads /console/* with 'X-Console-Key'.
+/conversations/{id}/confirm with the confirmation id. The human-agent console reads /console/* with 'X-Console-Key';
+every console route is a read.
+
+Rate limits key on the client address: the socket peer, or the address the frontend proxy names in
+X-Cautela-Client when the request also carries CAUTELA_PROXY_KEY in X-Cautela-Proxy-Key. Without that key the header
+is ignored, so no caller picks its own bucket.
 
 Errors always have the shape {"error": {"code", "message", "trace_id", "fields"}} and never include stack traces,
 SQL, file paths or the request body.
 """
 
 # No `from __future__ import annotations` here: FastAPI resolves the local Depends aliases at runtime.
+import ipaddress
 import logging
 import secrets
 from collections.abc import Callable
@@ -28,7 +34,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from api import views
 from api.models import (CaseStatusResponse, ChallengeRequest, ChallengeResponse, ConfirmRequest, ConversationAudit,
-                        ConversationView, DemoIdentity, ErrorResponse, HandoffQueueItem, HealthResponse,
+                        ConversationSummary, ConversationView, DemoIdentity, ErrorResponse, HandoffQueueItem, HealthResponse,
                         OutboxResponse, RecognizeRequest, SessionResponse, TraceView, TranslateRequest,
                         TranslationResponse, TurnRequest, TurnResponse, VerifyRequest)
 from api.ratelimit import RateLimiter
@@ -48,6 +54,23 @@ MESSAGES = {"session_invalid": "Session is not valid.", "session_expired": "Sess
             "rate_limited": "Too many requests; try again later.", "console_forbidden": "Console key required.",
             "demo_disabled": "Not available.", "validation_error": "Invalid request.",
             "translation_unavailable": "Translation is not available right now."}
+
+
+PROXY_KEY_HEADER = "x-cautela-proxy-key"
+PROXY_CLIENT_HEADER = "x-cautela-client"
+
+
+def client_address(request: Request, proxy_key: str | None) -> str:
+    """The address rate limits key on. The proxy's claim about the visitor counts only with the proxy's secret."""
+    peer = request.client.host if request.client else "unknown"
+    claimed = request.headers.get(PROXY_CLIENT_HEADER)
+    offered = request.headers.get(PROXY_KEY_HEADER)
+    if not proxy_key or not claimed or not offered or not secrets.compare_digest(proxy_key, offered):
+        return peer
+    try:
+        return str(ipaddress.ip_address(claimed.strip()))
+    except ValueError:
+        return peer
 
 
 class ApiError(HTTPException):
@@ -78,7 +101,8 @@ def create_app(runtime: Runtime | None = None, settings: ApiSettings | None = No
     app.state.runtime = runtime
     app.add_middleware(CORSMiddleware, allow_origins=list(settings.cors_origins), allow_credentials=False,
                        allow_methods=["GET", "POST"], allow_headers=["Authorization", "Content-Type", "X-Console-Key"])
-    limits = {"auth": RateLimiter(*settings.auth_rate), "turn": RateLimiter(*settings.turn_rate)}
+    limits = {"auth": RateLimiter(*settings.auth_rate), "turn": RateLimiter(*settings.turn_rate),
+              "console": RateLimiter(*settings.console_rate)}
     _handlers(app)
 
     @app.middleware("http")
@@ -93,7 +117,7 @@ def create_app(runtime: Runtime | None = None, settings: ApiSettings | None = No
 
     def limited(group: str) -> Callable[[Request], None]:
         def check(request: Request) -> None:
-            host = request.client.host if request.client else "unknown"
+            host = client_address(request, rt(request).settings.proxy_key)
             if not limits[group].allow(f"{group}:{host}"):
                 raise ApiError(429, "rate_limited")
         return check
@@ -198,28 +222,36 @@ def create_app(runtime: Runtime | None = None, settings: ApiSettings | None = No
     def case_status(case_id: str, request: Request, session: Auth) -> Any:
         return views.case_status(rt(request), session, case_id, ApiError)
 
-    # ---- human-agent console -------------------------------------------------------------------------------------
+    # ---- human-agent console (read-only) --------------------------------------------------------------------------
+    Console = [Depends(limited("console")), Depends(console)]
+
     @app.get("/console/handoffs", response_model=list[HandoffQueueItem], tags=["console"], responses=ERRORS,
-             dependencies=[Depends(console)])
+             dependencies=Console)
     def handoffs(request: Request) -> Any:
         with rt(request).lock:
             return [views.queue_item(i) for i in reversed(rt(request).queue)]
 
     @app.get("/console/handoffs/{handoff_id}", response_model=HandoffQueueItem, tags=["console"],
-             responses=ERRORS, dependencies=[Depends(console)])
+             responses=ERRORS, dependencies=Console)
     def handoff(handoff_id: str, request: Request) -> Any:
         item = rt(request).handoff(handoff_id)
         if item is None:
             raise ApiError(404, "not_found")
         return views.queue_item(item)
 
+    @app.get("/console/conversations", response_model=list[ConversationSummary], tags=["console"],
+             responses=ERRORS, dependencies=Console)
+    def conversation_index(request: Request) -> Any:
+        """Every conversation of this process, newest first: resolved, handed off or still open."""
+        return views.conversations(rt(request))
+
     @app.get("/console/conversations/{conversation_id}/audit", response_model=ConversationAudit,
-             tags=["console"], responses=ERRORS, dependencies=[Depends(console)])
+             tags=["console"], responses=ERRORS, dependencies=Console)
     def conversation_audit(conversation_id: str, request: Request) -> Any:
         return views.conversation_audit(rt(request), conversation_id, ApiError)
 
     @app.get("/console/traces/{trace_id}", response_model=TraceView, tags=["console"], responses=ERRORS,
-             dependencies=[Depends(console)])
+             dependencies=Console)
     def trace(trace_id: str, request: Request) -> Any:
         return views.trace(rt(request), trace_id, ApiError)
 
