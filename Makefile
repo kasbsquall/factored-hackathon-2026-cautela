@@ -79,13 +79,16 @@ eval-llm:  ## llm configuration plus two repeated runs on the variance subset (p
 # After-fix rerun of the deployed agent on the same suite, into the committed eval/results_after_fix.json. Every
 # configuration records the git commit it ran on. The LLM run has its own ledger and a hard USD 2.00 cap.
 AFTER_FIX ?= eval/results_after_fix.json
-.PHONY: eval-after-fix eval-after-fix-llm report
+.PHONY: eval-after-fix eval-after-fix-llm eval-repeats report
 
 eval-after-fix:  ## rules, learned (deployed decision) and the label-rule baseline, no LLM, no cost
 	uv run python -m eval.run --configs rules,learned,label_rule --out $(AFTER_FIX)
 
 eval-after-fix-llm:  ## llm configuration (gpt-6-luna, reasoning effort none), USD 2.00 cap on its own ledger
 	uv run python -m eval.run --configs llm --workers 6 --out $(AFTER_FIX) --cap-usd 2.00 --ledger data/eval/llm_spend_after_fix.json
+
+eval-repeats:  ## high-risk categories x3 for rules, learned and llm -> eval/results_repeats.json; llm capped at USD 0.50
+	uv run python -m eval.high_risk_repeats --runs 3 --cap-usd 0.50
 
 report:  ## eval/report.md from eval/report_template.md, eval/results.json and eval/results_after_fix.json
 	uv run python -m eval.report_tables
