@@ -258,6 +258,15 @@
        0.0337
       ]
      }
+    },
+    "safe_automated_resolution_ceiling": {
+     "k": 481,
+     "n": 1176,
+     "rate": 0.409,
+     "ci95": [
+      0.3813,
+      0.4374
+     ]
     }
    },
    "latency": {
@@ -286,6 +295,9 @@
     "calls_with_unknown_cost": 0,
     "input_tokens": 0,
     "output_tokens": 0,
+    "conversations": 1462,
+    "attempted_conversations": 847,
+    "usd_per_conversation": 0.0,
     "usd_per_attempted_conversation": 0.0,
     "usd_per_safe_automated_resolution": 0.0
    },
@@ -9618,6 +9630,15 @@
        0.0337
       ]
      }
+    },
+    "safe_automated_resolution_ceiling": {
+     "k": 481,
+     "n": 1176,
+     "rate": 0.409,
+     "ci95": [
+      0.3813,
+      0.4374
+     ]
     }
    },
    "latency": {
@@ -9646,6 +9667,9 @@
     "calls_with_unknown_cost": 0,
     "input_tokens": 0,
     "output_tokens": 0,
+    "conversations": 1462,
+    "attempted_conversations": 805,
+    "usd_per_conversation": 0.0,
     "usd_per_attempted_conversation": 0.0,
     "usd_per_safe_automated_resolution": 0.0
    },
@@ -18970,6 +18994,15 @@
        0.0337
       ]
      }
+    },
+    "safe_automated_resolution_ceiling": {
+     "k": 481,
+     "n": 1176,
+     "rate": 0.409,
+     "ci95": [
+      0.3813,
+      0.4374
+     ]
     }
    },
    "latency": {
@@ -18998,7 +19031,10 @@
     "calls_with_unknown_cost": 0,
     "input_tokens": 1459877,
     "output_tokens": 206700,
-    "usd_per_attempted_conversation": 0.0001705,
+    "conversations": 1462,
+    "attempted_conversations": 741,
+    "usd_per_conversation": 0.0001705,
+    "usd_per_attempted_conversation": 0.0003365,
     "usd_per_safe_automated_resolution": 0.0005812
    },
    "by_category": {
@@ -28436,5 +28472,6 @@
    "2-3": 447,
    "4+": 660
   }
- }
+ },
+ "cost_refreshed_by": "eval/refresh_cost.py"
 }

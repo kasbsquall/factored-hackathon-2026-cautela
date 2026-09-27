@@ -7,11 +7,13 @@ once the counter reaches the cap, the next call raises BudgetExceeded without co
 call can overshoot by the cost of one call (a fraction of a cent here). Run one paid process at a time: two
 processes writing the ledger would overwrite each other's counters (documented limit of DailyBudget).
 
-The key is read from the git-ignored .env and never printed.
+The key is read from the git-ignored .env and never printed. CAUTELA_ENV_FILE points the same loader at the .env of
+another checkout (a clean git worktree used to run the suite at one commit); the file is read, never copied.
 """
 
 from __future__ import annotations
 
+import os
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -32,7 +34,8 @@ def ledger(cap_usd: float = CAP_USD, path: Path = SPEND_LEDGER) -> DailyBudget:
 
 def paid_adapter(budget: DailyBudget) -> BudgetedAdapter:
     """gpt-6-luna with reasoning_effort none, wrapped by the cap. Settings come from .env plus LLM_ENV."""
-    env = parse_env((ROOT / ".env").read_text(encoding="utf-8")) if (ROOT / ".env").is_file() else {}
+    env_file = Path(os.environ.get("CAUTELA_ENV_FILE") or ROOT / ".env")
+    env = parse_env(env_file.read_text(encoding="utf-8")) if env_file.is_file() else {}
     settings = load_settings({**env, **LLM_ENV})
     return BudgetedAdapter(build_adapter(settings), budget)
 
