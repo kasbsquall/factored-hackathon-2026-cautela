@@ -68,7 +68,7 @@ export default function Home() {
               <ChartBar weight="light" aria-hidden />
               <span className={styles.rowText}>
                 <span className={styles.rowName}>Insights</span>
-                <span className={styles.rowDetail}>Why disputes first: complaint volume, SLA breach, resolution time, channels, demand, and the offline evaluation with its caveats</span>
+                <span className={styles.rowDetail}>Why disputes first: a record settles every outcome. Workflow ranking by agent-hours, savings range, cost per resolution, thresholds, demand and the offline evaluation with its caveats</span>
               </span>
               <ArrowUpRight weight="light" aria-hidden />
             </Link>
