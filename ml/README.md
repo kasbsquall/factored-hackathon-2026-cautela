@@ -2,7 +2,7 @@
 
 This is the learned component of Cautela. A customer writes something like "me cobraron algo raro la semana pasada, como 500 pesos, en una tienda". Complaints carry no `transaction_id`, so the service has to decide which of the customer's own recent transactions they mean. It then does one of three things: act on that charge, ask the customer to pick from a short list (clarify), or stop and hand the case to a person (abstain).
 
-The problem statement asks us to "evaluate at least one learned component against an appropriate baseline", with "valid labels or relevance judgments", leakage prevention, and justified "representations, metrics, thresholds, and evaluation splits". This folder is that evidence. Every number quoted here comes from `ml/reports/results.json` or `ml/reports/fitted.json`, which the code writes. `ml/reports/results.md` is generated from those files and holds the full tables.
+The problem statement asks us to "evaluate at least one learned component against an appropriate baseline", with "valid labels or relevance judgments", leakage prevention, and justified "representations, metrics, thresholds, and evaluation splits". This folder is that evidence. Every number quoted here comes from a file the code writes in `ml/reports/`: `results.json`, `results_fresh.json`, `fitted.json`, `parser_readback*.json`, `results_llm.json` (with `results_llm.md`) or `probe/*.json`. `ml/reports/results.md` is generated from those files and holds the full tables.
 
 ## Run it
 
@@ -15,11 +15,18 @@ uv run python -m ml.evaluate              # test split only -> ml/reports/result
 uv run python -m ml.evaluate --split test_fresh   # once -> ml/reports/results_fresh.json (refuses a second run)
 uv run python -m ml.parser_readback       # amount and date read-back on val and test -> ml/reports/parser_readback.json
 uv run python -m ml.report                # -> ml/reports/results.md
+uv run python -m ml.evaluate_llm          # paid: LLM rung on test, gpt-6-luna under the USD 3.00 cap -> ml/reports/results_llm.json, .md
+LLM_PROVIDER=ollama LLM_MODEL=qwen2.5:7b-instruct uv run python -m ml.probe_llm --n 50   # provider probe on val -> ml/reports/probe/
 uv run pytest tests/ml_tests
 uv run mlflow ui --backend-store-uri sqlite:///mlruns/mlflow.db   # browse runs (mlruns/ is git-ignored)
+uv run python -m ml.experiments_report   # or `make experiments` -> ml/reports/experiments.md, experiments_runs.json
 ```
 
 The builder is seeded and does not depend on the order of its inputs. Two runs on the same files give byte-identical case files; the manifest records a `data_version` hash, and `ml.evaluate` refuses fitted artifacts from another data version. MLflow 3 puts the plain `./mlruns` file store in maintenance mode, so runs go to a SQLite database inside `./mlruns`. Every run logs the data version, parameters, thresholds and metrics.
+
+### Tracking you can read without the store
+
+The MLflow store stays out of git, so the runs are also published as files. [`reports/experiments.md`](reports/experiments.md) lists every run behind a committed result (train, evaluate on test and on test_fresh, the LLM rung, the provider probes) with run id, date, git commit, data version, ranker and decider, thresholds, prompt version or provider and model, and the headline metrics with their denominators, and it names the report file that holds the full result. It also walks through the model-selection story with the file behind each claim. A run is linked to a report only when its logged metrics equal the numbers in that file; results that no run holds are listed as such. `reports/experiments_runs.json` is the snapshot the page is rendered from (run ids, params, logged metrics, git commit; no artifacts and no local paths), so `uv run python -m ml.experiments_report` regenerates the same page on a machine without `mlruns/`. With a local store it first refreshes the snapshot; `--import-reports` also logs `results_llm.json` and `probe/*.json` as runs tagged `cautela.imported_from`, since `ml/evaluate_llm.py` and `ml/probe_llm.py` write JSON only. `make experiments` runs the same command.
 
 ### Rebuilding the case files
 
@@ -32,7 +39,7 @@ uv run python -m ml.scenarios.build --verify
 uv run python -m ml.scenarios.build --verify --source s3://<bucket>/data
 ```
 
-Without `--source`, the builder reads `data/raw` when it exists and otherwise `LATAM_BANK_S3_URI` from `.env` plus `/data`. With `--verify` it rebuilds in memory, compares the three sha256 values, the `data_version` and the `test_fresh` sha256 with the committed manifest, and writes the case files only when all of them match; on a mismatch it exits with status 1 and writes nothing. The manifest is never rewritten in that mode. We checked both routes: the local copy and the bucket both reproduce data version `0189e386ce7fe882`. A plain run without `--verify` rebuilds and rewrites the manifest, which is how a deliberate change to the generator is recorded. A `make cases` target would call the `--verify` command; the Makefile is outside this folder, so that line is left to whoever maintains it.
+Without `--source`, the builder reads `data/raw` when it exists and otherwise `LATAM_BANK_S3_URI` from `.env` plus `/data`. With `--verify` it rebuilds in memory, compares the three sha256 values, the `data_version` and the `test_fresh` sha256 with the committed manifest, and writes the case files only when all of them match; on a mismatch it exits with status 1 and writes nothing. The manifest is never rewritten in that mode. We checked both routes: the local copy and the bucket both reproduce data version `0189e386ce7fe882`. A plain run without `--verify` rebuilds and rewrites the manifest, which is how a deliberate change to the generator is recorded. `make cases` runs the same `--verify` command.
 
 ## Task framing
 
@@ -111,7 +118,7 @@ Protocol: the change was checked on val, and test read-back was measured once af
 
 * **Learned ranker**: a binary classifier over candidate features, trained on match cases (the target is positive) and no_match cases (all negative). Ambiguous cases are left out because their label does not say which candidate is right. Logistic regression and gradient boosting were compared. Selection was by val MRR, with val log loss as the tie-break, because every candidate reached a val MRR of 1.0. The selected model is recorded in `fitted.json`.
 * **Disposition model**: a three-class classifier over case-level features: the ranker's score profile, which cues were parsed, how many candidates satisfy every parsed cue, and how many fail exactly one. In this run multinomial logistic regression beat gradient boosting (depth 3) on val log loss (0.0481 against 0.0541); in the previous run the order was reversed (0.0757 against 0.0777), so either is a defensible choice.
-* **LLM ranker** (`ml/rankers/llm.py`, prompt `ml/rankers/prompts/rank_v1.md`): optional. It is **not run** in the committed results because no `ANTHROPIC_API_KEY` was configured. When a key is present it runs on a stratified subset with its own train calibration and val thresholds, three repeated runs on test, and cost from API token counts. The default model is `claude-sonnet-5`, overridable with `CAUTELA_RANKER_MODEL`. Before any request, the description is masked with `agent.security.pii.mask_text` (the ranker refuses to run if that module is missing), and candidates are reduced to date, amount, currency, type, channel, merchant and city, with ids replaced by labels C1..Cn. The output is constrained by a JSON schema, and the prompt tells the model to treat the description as data.
+* **LLM ranker** (prompt `ml/rankers/prompts/rank_v1.md`), evaluated as a third rung by `ml/evaluate_llm.py`. It calls the model through `LLMPortRanker` (`ml/probe_llm.py`) and the provider-agnostic port in `agent/llm`, pinned to OpenAI `gpt-6-luna` with reasoning effort none (`LLM_ENV` in `eval/budget.py`), and every paid call goes through the USD 3.00 cap of the same file. The calibrator was fitted on a stratified train subset of 183 cases and the thresholds searched on 186 val cases; the whole original test split (1,107 cases) was then ranked three times with the frozen decider. Run 1: top-1 on match 97.2%, correct decisions 54.0%, safe automated resolution 22.3%, 12 of 1,107 unsafe, against 93.9% correct and 56.9% safe automated resolution for the learned system on the same cases; total spend USD 0.37056. Full tables in `ml/reports/results_llm.md`. The other path, `ml/rankers/llm.py` called from `ml.evaluate`, still defaults to `claude-sonnet-5` (`CAUTELA_RANKER_MODEL`) and needs `ANTHROPIC_API_KEY`; no committed result comes from it, which is why `results.json` records the LLM as not run. On both paths, before any request, the description is masked with `agent.security.pii.mask_text` (the ranker refuses to run if that module is missing), and candidates are reduced to date, amount, currency, type, channel, merchant and city, with ids replaced by labels C1..Cn. The output is constrained by a JSON schema, and the prompt tells the model to treat the description as data.
 
 All rankers implement the `CandidateRanker` shape of `agent/tools/ranking.py`: `rank(features, candidates) -> [(transaction_id, score in [0, 1])]`, best first. `ml/rankers/protocol.py` also accepts the agent's `DescriptionFeatures` object, where structured values override the parser. A test checks compatibility against the agent's protocol when that module can be imported.
 
@@ -196,7 +203,7 @@ The cases below were found in the previous run's `results.json` (proposed system
 * Pools are small: organizer customers have about one transaction a month, and 90-day pools have a median of 4 candidates. Ranking would be harder with real transaction volumes, and the pool-size breakdown is the only view of that.
 * Portuguese is a template rendering, not reviewed by native speakers, and Brazil is absent from the data.
 * The organizer data combines type, channel and merchant at random (for example withdrawals "por la app"), and Mexican customers transact mostly in USD, so some descriptions read oddly.
-* The LLM ranker was not run. Its latency, cost, variability and quality are unknown. Masking with the agent's PII module also masks large peso amounts written like an Argentine DNI ("16.371.485"): privacy wins over amount information there, and that trade-off should be measured when the LLM runs.
+* The LLM rung covers one model (`gpt-6-luna`, reasoning effort none), one prompt (`rank_v1`) and three runs on the original test split; it was not run on `test_fresh`. Masking with the agent's PII module also masks large peso amounts written like an Argentine DNI ("16.371.485"): privacy wins over amount information there, and that trade-off was not measured separately.
 * Case files include organizer-derived transaction fields (ids, amounts, merchants, dates) with pseudonymized customer references, about 9 MB in total. They are not committed; `ml.scenarios.build --verify` rebuilds them from the organizer files and checks them against the committed manifest (see "Rebuilding the case files").
 * Changes made after reading test errors (merchant features, slang mappings) make the original test numbers optimistic; `test_fresh` measures that (93.9% to 89.8% correct for the proposed system). The fresh split shares the test report-date window, because the organizer data has no later transactions, so it is fresh in customers, seed and phrasing but not in time. It is now spent as well: any change made after reading its results needs another fresh split to be measured.
 
@@ -212,7 +219,10 @@ The cases below were found in the previous run's `results.json` (proposed system
 | `decision.py`, `disposition.py` | Deciders, threshold search and the business act floor |
 | `train.py`, `evaluate.py`, `analysis.py`, `metrics.py`, `report.py`, `report_changes.py`, `report_fresh.py`, `tracking.py` | Fitting, test evaluation, aggregation, metric functions, report, MLflow |
 | `parser_readback.py` | Amount and date read-back on val and test |
-| `reports/fitted.json`, `results_fresh.json`, `results.json`, `results.md`, `parser_readback*.json` | Committed outputs; every reported number comes from these |
+| `evaluate_llm.py`, `probe_llm.py` | LLM rung on test (paid, capped) and provider probe on val |
+| `experiments_report.py`, `experiments_md.py` | MLflow store snapshot, run-to-report linking, `reports/experiments.md` |
+| `reports/fitted.json`, `results_fresh.json`, `results.json`, `results.md`, `parser_readback*.json`, `results_llm.json`, `results_llm.md`, `probe/` | Committed outputs; every reported number comes from these |
+| `reports/experiments.md`, `experiments_runs.json` | Tracked runs behind each committed result, and the run snapshot |
 | `reports/previous/` | Snapshot of the previous run's `results.json` and `fitted.json` |
 | `../eval/cases/disputes/` | Committed manifest; the git-ignored case files are rebuilt there |
 | `../tests/ml_tests/` | Tests |

@@ -76,3 +76,10 @@ freshness-demo:  ## update test: earlier delivery state, then the current one, i
 
 freshness-status:  ## freshness of TARGET against the policy; exit code 1 when a table or gold is stale
 	uv run python -m data_engineering.freshness.status --target $(TARGET)
+
+# ML experiment tracking made readable without the git-ignored mlruns/: refreshes ml/reports/experiments_runs.json from
+# the local MLflow store when there is one, then writes ml/reports/experiments.md (no network, no organizer data).
+.PHONY: experiments
+
+experiments:  ## ml/reports/experiments.md: every MLflow run behind a committed ML result, and the model-selection story
+	uv run python -m ml.experiments_report
