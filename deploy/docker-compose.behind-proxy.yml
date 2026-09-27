@@ -30,6 +30,7 @@ services:
       CAUTELA_API_PORT: "8000"
       CAUTELA_TRUSTED_PROXY: ${CAUTELA_PROXY_GATEWAY:-10.83.30.1}
       CAUTELA_DEMO_RESET_S: ${CAUTELA_DEMO_RESET_S:-1800}
+      CAUTELA_DEMO_MODE: ${CAUTELA_DEMO_MODE:-1}   # the public demo: seeded identities and their codes on screen
       LLM_DAILY_MAX_CALLS: ${LLM_DAILY_MAX_CALLS:-2000}
       LLM_DAILY_MAX_USD: ${LLM_DAILY_MAX_USD:-1.00}
     ports:

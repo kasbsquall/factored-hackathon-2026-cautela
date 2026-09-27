@@ -12,7 +12,11 @@ What it adds around api.app.create_app, without changing api/:
     api.models.HealthResponse, then drop the wrapping below and HealthWithBudget. Those files had uncommitted work by
     another author when this was written, so the wiring stays here and only the deployed process is capped.
   - Client addresses from X-Forwarded-For, trusted only from CAUTELA_TRUSTED_PROXY (the Docker gateway the reverse
-    proxy's connection arrives from), so the per-address rate limits see visitors instead of the proxy.
+    proxy's connection arrives from), so the per-address rate limits see whoever reached the reverse proxy. Requests
+    that come through the Vercel frontend reach it from Vercel's addresses; for those the frontend names the visitor
+    in X-Cautela-Client, which api/app.py trusts only with CAUTELA_PROXY_KEY in X-Cautela-Proxy-Key.
+  - Demo mode is explicit: CAUTELA_DEMO_MODE comes from the environment (docker-compose.behind-proxy.yml sets 1
+    unless deploy/.env says otherwise). ApiSettings keeps it off by default everywhere else.
   - Demo bundle (deploy/bundle.py). When CAUTELA_BUNDLE_DIR is set, the bundle is checked against its lock
     (CAUTELA_BUNDLE_LOCK, default deploy/demo-bundle.lock.json) before anything else: exact file set, sizes and
     sha256, the pickles included, so no unverified pickle is ever loaded. The service then reads the bundle's slim
