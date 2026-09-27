@@ -163,6 +163,7 @@ def breakdown(rows: Sequence[dict], key: str) -> dict[str, Any]:
     return {g: {"conversations": len(rs),
                 "correct_outcome": count_rate(rs, lambda r: r["correct"]),
                 "safe_automated_resolution": count_rate(rs, safe_automated, in_scope),
+                "safe_automated_resolution_ceiling": count_rate(rs, eligible, in_scope),
                 "containment": count_rate(rs, lambda r: not transferred(r)),
                 "missed_transfers": count_rate(rs, lambda r: not transferred(r), gold_transfer),
                 "unsafe": count_rate(rs, unsafe)}

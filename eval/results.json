@@ -637,6 +637,15 @@
        0.4436
       ]
      },
+     "safe_automated_resolution_ceiling": {
+      "k": 409,
+      "n": 984,
+      "rate": 0.4157,
+      "ci95": [
+       0.3852,
+       0.4467
+      ]
+     },
      "containment": {
       "k": 492,
       "n": 1151,
@@ -685,6 +694,15 @@
        0.4347
       ]
      },
+     "safe_automated_resolution_ceiling": {
+      "k": 72,
+      "n": 192,
+      "rate": 0.375,
+      "ci95": [
+       0.3096,
+       0.4453
+      ]
+     },
      "containment": {
       "k": 112,
       "n": 311,
@@ -727,6 +745,15 @@
       ]
      },
      "safe_automated_resolution": {
+      "k": 98,
+      "n": 282,
+      "rate": 0.3475,
+      "ci95": [
+       0.2943,
+       0.4048
+      ]
+     },
+     "safe_automated_resolution_ceiling": {
       "k": 98,
       "n": 282,
       "rate": 0.3475,
@@ -783,6 +810,15 @@
        0.4843
       ]
      },
+     "safe_automated_resolution_ceiling": {
+      "k": 173,
+      "n": 391,
+      "rate": 0.4425,
+      "ci95": [
+       0.394,
+       0.492
+      ]
+     },
      "containment": {
       "k": 202,
       "n": 474,
@@ -829,6 +865,15 @@
       "ci95": [
        0.3713,
        0.4571
+      ]
+     },
+     "safe_automated_resolution_ceiling": {
+      "k": 210,
+      "n": 503,
+      "rate": 0.4175,
+      "ci95": [
+       0.3752,
+       0.4611
       ]
      },
      "containment": {
@@ -881,6 +926,15 @@
        0.4466
       ]
      },
+     "safe_automated_resolution_ceiling": {
+      "k": 266,
+      "n": 642,
+      "rate": 0.4143,
+      "ci95": [
+       0.3768,
+       0.4528
+      ]
+     },
      "containment": {
       "k": 336,
       "n": 813,
@@ -921,6 +975,15 @@
       ]
      },
      "safe_automated_resolution": {
+      "k": 115,
+      "n": 289,
+      "rate": 0.3979,
+      "ci95": [
+       0.3432,
+       0.4553
+      ]
+     },
+     "safe_automated_resolution_ceiling": {
       "k": 115,
       "n": 289,
       "rate": 0.3979,
@@ -977,6 +1040,15 @@
        0.4723
       ]
      },
+     "safe_automated_resolution_ceiling": {
+      "k": 58,
+      "n": 148,
+      "rate": 0.3919,
+      "ci95": [
+       0.3169,
+       0.4723
+      ]
+     },
      "containment": {
       "k": 74,
       "n": 184,
@@ -1023,6 +1095,15 @@
       "ci95": [
        0.3292,
        0.5221
+      ]
+     },
+     "safe_automated_resolution_ceiling": {
+      "k": 42,
+      "n": 97,
+      "rate": 0.433,
+      "ci95": [
+       0.3388,
+       0.5323
       ]
      },
      "containment": {
@@ -1075,6 +1156,15 @@
        0.4436
       ]
      },
+     "safe_automated_resolution_ceiling": {
+      "k": 409,
+      "n": 984,
+      "rate": 0.4157,
+      "ci95": [
+       0.3852,
+       0.4467
+      ]
+     },
      "containment": {
       "k": 418,
       "n": 984,
@@ -1121,6 +1211,15 @@
       "ci95": [
        0.2998,
        0.4347
+      ]
+     },
+     "safe_automated_resolution_ceiling": {
+      "k": 72,
+      "n": 192,
+      "rate": 0.375,
+      "ci95": [
+       0.3096,
+       0.4453
       ]
      },
      "containment": {
@@ -1173,6 +1272,15 @@
        0.4141
       ]
      },
+     "safe_automated_resolution_ceiling": {
+      "k": 180,
+      "n": 481,
+      "rate": 0.3742,
+      "ci95": [
+       0.3321,
+       0.4183
+      ]
+     },
      "containment": {
       "k": 181,
       "n": 481,
@@ -1219,6 +1327,15 @@
       "ci95": [
        0.3925,
        0.4659
+      ]
+     },
+     "safe_automated_resolution_ceiling": {
+      "k": 301,
+      "n": 695,
+      "rate": 0.4331,
+      "ci95": [
+       0.3967,
+       0.4702
       ]
      },
      "containment": {
@@ -10011,6 +10128,15 @@
        0.4262
       ]
      },
+     "safe_automated_resolution_ceiling": {
+      "k": 409,
+      "n": 984,
+      "rate": 0.4157,
+      "ci95": [
+       0.3852,
+       0.4467
+      ]
+     },
      "containment": {
       "k": 454,
       "n": 1151,
@@ -10057,6 +10183,15 @@
       "ci95": [
        0.256,
        0.3866
+      ]
+     },
+     "safe_automated_resolution_ceiling": {
+      "k": 72,
+      "n": 192,
+      "rate": 0.375,
+      "ci95": [
+       0.3096,
+       0.4453
       ]
      },
      "containment": {
@@ -10109,6 +10244,15 @@
        0.372
       ]
      },
+     "safe_automated_resolution_ceiling": {
+      "k": 98,
+      "n": 282,
+      "rate": 0.3475,
+      "ci95": [
+       0.2943,
+       0.4048
+      ]
+     },
      "containment": {
       "k": 114,
       "n": 352,
@@ -10157,6 +10301,15 @@
        0.4689
       ]
      },
+     "safe_automated_resolution_ceiling": {
+      "k": 173,
+      "n": 391,
+      "rate": 0.4425,
+      "ci95": [
+       0.394,
+       0.492
+      ]
+     },
      "containment": {
       "k": 187,
       "n": 474,
@@ -10203,6 +10356,15 @@
       "ci95": [
        0.35,
        0.435
+      ]
+     },
+     "safe_automated_resolution_ceiling": {
+      "k": 210,
+      "n": 503,
+      "rate": 0.4175,
+      "ci95": [
+       0.3752,
+       0.4611
       ]
      },
      "containment": {
@@ -10255,6 +10417,15 @@
        0.4293
       ]
      },
+     "safe_automated_resolution_ceiling": {
+      "k": 266,
+      "n": 642,
+      "rate": 0.4143,
+      "ci95": [
+       0.3768,
+       0.4528
+      ]
+     },
      "containment": {
       "k": 304,
       "n": 813,
@@ -10301,6 +10472,15 @@
       "ci95": [
        0.31,
        0.4202
+      ]
+     },
+     "safe_automated_resolution_ceiling": {
+      "k": 115,
+      "n": 289,
+      "rate": 0.3979,
+      "ci95": [
+       0.3432,
+       0.4553
       ]
      },
      "containment": {
@@ -10351,6 +10531,15 @@
        0.4518
       ]
      },
+     "safe_automated_resolution_ceiling": {
+      "k": 58,
+      "n": 148,
+      "rate": 0.3919,
+      "ci95": [
+       0.3169,
+       0.4723
+      ]
+     },
      "containment": {
       "k": 65,
       "n": 184,
@@ -10397,6 +10586,15 @@
       "ci95": [
        0.31,
        0.5016
+      ]
+     },
+     "safe_automated_resolution_ceiling": {
+      "k": 42,
+      "n": 97,
+      "rate": 0.433,
+      "ci95": [
+       0.3388,
+       0.5323
       ]
      },
      "containment": {
@@ -10449,6 +10647,15 @@
        0.4262
       ]
      },
+     "safe_automated_resolution_ceiling": {
+      "k": 409,
+      "n": 984,
+      "rate": 0.4157,
+      "ci95": [
+       0.3852,
+       0.4467
+      ]
+     },
      "containment": {
       "k": 396,
       "n": 984,
@@ -10495,6 +10702,15 @@
       "ci95": [
        0.256,
        0.3866
+      ]
+     },
+     "safe_automated_resolution_ceiling": {
+      "k": 72,
+      "n": 192,
+      "rate": 0.375,
+      "ci95": [
+       0.3096,
+       0.4453
       ]
      },
      "containment": {
@@ -10547,6 +10763,15 @@
        0.3929
       ]
      },
+     "safe_automated_resolution_ceiling": {
+      "k": 180,
+      "n": 481,
+      "rate": 0.3742,
+      "ci95": [
+       0.3321,
+       0.4183
+      ]
+     },
      "containment": {
       "k": 168,
       "n": 481,
@@ -10593,6 +10818,15 @@
       "ci95": [
        0.3699,
        0.4427
+      ]
+     },
+     "safe_automated_resolution_ceiling": {
+      "k": 301,
+      "n": 695,
+      "rate": 0.4331,
+      "ci95": [
+       0.3967,
+       0.4702
       ]
      },
      "containment": {
@@ -19378,6 +19612,15 @@
        0.4057
       ]
      },
+     "safe_automated_resolution_ceiling": {
+      "k": 409,
+      "n": 984,
+      "rate": 0.4157,
+      "ci95": [
+       0.3852,
+       0.4467
+      ]
+     },
      "containment": {
       "k": 425,
       "n": 1151,
@@ -19424,6 +19667,15 @@
       "ci95": [
        0.2512,
        0.3812
+      ]
+     },
+     "safe_automated_resolution_ceiling": {
+      "k": 72,
+      "n": 192,
+      "rate": 0.375,
+      "ci95": [
+       0.3096,
+       0.4453
       ]
      },
      "containment": {
@@ -19476,6 +19728,15 @@
        0.3537
       ]
      },
+     "safe_automated_resolution_ceiling": {
+      "k": 98,
+      "n": 282,
+      "rate": 0.3475,
+      "ci95": [
+       0.2943,
+       0.4048
+      ]
+     },
      "containment": {
       "k": 105,
       "n": 352,
@@ -19524,6 +19785,15 @@
        0.4353
       ]
      },
+     "safe_automated_resolution_ceiling": {
+      "k": 173,
+      "n": 391,
+      "rate": 0.4425,
+      "ci95": [
+       0.394,
+       0.492
+      ]
+     },
      "containment": {
       "k": 170,
       "n": 474,
@@ -19570,6 +19840,15 @@
       "ci95": [
        0.3442,
        0.4289
+      ]
+     },
+     "safe_automated_resolution_ceiling": {
+      "k": 210,
+      "n": 503,
+      "rate": 0.4175,
+      "ci95": [
+       0.3752,
+       0.4611
       ]
      },
      "containment": {
@@ -19622,6 +19901,15 @@
        0.4087
       ]
      },
+     "safe_automated_resolution_ceiling": {
+      "k": 266,
+      "n": 642,
+      "rate": 0.4143,
+      "ci95": [
+       0.3768,
+       0.4528
+      ]
+     },
      "containment": {
       "k": 283,
       "n": 813,
@@ -19668,6 +19956,15 @@
       "ci95": [
        0.2935,
        0.4026
+      ]
+     },
+     "safe_automated_resolution_ceiling": {
+      "k": 115,
+      "n": 289,
+      "rate": 0.3979,
+      "ci95": [
+       0.3432,
+       0.4553
       ]
      },
      "containment": {
@@ -19718,6 +20015,15 @@
        0.4311
       ]
      },
+     "safe_automated_resolution_ceiling": {
+      "k": 58,
+      "n": 148,
+      "rate": 0.3919,
+      "ci95": [
+       0.3169,
+       0.4723
+      ]
+     },
      "containment": {
       "k": 60,
       "n": 184,
@@ -19764,6 +20070,15 @@
       "ci95": [
        0.31,
        0.5016
+      ]
+     },
+     "safe_automated_resolution_ceiling": {
+      "k": 42,
+      "n": 97,
+      "rate": 0.433,
+      "ci95": [
+       0.3388,
+       0.5323
       ]
      },
      "containment": {
@@ -19816,6 +20131,15 @@
        0.4057
       ]
      },
+     "safe_automated_resolution_ceiling": {
+      "k": 409,
+      "n": 984,
+      "rate": 0.4157,
+      "ci95": [
+       0.3852,
+       0.4467
+      ]
+     },
      "containment": {
       "k": 374,
       "n": 984,
@@ -19862,6 +20186,15 @@
       "ci95": [
        0.2512,
        0.3812
+      ]
+     },
+     "safe_automated_resolution_ceiling": {
+      "k": 72,
+      "n": 192,
+      "rate": 0.375,
+      "ci95": [
+       0.3096,
+       0.4453
       ]
      },
      "containment": {
@@ -19914,6 +20247,15 @@
        0.3866
       ]
      },
+     "safe_automated_resolution_ceiling": {
+      "k": 180,
+      "n": 481,
+      "rate": 0.3742,
+      "ci95": [
+       0.3321,
+       0.4183
+      ]
+     },
      "containment": {
       "k": 165,
       "n": 481,
@@ -19960,6 +20302,15 @@
       "ci95": [
        0.3445,
        0.4165
+      ]
+     },
+     "safe_automated_resolution_ceiling": {
+      "k": 301,
+      "n": 695,
+      "rate": 0.4331,
+      "ci95": [
+       0.3967,
+       0.4702
       ]
      },
      "containment": {
