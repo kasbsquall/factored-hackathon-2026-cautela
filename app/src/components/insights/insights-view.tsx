@@ -287,7 +287,7 @@ export function InsightsView() {
             <span><strong>Hours carry no timezone.</strong> Hour-of-day and weekday shares are as stored and may be shifted.</span>
           </li>
         </ul>
-        <p className={styles.reproduce}>Reproduce: <span className="mono">make analytics REPORT_WAREHOUSE=data/warehouse_real.duckdb</span>; full write-up in <span className="mono">data_analytics/reports/why-this-workflow.md</span> and <span className="mono">ml/reports/results.md</span>.</p>
+        <p className={styles.reproduce}>Reproduce: <span className="mono">make analytics</span>; full write-up in <span className="mono">data_analytics/reports/why-this-workflow.md</span> and <span className="mono">ml/reports/results.md</span>.</p>
       </section>
     </div>
   );
