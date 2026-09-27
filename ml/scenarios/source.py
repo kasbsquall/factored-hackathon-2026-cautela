@@ -1,7 +1,7 @@
 """Read customers and their transactions from the organizer files with DuckDB.
 
 The source is either a local copy (``data/raw``) or the organizer bucket
-(``s3://<bucket>/data``, credentials from the git-ignored ``.env`` through
+(``LATAM_BANK_S3_URI``, ending in ``/data``; credentials from the git-ignored ``.env`` through
 data_engineering/pipelines/source.py). Both hold the same CSV partitions, so
 either rebuilds the same case files. The reader applies the silver primary-key
 rule (one row per ``transaction_id``, latest ``process_date``) and drops rows
@@ -23,18 +23,20 @@ COUNTRY_CODES = {"México": "MX", "Mexico": "MX", "Colombia": "CO", "Argentina":
 TX_COLUMNS = ("transaction_id", "transaction_date", "process_date", "customer_id", "transaction_type", "amount",
               "currency", "channel", "merchant_name", "merchant_category", "transaction_city",
               "transaction_country", "transaction_status")
-S3_DATA_PREFIX = "data"  # organizer bucket layout: s3://<bucket>/data/<table>/...
 
 
 def default_source() -> str:
-    """data/raw when a local copy exists, else the bucket named by LATAM_BANK_S3_URI plus /data."""
+    """data/raw when a local copy exists, else LATAM_BANK_S3_URI as given.
+
+    The URI already points at the delivery root (``s3://<bucket>/data``), as `make mirror` and the pipeline read it.
+    """
     if os.path.isdir("data/raw/transactions"):
         return "data/raw"
     load_env_file(".env")
-    bucket = os.environ.get("LATAM_BANK_S3_URI")
-    if not bucket:
+    uri = os.environ.get("LATAM_BANK_S3_URI")
+    if not uri:
         raise SystemExit("no data/raw copy and no LATAM_BANK_S3_URI in .env: pass --source")
-    return bucket.rstrip("/") + "/" + S3_DATA_PREFIX
+    return uri.rstrip("/")
 
 
 def open_source(uri: str) -> tuple[duckdb.DuckDBPyConnection, SourceLocation]:

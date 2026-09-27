@@ -106,3 +106,13 @@ def test_target_belongs_to_the_candidate_pool(built):
 def test_ranker_input_hides_hints_and_labels(built):
     case = built[0]["train"][0]
     assert set(ranker_input(case)) == {"text", "report_date", "language"}
+
+
+def test_default_source_uses_the_bucket_uri_as_given(tmp_path, monkeypatch):
+    """Without data/raw the cases read LATAM_BANK_S3_URI, which already ends in /data (no .../data/data)."""
+    from ml.scenarios.source import default_source
+    monkeypatch.chdir(tmp_path)  # no data/raw and no .env here
+    monkeypatch.setenv("LATAM_BANK_S3_URI", "s3://organizer-bucket/data/")
+    assert default_source() == "s3://organizer-bucket/data"
+    (tmp_path / "data" / "raw" / "transactions").mkdir(parents=True)
+    assert default_source() == "data/raw"
