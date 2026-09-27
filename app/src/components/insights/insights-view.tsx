@@ -1,8 +1,8 @@
 "use client";
 
 import {
-  CalendarBlank, ChartBar, ClockCountdown, Flask, Headset, Info, ListNumbers, MapTrifold, Scales, ShieldWarning, Timer,
-  UsersThree, type Icon,
+  CalendarBlank, ChartBar, ClockCountdown, Coins, Flask, Gauge, Headset, Info, ListNumbers, MapTrifold, Queue, Ranking, Scales,
+  ShieldWarning, Smiley, Timer, UsersThree, type Icon,
 } from "@phosphor-icons/react";
 import {
   BASELINE, COMPLAINT_FCR, DAILY, DISPUTE, EVAL, LIMITS, PROPOSED, PROVENANCE, RUNNER_UP, SYSTEM_LABEL, WEEKDAY, byCountry,
@@ -11,6 +11,8 @@ import {
 } from "@/lib/insights";
 import { BarList, ColumnChart, DotRange } from "./charts";
 import { Decides } from "./decides";
+import { WorkflowRanking } from "./workflow-ranking";
+import { Assumptions, CostPerResolution, HandoffQueue, Savings, Satisfaction, Thresholds } from "./business";
 import styles from "./insights.module.css";
 
 /** English for the complaint types' Spanish subcategories, as the organizer data names them. */
@@ -122,7 +124,12 @@ export function InsightsView() {
           table={{ head: ["Complaint type", "SLA breached", "Rate", "95% CI", "Resolution p50 / p90 (days)"], rows: complaintTypes.map((t) => [typeLabel(t.type), `${int(t.slaBreached)} / ${int(t.complaints)}`, pct(t.slaRate), `${pct(t.slaCi[0])} to ${pct(t.slaCi[1])}`, `${t.p50} / ${t.p90}`]) }} />
       </Section>
 
-      <Section n={2} icon={Headset} title="Where disputes arrive, and how complaint contacts end"
+      <Section n={2} icon={Ranking} layout="stack" title="Seven candidate workflows, ranked by the hours they leave unresolved"
+        lede="Contact reasons stand in for the workflows a bank could automate. Ranked by agent-hours spent on contacts not resolved the first time, disputes come last; the choice rests on verifiability instead.">
+        <WorkflowRanking />
+      </Section>
+
+      <Section n={3} icon={Headset} title="Where disputes arrive, and how complaint contacts end"
         lede="Half of the disputes come in by phone. In the contact center, complaint contacts have the lowest first-contact resolution of any reason.">
         <BarList index={0} title="Disputes by reception channel" sub={`Share of ${int(disputeChannelDenominator)} unrecognized-charge complaints, by the channel that received them.`}
           source={`${SRC}/dispute_channel_mix.json`} hint="Hover, tap or focus a bar for its count."
@@ -154,7 +161,7 @@ export function InsightsView() {
         </div>
       </Section>
 
-      <Section n={3} icon={CalendarBlank} title="When disputes arrive"
+      <Section n={4} icon={CalendarBlank} title="When disputes arrive"
         lede="Tuesday to Friday carry the load, Monday is lower and weekends drop. Across the hours of the day the profile is nearly flat.">
         <ColumnChart index={0} title="Disputes by weekday" sub={`Unrecognized-charge complaints per ISO weekday, out of ${int(d.complaints)}.`}
           source={`${SRC}/demand_by_weekday.json`} hint="Hover, tap or focus a column for its count and share."
@@ -176,7 +183,7 @@ export function InsightsView() {
           table={{ head: ["Hour", "Complaints", "Share"], rows: disputesByHour.map((b) => [hourLabel(b.bucket), int(b.count), pct(b.share)]) }} />
       </Section>
 
-      <Section n={4} icon={MapTrifold} title="By country and segment"
+      <Section n={5} icon={MapTrifold} title="By country and segment"
         lede="Every country and segment files about 81 to 83 disputes per 1,000 customers. The need is the same everywhere, so one workflow can serve all three countries, each with its own claim-window rules: law where the team verified one, synthetic policy elsewhere.">
         <BarList index={0} title="Disputes per 1,000 customers, by country" sub="Unrecognized-charge complaints divided by the country's customers, times 1,000."
           source={`${SRC}/dispute_breakdowns.json`} hint="Hover, tap or focus a bar for its counts."
@@ -196,7 +203,7 @@ export function InsightsView() {
           table={{ head: ["Segment", "Complaints", "Customers", "Per 1,000", "SLA breached", "Resolution p50 / p90 (days)"], rows: bySegment.map((g) => [g.label, int(g.complaints), int(g.customers), `${g.per1000}`, pct(g.slaRate), `${g.p50} / ${g.p90}`]) }} />
       </Section>
 
-      <Section n={5} icon={Scales} layout="stack" title="Does the disposition model act safely?"
+      <Section n={6} icon={Scales} layout="stack" title="Does the disposition model act safely?"
         lede={`Offline evaluation on the fresh test split (${EVAL.split}), evaluated once: ${int(EVAL.n_cases)} generated cases (${int(EVAL.n_by_label.match)} with one matching charge, ${int(EVAL.n_by_label.ambiguous)} ambiguous, ${int(EVAL.n_by_label.no_match)} with none). A decision is correct when the system acts on the right charge, asks with the right charge among its options when the case is ambiguous, or stops when nothing matches; unsafe means it acted when it should not have: on the wrong charge when one matched, or on any charge when the case was ambiguous or nothing matched (ml/metrics.py).`}>
         <dl className={`${styles.evalHead} rise`}>
           <div>
@@ -228,7 +235,29 @@ export function InsightsView() {
           table={{ head: ["System", "Unsafe", "Cases", "Acted on"], rows: systems.map((s) => [SYSTEM_LABEL[s.id] ?? s.id, `${s.unsafe.count}`, int(s.unsafe.denominator), int(s.unsafe.acted_denominator)]) }} />
       </Section>
 
-      <Decides />
+      <Section n={7} icon={Coins} layout="stack" title="What the dispute flow saves, and what one resolution costs"
+        lede="The range runs from the deployed configuration on chat disputes only to the decision component with call-center disputes routed to the same flow. Labor savings at this scale are small; section 02 gives the reason for the choice.">
+        <Savings />
+        <CostPerResolution />
+      </Section>
+
+      <Section n={8} icon={Queue} layout="stack" title="The queue a person still handles"
+        lede="Every dispute the bot does not resolve safely reaches a person with the full handling time. In every scenario that is a few handoffs a day and a fraction of one agent in the busiest hour.">
+        <HandoffQueue />
+      </Section>
+
+      <Section n={9} icon={Gauge} layout="stack" title="What the two review thresholds send to a person"
+        lede="Both thresholds are read from agent/policy/rules.yaml and measured on every disputable charge in the window, with amounts converted to USD the way the policy engine does.">
+        <Thresholds />
+      </Section>
+
+      <Section n={10} icon={Smiley} layout="stack" title="Satisfaction follows first-contact resolution"
+        lede="Survey scores move with whether the contact was resolved the first time, which makes a dispute taken end to end in one conversation the customer outcome to aim for.">
+        <Satisfaction />
+        <Assumptions />
+      </Section>
+
+      <Decides n={11} />
 
       <section className={`${styles.caveats} rise`} aria-labelledby="caveats">
         <h2 id="caveats" className={styles.h2}><ShieldWarning aria-hidden />What these numbers cannot tell you</h2>

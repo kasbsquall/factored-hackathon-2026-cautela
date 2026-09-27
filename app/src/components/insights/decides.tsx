@@ -41,7 +41,7 @@ interface Mode {
  * Every value comes from decision_rules.json, which scripts/copy-insights.mjs reads from agent/policy/rules.yaml,
  * agent/tools/ranking.py and ml/reports/fitted.json at build time.
  */
-export function Decides() {
+export function Decides({ n }: { n: number }) {
   const d = DECISION;
   const disp = d.disposition;
   const actAt = Math.max(disp.t_act, disp.act_floor);
@@ -92,7 +92,7 @@ export function Decides() {
   return (
     <section className={styles.section} id="decides" aria-labelledby="decides-title">
       <header className={styles.head}>
-        <p className="eyebrow"><span className="mono">06</span></p>
+        <p className="eyebrow"><span className="mono">{String(n).padStart(2, "0")}</span></p>
         <h2 id="decides-title" className={styles.h2}><Signpost aria-hidden />How Cautela decides</h2>
         <p className={styles.lede}>
           What the assistant does on its own, when it asks, when it needs a yes and when a person takes over, with the thresholds the

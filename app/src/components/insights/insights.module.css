@@ -155,8 +155,10 @@
 }
 
 /* ---------- sections ---------- */
+/* One shrinkable column: a wide table scrolls inside its own box instead of widening the section. */
 .section {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--s-24);
 }
 
@@ -194,6 +196,7 @@
 
 .charts {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--s-16);
   min-width: 0;
 }

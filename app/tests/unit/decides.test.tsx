@@ -24,7 +24,7 @@ describe("decision rules copied from the service's own sources", () => {
 
 describe("Decides", () => {
   it("shows the four modes, the thresholds and every claim window with law or synthetic policy", () => {
-    render(<Decides />);
+    render(<Decides n={11} />);
     expect(screen.getByRole("heading", { level: 2, name: "How Cautela decides" })).toBeInTheDocument();
     for (const name of ["Acts alone", "Asks the customer", "Confirms before writing", "Hands off to a person"]) {
       expect(screen.getByRole("heading", { level: 3, name: new RegExp(name) })).toBeInTheDocument();

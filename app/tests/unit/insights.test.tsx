@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { InsightsView } from "@/components/insights/insights-view";
 import {
   BASELINE, COMPLAINT_FCR, DISPUTE, PROPOSED, complaintTypes, disputeChannelDenominator, disputeChannelMix,
@@ -47,6 +47,27 @@ describe("InsightsView", () => {
     const figures = screen.getAllByRole("figure");
     expect(figures.length).toBe(10);
     expect(screen.getAllByText("Show the numbers")).toHaveLength(figures.length);
-    expect(screen.getAllByText(/^Source:/)).toHaveLength(figures.length);
+    for (const f of figures) expect(within(f).getByText(/^Source:/)).toBeInTheDocument();
+  });
+
+  it("renders the business figures of insights.json with their units", () => {
+    render(<InsightsView />);
+    const ranking = screen.getByRole("region", { name: "Candidate workflows ranked by agent-hours" });
+    const rows = within(ranking).getAllByRole("row");
+    expect(rows).toHaveLength(8);
+    const chosen = rows[7]!;
+    expect(within(chosen).getByRole("rowheader")).toHaveTextContent("7");
+    expect(chosen).toHaveTextContent("chosen");
+    expect(chosen).toHaveTextContent("278.3 h");
+    expect(screen.getByText(/Disputes rank 7 of 7 by these hours/)).toHaveTextContent("chosen for verifiability");
+    expect(screen.getByText("45.5")).toBeInTheDocument();
+    expect(screen.getByText("212.3")).toBeInTheDocument();
+    expect(screen.getByText("USD 455 net per year")).toBeInTheDocument();
+    expect(screen.getByText("USD 2,123 net per year")).toBeInTheDocument();
+    expect(screen.getByText("not defined")).toBeInTheDocument();
+    expect(screen.getByText(/the score threshold adds nothing beyond the flag/)).toBeInTheDocument();
+    expect(screen.getByText(/exists for 471 of 12,297 disputes/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Assumptions behind the business figures" })).toBeInTheDocument();
+    expect(screen.queryByText(/Retención/)).toBeNull();
   });
 });
