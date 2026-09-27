@@ -6,20 +6,26 @@ The runs between the original evaluation (eval/results.json) and the final after
 (eval/results_after_fix.json) were kept under data/eval/runs/ (git-ignored). This recomputes their aggregates with
 the current eval/metrics.py from rows.jsonl, without calling the agent, the judge or the LLM, so the fix-round
 tables of the report come from a committed file. Runs whose rows were not kept (the first after-fix run of every
-configuration, including the only after-fix LLM run before the final one) cannot be listed.
+configuration, including the only after-fix LLM run before the final one) cannot be listed. The counters of the
+git-ignored spend ledgers are copied as well, so the spend table of the report comes from this file too.
 """
 
 from __future__ import annotations
 
 import json
 
-from eval.paths import EVAL_DIR, RUNS_DIR
+from eval.paths import DATA_DIR, EVAL_DIR, RUNS_DIR
 from eval.run import aggregate, compare
 
 OUT = EVAL_DIR / "results_fix_rounds.json"
 ROUNDS = {  # label -> run id per configuration
     "first_round_rerun": {"rules": "rules-compliant-20260926T225250Z", "learned": "learned-compliant-20260926T225524Z"},
     "second_round": {"rules": "rules-compliant-20260927T000907Z", "learned": "learned-compliant-20260927T001117Z"},
+}
+LEDGERS = {  # git-ignored spend ledgers of eval/budget.py (counters only) -> the hard cap each was run under
+    "llm_spend.json": 3.00,             # original evaluation and the ranker ladder
+    "llm_spend_fixes.json": 2.00,       # first after-fix work: reply probe, the superseded and the first (c) rerun
+    "llm_spend_after_fix.json": 2.00,   # the final after-fix run of (c) in eval/results_after_fix.json
 }
 NOTES = {
     "first_round_rerun": "rerun of the first fix round at commit 55222bc (fixes 785029b, be506c4, 80c21fd, 773a62b)",
@@ -45,6 +51,8 @@ def main() -> None:
             body.pop("outcomes")
             body.pop("failure_examples")
             out["rounds"][label]["configs"][cfg] = body
+    out["spend_ledgers"] = {name: json.loads((DATA_DIR / name).read_text(encoding="utf-8")) | {"cap_usd": cap}
+                            for name, cap in LEDGERS.items() if (DATA_DIR / name).exists()}
     out["second_round_minus_first_round_rerun"] = {
         cfg: compare(loaded[("first_round_rerun", cfg)], loaded[("second_round", cfg)]) for cfg in ("rules", "learned")}
     OUT.write_text(json.dumps(out, indent=1, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n")
