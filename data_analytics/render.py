@@ -270,6 +270,8 @@ def render_report(ev: dict) -> str:
         "## Reproduce",
         f"```bash\nmake gold TARGET=data/{p['warehouse']}\nmake analytics REPORT_WAREHOUSE=data/{p['warehouse']}\n```",
         "The warehouse comes from the bronze/silver pipeline over the organizer data (`make pipeline-s3`, see "
-        "`data_engineering/README.md`). A fixture warehouse is refused for the committed reports directory.",
+        "`data_engineering/README.md`). A fixture warehouse is refused for the committed reports directory. No figure "
+        "reads `digital_events` or `campaign_sends`: they were loaded into the warehouse after the first version of "
+        "this report, and regenerating it afterwards changed only the run ids above.",
     ]
     return "\n\n".join(parts) + "\n"

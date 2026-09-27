@@ -239,6 +239,19 @@ The first run's customer quarantine (149,995 orphans) was not a cascade from the
 
 After reconciliation the full refresh quarantines 0 of 6,127,393 rows. Remaining warnings are the 149,995 and 831 branch orphans and the 24,029 null transcript durations. The run takes about 10 minutes on a laptop; about 80 seconds of it is per-file CSV header sniffing.
 
+### digital_events and campaign_sends
+
+Loaded on 2026-09-27 into the same warehouse (`--tables digital_events,campaign_sends`, after copying the two tables from the bucket into the local mirror with `freshness/stage.py`), with the contracts already written from the dictionary. Nothing was changed in either contract.
+
+| Table | Files | Rows in | Quarantined | Duplicates | Silver | Warnings | Orphans | Drift |
+|---|---|---|---|---|---|---|---|---|
+| digital_events | 1,097 (3.76 GB) | 15,620,994 | 0 | 0 | 15,620,994 | 0 | 0 of 11,875,548 customer ids, 0 of 1,440,338 product ids | none |
+| campaign_sends | 1,083 (326 MB) | 1,746,801 | 0 | 0 | 1,746,801 | 0 | 0 of 1,746,801 customer ids and campaign ids | none |
+
+Every value of the listed and decoded enums is in the contract (the decoded `event_type` list, ending in Purchase, is confirmed). Every file is UTF-8 with BOM, no event is late by the one-day rule, and the partitions run from 2023-06-17 (campaign sends from 2023-07-01) to 2026-06-17. Row counts differ from the summary in both directions: 15,620,994 digital events against 10,000,000, and 1,746,801 campaign sends against 2,000,000. Sparse columns: `digital_events.customer_id` is null in 24.0% of events (anonymous events are allowed), `product_id` in 90.8%; in `campaign_sends`, `open_date` is null in 72.1% and `conversion_date` in 99.4%.
+
+The load took 37 minutes on a laptop, most of it on digital_events, which DuckDB processed in one transaction; during the run the process held at least 23 GB of memory and had spilled at least 19 GB to its temp directory (observed readings, not measured peaks). That table is now the capacity limit of the single-node design. No gold table, analytics figure or agent tool reads either table; regenerating `data_analytics/reports` after the load changed only the run ids in their provenance. Gold was rerun afterwards (every table skipped) so the tool repository accepts the warehouse again.
+
 ## Gold layer
 
 ```bash
@@ -303,7 +316,7 @@ make freshness-demo                                       # update test on organ
 | Monthly snapshot | customers, products, service_agents | modification time of the newest loaded file (snapshots carry no snapshot date) | more than 35 days behind |
 | Full snapshot | branches, marketing_campaigns | same | never: the dictionary gives no cadence, so the status is `no_policy` |
 
-The reference date is `--as-of` (today in UTC by default). For a daily table the status also gives the lag behind the dataset clock, the newest partition of any daily table in the warehouse, which is the useful number while the data is a static delivery: measured against the calendar, every daily table of the organizer data is months stale. `freshness-status` exits with code 1 when a table is stale or not loaded, or when gold is stale.
+The reference date is `--as-of` (today in UTC by default). For a daily table the status also gives the lag behind the dataset clock, the newest partition of any daily table in the warehouse, which is the useful number while the data is a static delivery: measured against the calendar, every daily table of the organizer data is months stale. `freshness-status` exits with code 1 when a table is stale or not loaded, or when gold is stale. Snapshot tables loaded before the ledger recorded modification times report `no_date` until their file is loaded again (the load time is not used in its place, because it says nothing about when the data was produced).
 
 **Gold.** Gold runs after every silver load. It is stale when its latest successful run is older than the latest successful silver run, or when a materialized table's recorded source marks no longer match silver. After a rewritten file, every gold table that reads the affected silver table is rebuilt in full instead of patched by key, because a rewrite can withdraw keys that the key queries cannot see.
 
@@ -327,4 +340,4 @@ One conservative effect showed up in that run: a silver run that loads nothing s
 
 ## Capacity limits and route to production
 
-DuckDB runs on one machine. The organizer dataset (about 19 million rows, the largest table at 10 million) fits comfortably; the fixture run takes a few seconds. Past what one machine's disk and memory hold, the same SQL can run on Databricks or Snowflake with the ledger and watermark tables kept as they are. Other known limits: a rewrite is detected by size and modification time, not by content, so a file re-uploaded with identical bytes is reloaded (the result does not change, the run just costs more); a file that disappears from the source is counted as `missing_from_source` but its rows are kept; rows quarantined as orphans are not replayed automatically when their parent arrives later; deletions in snapshot tables are not propagated; and VARCHAR lengths are not enforced.
+DuckDB runs on one machine. The organizer dataset (23,495,188 rows, the largest table digital_events at 15.6 million) fits on a laptop, but loading digital_events in one transaction held at least 23 GB of memory plus a temp spill; splitting a table's first load into several transactions is the next step if the delivery grows. The fixture run takes a few seconds. Past what one machine's disk and memory hold, the same SQL can run on Databricks or Snowflake with the ledger and watermark tables kept as they are. Other known limits: a rewrite is detected by size and modification time, not by content, so a file re-uploaded with identical bytes is reloaded (the result does not change, the run just costs more); a file that disappears from the source is counted as `missing_from_source` but its rows are kept; rows quarantined as orphans are not replayed automatically when their parent arrives later; deletions in snapshot tables are not propagated; and VARCHAR lengths are not enforced.
