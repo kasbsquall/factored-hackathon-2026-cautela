@@ -105,16 +105,17 @@ def parse_table(res: dict) -> str:
     return "\n".join(rows)
 
 
+WITHHELD = "[redacted before publication: generated over organizer transactions]"
+
+
 def examples_block(res: dict, name: str, limit: int = 6) -> str:
+    """The description and the candidates' values come from organizer rows, which are never committed."""
     out = []
     ex = res["examples"][name]
     for kind in ("unsafe", "wrong_top1_on_match"):
         for e in ex[kind][:limit]:
-            top = "; ".join(f"{t['amount']} {t['currency']} {t['transaction_type']} {t['merchant_name'] or '-'} "
-                            f"{str(t['transaction_date'])[:10]} (score {t['score']}{', target' if t['is_target'] else ''})"
-                            for t in e["top3"])
             out.append(f"* `{e['case_id']}` [{kind}, label {e['label']}, {e['family']}, decision {e['decision']}, "
-                       f"confidence {e['confidence']:.3f}] \"{e['description']}\"  \n  top 3: {top}")
+                       f"confidence {e['confidence']:.3f}] \"{WITHHELD}\"  \n  top 3: {WITHHELD}")
     return "\n".join(out)
 
 

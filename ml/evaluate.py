@@ -85,11 +85,12 @@ def run_system(ranker, decider, cases: list[dict]) -> list[dict]:
 
 def describe(case: dict, row: dict) -> dict:
     by_id = {c["transaction_id"]: c for c in case["candidates"]}
-    top = [{k: by_id[t].get(k) for k in ("transaction_date", "amount", "currency", "transaction_type",
-                                          "merchant_name", "channel")} | {"is_target": t == case["target_transaction_id"],
-                                                                          "score": s}
+    # No organizer transaction values (date, amount, merchant) and no description rendered from them: the reports
+    # are committed, the organizer rows are not.
+    top = [{k: by_id[t].get(k) for k in ("currency", "transaction_type", "channel")}
+           | {"is_target": t == case["target_transaction_id"], "score": s}
            for t, s in row["ranked_top"][:3]]
-    return {"case_id": case["case_id"], "description": case["description"], "label": case["label"],
+    return {"case_id": case["case_id"], "label": case["label"],
             "family": case["family"], "recall_error": case.get("recall_error"), "report_date": case["report_date"],
             "decision": row["decision"], "confidence": row["confidence"], "outcome": row["outcome"], "top3": top}
 
