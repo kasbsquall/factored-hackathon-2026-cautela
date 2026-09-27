@@ -355,5 +355,8 @@ class HealthResponse(BaseModel):
     llm_provider: str
     llm_model: str | None
     disposition_model: str
+    disposition_source: str | None = Field(
+        default=None,
+        description="Where the disposition model was loaded from, or 'fallback: <reason>' when the rule baseline runs")
     demo_mode: bool
     service_clock: datetime

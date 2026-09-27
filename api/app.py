@@ -145,7 +145,9 @@ def create_app(runtime: Runtime | None = None, settings: ApiSettings | None = No
     def health(request: Request) -> Any:
         r = rt(request)
         return {"status": "ok", "llm_provider": r.llm_choice.provider, "llm_model": r.llm_choice.model,
-                "disposition_model": r.orchestrator.disposition.name, "demo_mode": r.settings.demo_mode,
+                "disposition_model": r.orchestrator.disposition.name,
+                "disposition_source": getattr(r.orchestrator.disposition, "source", None),
+                "demo_mode": r.settings.demo_mode,
                 "service_clock": r.clock()}
 
     @app.get("/demo/identities", response_model=list[DemoIdentity], tags=["demo"],

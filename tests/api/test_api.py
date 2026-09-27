@@ -71,6 +71,7 @@ def test_health_reports_components_without_internals(client):
     body = client.get("/health").json()
     assert body["status"] == "ok" and body["llm_provider"] == "fake"
     assert body["disposition_model"] == "rules_fixed_baseline"
+    assert body["disposition_source"] == "rules baseline, chosen explicitly"
     text = json.dumps(body)
     assert "duckdb" not in text and "\\" not in text and "/data" not in text
 

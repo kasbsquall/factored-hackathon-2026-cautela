@@ -708,6 +708,11 @@ export interface components {
             demo_mode: boolean;
             /** Disposition Model */
             disposition_model: string;
+            /**
+             * Disposition Source
+             * @description Where the disposition model was loaded from, or 'fallback: <reason>' when the rule baseline runs
+             */
+            disposition_source?: string | null;
             /** Llm Model */
             llm_model: string | null;
             /** Llm Provider */

@@ -1079,6 +1079,18 @@
             "title": "Disposition Model",
             "type": "string"
           },
+          "disposition_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Where the disposition model was loaded from, or 'fallback: <reason>' when the rule baseline runs",
+            "title": "Disposition Source"
+          },
           "llm_model": {
             "anyOf": [
               {
