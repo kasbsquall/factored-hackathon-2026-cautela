@@ -189,7 +189,15 @@ def list_files(con: duckdb.DuckDBPyConnection, loc: SourceLocation, table: str) 
     for pattern, fmt in loc.patterns(table):
         if not con.execute("SELECT count(*) FROM glob(?)", [pattern]).fetchone()[0]:
             continue
-        rows = con.execute("SELECT filename, size, epoch_ms(last_modified) FROM read_blob(?)", [pattern]).fetchall()
+        try:
+            rows = con.execute("SELECT filename, size, epoch_ms(last_modified) FROM read_blob(?)",
+                               [pattern]).fetchall()
+        except duckdb.HTTPException as exc:
+            # On S3, glob echoes a pattern without wildcards (`<root>/<table>.csv`) whether or not the object
+            # exists; only the metadata request tells. A missing single-file layout is not an error.
+            if "*" in pattern or getattr(exc, "status_code", None) != 404:
+                raise
+            continue
         for uri, size, modified_ms in rows:
             norm = uri.replace("\\", "/")
             found.setdefault(norm, SourceFile(norm, loc.relative(norm), fmt, size=size, modified_ms=modified_ms))
