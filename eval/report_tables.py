@@ -374,8 +374,7 @@ def after_subcategory(before: dict, after: dict) -> str:
             x = b["by_subcategory"][k]
             cells.append(f"{x['correct']}" + (f" ({x['unsafe']})" if x["unsafe"] else ""))
         out.append(f"| {k} | {cols[0][2]['by_subcategory'][k]['conversations']} | " + " | ".join(cells) + " |")
-    return "
-".join(out)
+    return "\n".join(out)
 
 
 def after_llm_fallbacks(after: dict) -> str:
@@ -390,8 +389,7 @@ def after_llm_fallbacks(after: dict) -> str:
     out += [f"| replies worded by {k} | {v} of {total} |" for k, v in sorted(sources.items())]
     out += [f"| reply note {k} | {v} |" for k, v in sorted(fb["reply_notes"].items())]
     out += [f"| understand step source {k} | {v} |" for k, v in sorted(fb["understand_sources"].items())]
-    return "
-".join(out)
+    return "\n".join(out)
 
 
 def after_provenance(after: dict) -> str:
@@ -431,8 +429,7 @@ def spend_ledgers(fr: dict) -> str:
     for name, led in fr.get("spend_ledgers", {}).items():
         out.append(f"| `data/eval/{name}` | {led['cap_usd']:.2f} | {led['calls']} | {led['unpriced_calls']} | "
                    f"{led['refused']} | {led['usd']:.4f} |")
-    return "
-".join(out)
+    return "\n".join(out)
 
 
 def llm_extraction(x: dict | None) -> str:
