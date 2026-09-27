@@ -206,12 +206,6 @@ def _evaluate_transaction(b: _Builder, tx: TransactionFacts, country: str | None
     if window is None:
         b.fire(rules["missing_data"], f"no claim window for {country}", "policy_requires_review")
         return
-    # Known limitation (data_engineering/README.md, "Event time and the claim window"): the window counts from the
-    # stored calendar date. In the organizer data every stored timestamp falls between 06:00 of its partition date
-    # and 06:00 of the next day, in all three countries, so a charge stored before 06:00 sits in the previous day's
-    # partition. Counting from the partition date would start the window one day earlier in 262 of the 1,017 held-out
-    # conversations that target a charge, and flip 3 of them from inside to outside a 30-day window. eval/oracle.py
-    # uses the stored date too, so a fix changes the engine and the oracle together and re-freezes the suites.
     start = tx.transaction_date.date()
     deadline = window_deadline(window, start)
     b.facts.update(window_rule=window["id"], window_deadline=deadline.isoformat(),
