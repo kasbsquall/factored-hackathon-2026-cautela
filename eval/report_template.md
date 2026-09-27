@@ -33,9 +33,10 @@ suite is in "After fixes (suite used for error analysis)", followed by a second 
   transfers against 0.9%) and misses fewer transfers (5.2% against 8.4%). In this suite that is a net loss on
   resolution and a net gain on safety. It does not beat the rules baseline end to end in either pool-size bucket,
   including pools of 4 or more. At the component level (the ranker ladder, where the rules rung can abstain) it does
-  beat the tuned rules rung, most clearly on pools of 4 or more.
+  beat the tuned rules rung, most clearly on pools of 4 or more. Applied directly, the label rule it gets as
+  features makes more correct component decisions than it does, with more unsafe acts (see the ranker ladder).
 * **The prompted LLM ranker is the weakest rung of the ladder.** It ranks almost as well (top-1 97.2% against 99.1%
-  and 99.9%) but its scores do not support act or abstain decisions: safe automated resolution 22.3% against 50.3%
+  and 99.9%) but its scores do not support act or abstain decisions: component safe act rate 22.3% against 50.3%
   (rules) and 56.9% (learned) on the 1107 test cases, stable across three runs.
 * **The suite's pools are larger than real customers' pools.** Every scenario has at least 3 candidate transactions;
   41% of real Active customer snapshots have 0 or 1 transaction in the agent's 90-day window. For those customers
