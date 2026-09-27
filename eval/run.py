@@ -91,16 +91,20 @@ def disposition_for(kind: str):
     return model
 
 
-def code_state(paths: tuple[str, ...] = ("agent", "api", "ml", "eval")) -> dict[str, Any]:
-    """The commit a run starts from and the code paths that differ from it (uncommitted changes)."""
+def code_state(paths: tuple[str, ...] = ("agent", "api", "ml", "eval"), output: Path | None = None) -> dict[str, Any]:
+    """The commit a run starts from and the code paths that differ from it (uncommitted changes).
+
+    ``output`` (the results file being written) is left out: it changes on every run and is not code.
+    """
     def git(*args: str) -> str:
         try:
-            return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip()
+            return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True, check=True).stdout.rstrip()
         except (OSError, subprocess.CalledProcessError):
             return ""
     dirty = git("status", "--porcelain", "--", *paths).splitlines()
     return {"git_commit": git("rev-parse", "HEAD") or "unknown",
-            "uncommitted_paths": sorted(line[3:] for line in dirty if not line.endswith(".md"))}
+            "uncommitted_paths": sorted(line[3:] for line in dirty
+                                        if not line.endswith(".md") and line[3:] != (output and _rel(output)))}
 
 
 def row_of(spec: dict, t, verdict) -> dict[str, Any]:
@@ -300,7 +304,7 @@ def main() -> None:
     runs: dict[str, dict] = {}
     for name in [c for c in args.configs.split(",") if c]:
         workers = args.workers if ALL_CONFIGS[name]["llm"] else 1
-        state = code_state()
+        state = code_state(output=args.out)
         if ALL_CONFIGS[name]["llm"]:
             need = COST_PER_CONV_ESTIMATE * len(suite) * (1 + 0.25 * args.variance_runs)
             if spend.remaining(ledger) < need:

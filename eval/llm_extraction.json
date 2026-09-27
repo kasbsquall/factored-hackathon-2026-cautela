@@ -1,0 +1,297 @@
+{
+ "generated_by": "eval/llm_extraction.py",
+ "source": "eval/results_after_fix.json",
+ "llm_run": "llm-compliant-20260927T025810Z",
+ "llm_code": {
+  "git_commit": "017293e087a96d1f514209e1917897870553cfc3",
+  "uncommitted_paths": [
+   "eval/results_after_fix.json"
+  ]
+ },
+ "learned_run": "learned-compliant-20260927T025340Z",
+ "extraction": {
+  "model_readings": 1528,
+  "values": {
+   "model_only_amount": 2,
+   "model_only_merchant": 263,
+   "parser_amount": 931,
+   "parser_date": 636
+  },
+  "intent_changes": {
+   "dispute_charge -> out_of_scope": 21,
+   "dispute_charge -> other": 8
+  },
+  "first_dispute_message": {
+   "amount_in_hints": 700,
+   "date_in_hints": 561,
+   "date_in_hints_read_by_neither": 81,
+   "first_dispute_messages": 990,
+   "parser_amount_matches_hint": 679,
+   "parser_amount_wrong_or_not_in_hints": 26,
+   "parser_date_matches_hint": 479,
+   "parser_date_wrong_or_not_in_hints": 1
+  },
+  "examples": {
+   "date_in_hints_read_by_neither": [
+    "dsp-test-00000-pt",
+    "dsp-test-00049-es",
+    "dsp-test-00049-pt",
+    "dsp-test-00064-es",
+    "dsp-test-00090-es",
+    "dsp-test-00101-pt",
+    "dsp-test-00142-es",
+    "dsp-test-00146-es"
+   ],
+   "parser_amount_matches_hint": [
+    "dsp-test-00000-es",
+    "dsp-test-00002-es",
+    "dsp-test-00003-es",
+    "dsp-test-00001-es",
+    "dsp-test-00004-es",
+    "dsp-test-00001-pt",
+    "dsp-test-00000-pt",
+    "dsp-test-00006-es"
+   ],
+   "parser_amount_wrong_or_not_in_hints": [
+    "dsp-test-00034-es",
+    "dsp-test-00055-es",
+    "dsp-test-00098-es",
+    "dsp-test-00125-es",
+    "dsp-test-00211-es",
+    "dsp-test-00217-es",
+    "dsp-test-00414-es",
+    "dsp-test-00414-pt"
+   ],
+   "parser_date_matches_hint": [
+    "dsp-test-00000-es",
+    "dsp-test-00003-es",
+    "dsp-test-00006-es",
+    "dsp-test-00012-es",
+    "dsp-test-00010-es",
+    "dsp-test-00014-es",
+    "dsp-test-00014-pt",
+    "dsp-test-00015-es"
+   ],
+   "parser_date_wrong_or_not_in_hints": [
+    "mix-test-00215-es"
+   ]
+  }
+ },
+ "end_to_end_llm_minus_learned": {
+  "safe_automated_resolution": {
+   "diff": 0.0009,
+   "ci95": [
+    0.0,
+    0.0026
+   ],
+   "n": 1176,
+   "groups": 756
+  },
+  "correct_outcome": {
+   "diff": 0.0014,
+   "ci95": [
+    0.0,
+    0.0035
+   ],
+   "n": 1462,
+   "groups": 810
+  },
+  "unsafe": {
+   "diff": 0.0,
+   "ci95": [
+    0.0,
+    0.0
+   ],
+   "n": 1462,
+   "groups": 810
+  },
+  "containment": {
+   "diff": -0.0021,
+   "ci95": [
+    -0.0069,
+    0.0014
+   ],
+   "n": 1462,
+   "groups": 810
+  },
+  "missed_transfers": {
+   "diff": 0.0,
+   "ci95": [
+    0.0,
+    0.0
+   ],
+   "n": 931,
+   "groups": 580
+  },
+  "safe_automated_resolution_in_scope_pool_2-3": {
+   "diff": 0.0,
+   "ci95": [
+    0.0,
+    0.0
+   ],
+   "n": 481,
+   "groups": 309
+  },
+  "correct_outcome_in_scope_pool_2-3": {
+   "diff": 0.0021,
+   "ci95": [
+    0.0,
+    0.0065
+   ],
+   "n": 481,
+   "groups": 309
+  },
+  "unsafe_in_scope_pool_2-3": {
+   "diff": 0.0,
+   "ci95": [
+    0.0,
+    0.0
+   ],
+   "n": 481,
+   "groups": 309
+  },
+  "safe_automated_resolution_in_scope_pool_4+": {
+   "diff": 0.0014,
+   "ci95": [
+    0.0,
+    0.0044
+   ],
+   "n": 695,
+   "groups": 447
+  },
+  "correct_outcome_in_scope_pool_4+": {
+   "diff": 0.0014,
+   "ci95": [
+    0.0,
+    0.0044
+   ],
+   "n": 695,
+   "groups": 447
+  },
+  "unsafe_in_scope_pool_4+": {
+   "diff": 0.0,
+   "ci95": [
+    0.0,
+    0.0
+   ],
+   "n": 695,
+   "groups": 447
+  }
+ },
+ "correct_by_category": {
+  "adversarial": {
+   "learned": 48,
+   "llm": 48,
+   "conversations": 48
+  },
+  "bad_data": {
+   "learned": 50,
+   "llm": 50,
+   "conversations": 50
+  },
+  "dispute": {
+   "learned": 916,
+   "llm": 918,
+   "conversations": 930
+  },
+  "expired_session": {
+   "learned": 40,
+   "llm": 40,
+   "conversations": 40
+  },
+  "human_request": {
+   "learned": 46,
+   "llm": 46,
+   "conversations": 46
+  },
+  "identity": {
+   "learned": 30,
+   "llm": 30,
+   "conversations": 30
+  },
+  "injection": {
+   "learned": 62,
+   "llm": 62,
+   "conversations": 62
+  },
+  "multilingual": {
+   "learned": 59,
+   "llm": 59,
+   "conversations": 60
+  },
+  "out_of_scope": {
+   "learned": 37,
+   "llm": 37,
+   "conversations": 44
+  },
+  "recognized": {
+   "learned": 48,
+   "llm": 48,
+   "conversations": 48
+  },
+  "tool_failure": {
+   "learned": 48,
+   "llm": 48,
+   "conversations": 48
+  },
+  "unauthorized": {
+   "learned": 56,
+   "llm": 56,
+   "conversations": 56
+  }
+ },
+ "cost": {
+  "llm_calls": 5054,
+  "llm_cost_usd_total": 0.302278,
+  "calls_with_unknown_cost": 0,
+  "input_tokens": 1927131,
+  "output_tokens": 219244,
+  "conversations": 1462,
+  "attempted_conversations": 843,
+  "usd_per_conversation": 0.0002068,
+  "usd_per_attempted_conversation": 0.0003586,
+  "usd_per_safe_automated_resolution": 0.0006297
+ },
+ "latency": {
+  "llm": {
+   "per_call_orchestrator_ms": {
+    "n": 3572,
+    "p50": 1273.2,
+    "p95": 2576.2,
+    "max": 11843.7
+   },
+   "per_call_wall_ms": {
+    "n": 3572,
+    "p50": 1273.2,
+    "p95": 2576.3,
+    "max": 11843.8
+   },
+   "per_conversation_wall_ms": {
+    "n": 1432,
+    "p50": 4435.7,
+    "p95": 6266.6,
+    "max": 14816.4
+   }
+  },
+  "learned": {
+   "per_call_orchestrator_ms": {
+    "n": 3569,
+    "p50": 15.3,
+    "p95": 36.5,
+    "max": 189.3
+   },
+   "per_call_wall_ms": {
+    "n": 3569,
+    "p50": 15.4,
+    "p95": 36.6,
+    "max": 189.4
+   },
+   "per_conversation_wall_ms": {
+    "n": 1432,
+    "p50": 50.5,
+    "p95": 74.9,
+    "max": 214.9
+   }
+  }
+ }
+}
