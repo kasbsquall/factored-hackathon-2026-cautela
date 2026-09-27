@@ -28,10 +28,10 @@ describe("narrateTurn on turns captured from the live service", () => {
     expect(n.serviceTime).toMatch(/^\d[\d,]* ms$/);
   });
 
-  it("folds consecutive read tools into one line and keeps the attempt count", () => {
+  it("folds consecutive read tools into one line and counts the retries", () => {
     const lines = texts(runs.normal![0]!);
     expect(lines).toContain("Read with tools get_transaction and get_dispute_policy.");
-    expect(lines).toContain("Read with tool get_customer_profile (2 attempts).");
+    expect(lines).toContain("Read with tool get_customer_profile (1 retry).");
   });
 
   it("says the confirmation came first and that nothing was written in that turn", () => {
@@ -45,7 +45,7 @@ describe("narrateTurn on turns captured from the live service", () => {
   it("reports the write and the read-back from the case store", () => {
     const lines = texts(runs.normal![2]!, { kind: "confirm", accept: true });
     expect(lines).toContain("The customer confirmed.");
-    expect(lines).toContain("Wrote the dispute case with open_dispute_case, using the customer's confirmation (2 attempts).");
+    expect(lines).toContain("Wrote the dispute case with open_dispute_case, using the customer's confirmation (1 retry).");
     expect(lines.some((l) => /^Case CASE-[0-9A-F]{12} written, then read back from the case store: status "open" matches\.$/.test(l))).toBe(true);
   });
 
@@ -152,5 +152,19 @@ describe("a request after the handoff", () => {
     for (const outcome of ["customer_requested_human", "out_of_scope", "new_charge", "not_added", "something_new"]) {
       expect(texts(withStep(outcome)).join(" ")).not.toMatch(/handoff\.follow_up/);
     }
+  });
+});
+
+describe("retries of a tool call", () => {
+  const base = runs.normal![0]!;
+  const withAttempts = (attempts: number): TurnResponse => ({
+    ...base,
+    trail: [{ step: "tool.get_transaction", outcome: "ok", rule_ids: [], detail: { attempts } }],
+  } as unknown as TurnResponse);
+
+  it("counts retries, not attempts, and says nothing when the first call worked", () => {
+    expect(texts(withAttempts(1))).toEqual(["Read with tool get_transaction."]);
+    expect(texts(withAttempts(2))).toEqual(["Read with tool get_transaction (1 retry)."]);
+    expect(texts(withAttempts(3))).toEqual(["Read with tool get_transaction (2 retries)."]);
   });
 });

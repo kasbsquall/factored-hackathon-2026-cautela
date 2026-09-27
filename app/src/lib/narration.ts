@@ -149,7 +149,9 @@ function ruleNotes(ids: string[], turn: TurnResponse): RuleNote[] {
 
 function attemptsNote(detail: Step["detail"]): string {
   const attempts = num(detail.attempts);
-  return attempts !== null && attempts > 1 ? ` (${attempts} attempts)` : "";
+  if (attempts === null || attempts < 2) return "";
+  const retries = attempts - 1;
+  return ` (${retries} ${retries === 1 ? "retry" : "retries"})`;
 }
 
 function understand(step: Step): NarrationStep {
