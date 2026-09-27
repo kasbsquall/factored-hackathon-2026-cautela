@@ -94,6 +94,7 @@ class Orchestrator(RoutingMixin):
             state = self.store.create(session.customer_id, session.customer_ref, lang, self.service.clock())
         turn = Turn(state, session_token, session, trace_id, started)
         state.trace_ids.append(trace_id)
+        self.service.audit.bind(trace_id, state.conversation_id)  # every record of this turn carries the conversation
         state.transcript.append(("customer", message))
         self._step(turn, "gate", "session_valid", {"conversation_id": state.conversation_id})
         if state.stage in FINAL_STAGES:
@@ -118,6 +119,7 @@ class Orchestrator(RoutingMixin):
             return self._error(trace_id, "no_pending_confirmation", state.language, state.conversation_id)
         turn = Turn(state, session_token, session, trace_id, started)
         state.trace_ids.append(trace_id)
+        self.service.audit.bind(trace_id, state.conversation_id)  # every record of this turn carries the conversation
         state.pending = None
         self._step(turn, "confirm.answer", "accepted" if accept else "declined",
                    {"confirmation_id": confirmation_id, "tool": pending.tool})
@@ -144,6 +146,7 @@ class Orchestrator(RoutingMixin):
             return self._error(trace_id, "no_pending_recognition", state.language, state.conversation_id)
         turn = Turn(state, session_token, session, trace_id, started)
         state.trace_ids.append(trace_id)
+        self.service.audit.bind(trace_id, state.conversation_id)  # every record of this turn carries the conversation
         state.recognition = None
         self._step(turn, "recognize.answer", "recognized" if recognized else "not_recognized",
                    {"recognition_id": recognition_id, "transaction_id": check.transaction_id})
