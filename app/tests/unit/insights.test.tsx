@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { InsightsView } from "@/components/insights/insights-view";
 import {
   BASELINE, COMPLAINT_FCR, DISPUTE, PROPOSED, complaintTypes, disputeChannelDenominator, disputeChannelMix,
-  disputesByHour, disputesByWeekday, interactionChannelMix,
+  disputesByHour, disputesByWeekday, fcrByReason, interactionChannelMix, reasonLabel,
 } from "@/lib/insights";
 
 describe("insights data (copied from data_analytics/reports and ml/reports)", () => {
@@ -13,6 +13,13 @@ describe("insights data (copied from data_analytics/reports and ml/reports)", ()
     expect(BASELINE.correct_decision_rate.value).toBeCloseTo(0.822, 3);
     expect(PROPOSED.unsafe).toMatchObject({ count: 4, denominator: 1240 });
     expect(BASELINE.unsafe).toMatchObject({ count: 24, denominator: 1240 });
+  });
+
+  it("labels every contact reason in English", () => {
+    const labels = fcrByReason.map((r) => r.label);
+    expect(labels).toContain("Retention");
+    expect(labels).not.toContain("Retención");
+    expect(reasonLabel("Complaint")).toBe("Complaint");
   });
 
   it("has denominators that add up", () => {

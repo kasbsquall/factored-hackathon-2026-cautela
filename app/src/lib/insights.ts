@@ -56,10 +56,17 @@ export const interactionChannelMix = interactionChannels.data.map((c) => ({ labe
 export const interactionDenominator = interactionChannels.data.reduce((sum, c) => sum + c.interactions, 0);
 
 /* ---------- first-contact resolution ---------- */
+/**
+ * English display names for reason categories the data keeps as delivered. Silver has no documented counterpart for
+ * "Retención", so the report carries the Spanish value (data_engineering/README.md, reconciliation); the page is English.
+ */
+const REASON_LABEL: Record<string, string> = { "Retención": "Retention" };
+export const reasonLabel = (category: string) => REASON_LABEL[category] ?? category;
+
 export const fcrByReason = fcr.data
   .filter((r) => r.reason_category !== "(all reasons)")
   .map((r) => ({
-    label: r.reason_category,
+    label: reasonLabel(r.reason_category),
     rate: r.fcr_rate,
     ci: r.fcr_ci95 as [number, number],
     resolved: r.resolved_first_contact,
