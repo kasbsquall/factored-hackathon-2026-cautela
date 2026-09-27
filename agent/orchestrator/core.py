@@ -16,13 +16,14 @@ calls, latency, and the LLM tokens and cost of the turn.
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 from agent.llm.port import LanguageModel
 from agent.orchestrator import evidence, fmt, replies
 from agent.orchestrator import intent as nlu
-from agent.orchestrator.disposition import DispositionModel, load_default, non_disputable_fit
+from agent.orchestrator.disposition import (Disposition, DispositionModel, load_default, non_disputable_fit,
+                                             plausible_charges)
 from agent.orchestrator.routing import RoutingMixin, names_a_charge
 from agent.orchestrator.state import FINAL_STAGES, ConversationStore, Option, TrailStep
 from agent.orchestrator.steps import HandoffSink, Turn, tx_label
@@ -177,11 +178,12 @@ class Orchestrator(RoutingMixin):
         pool = pool_result.data["transactions"]
         cues = self._cues(state, pool)
         state.cued = names_a_charge(cues, state.text)
-        state.searched = len(pool)
+        state.searched, state.plausible = len(pool), []
         if not state.cued:  # nothing names a charge: never act on one (see actions._act_on_transaction)
             self._clarify_details(turn, cues)
             return
         started, text = time.perf_counter(), nlu.without_refs(state.text)
+        state.plausible = plausible_charges(text, self.service.clock().date(), state.slots.overrides(), pool)
         spent = non_disputable_fit(text, self.service.clock().date(), state.slots.overrides(), pool)
         if spent is not None:  # a charge that moved no money: policy explains it, no model is asked
             self._step(turn, "decide.status_check", "fits_non_disputable_charge",
@@ -200,6 +202,8 @@ class Orchestrator(RoutingMixin):
             self._match_reasons(turn, pool, disposition.top_k[:1])
             self._act_on_transaction(turn, disposition.top_k[0], disposition.confidence, disposition.model)
             return
+        if disposition.decision == "escalate" and state.clarify_rounds < MAX_CLARIFY_ROUNDS:
+            disposition = self._plausible_instead(turn, disposition)
         if disposition.decision == "escalate" or state.clarify_rounds >= MAX_CLARIFY_ROUNDS:
             self._transfer_unmatched(turn, disposition.confidence)
             return
@@ -213,6 +217,21 @@ class Orchestrator(RoutingMixin):
         state.stage = "clarifying"
         listing = "\n".join(f"{o.index}) {fmt.label_text(o.label, state.language)}" for o in state.options)
         self._say(turn, "clarify_options", {"options": listing}, tuple(o.label for o in state.options))
+
+    def _plausible_instead(self, turn: Turn, disposition: Disposition) -> Disposition:
+        """An abstention while some charge fits the description on every cue, or on all but one of three or more
+        (`disposition.plausible_charges`), shows those charges instead of transferring. The models abstain on
+        descriptions that miss their charge on one detail (an amount in another currency, "early this month" for
+        the last days of the previous one); asking costs one clarifying round, and only the customer's explicit
+        pick followed by "I don't recognize it" leads to a write. Charges the customer already rejected are not
+        shown again."""
+        rejected = {rid for rid, _ in turn.state.rejected}
+        unseen = [tid for tid in turn.state.plausible if tid not in rejected]
+        self._step(turn, "decide.plausible", "clarify" if unseen else "none",
+                   {"plausible": len(turn.state.plausible), "shown": unseen[:3]})
+        if not unseen:
+            return disposition
+        return replace(disposition, decision="clarify", top_k=unseen[:3], note="abstain_to_plausible")
 
     def _match_reasons(self, turn: Turn, pool: list[dict[str, Any]],
                        ids: list[str]) -> dict[str, list[dict[str, Any]]]:

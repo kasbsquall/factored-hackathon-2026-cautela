@@ -19,8 +19,10 @@ from pathlib import Path
 from typing import Any, Literal, Protocol
 
 from ml.decision import K_CLARIFY, FixedRuleDecider
-from ml.disposition import cue_fits
+from ml.disposition import _cue_hits, cue_fits
+from ml.features.pairwise import candidate_features
 from ml.rankers.learned import LearnedRanker
+from ml.rankers.protocol import coerce_features
 from ml.rankers.rules import RuleRanker
 
 MODELS_DIR = Path(__file__).resolve().parents[2] / "data" / "ml" / "models"
@@ -119,6 +121,28 @@ def non_disputable_fit(text: str, report_date: date, overrides: Mapping[str, Any
         return None
     tx = next(t for t in candidates if t["transaction_id"] == ids[0])
     return None if tx.get("transaction_status") in DISPUTABLE_STATUSES else tx
+
+
+def plausible_charges(text: str, report_date: date, overrides: Mapping[str, Any],
+                      pool: Sequence[Mapping[str, Any]]) -> list[str]:
+    """Ids of the charges the description could mean: each satisfies at least MIN_FIT_CUES of the cues read and
+    fails at most one of them (same cue tests and tolerances as the labels, `ml.disposition._cue_hits`), whatever
+    its type or status.
+
+    Every cue when two are read; all but one when three or more are, the "near" fit the disposition model already
+    counts as a feature (`n_near` in ml/disposition.py). One wrong detail is how a description usually misses its
+    charge (an amount in another currency, "early this month" for the last days of the previous one). Empty when
+    fewer than MIN_FIT_CUES cues were read: one cue ("about 4,500") is too little to name a charge.
+    """
+    candidates = [dict(t) for t in pool]
+    parsed, report = coerce_features(ranker_input(text, report_date, overrides))
+    rows = candidate_features(parsed, candidates, report) if candidates else []
+    missed = {}
+    for tx, row in zip(candidates, rows):
+        hits = list(_cue_hits(row).values())
+        if hits.count(True) >= MIN_FIT_CUES and hits.count(False) <= 1:
+            missed[tx["transaction_id"]] = hits.count(False)
+    return sorted(missed, key=missed.get)  # charges that fit every cue first, then pool order (newest first)
 
 
 def load_default(models_dir: Path = MODELS_DIR) -> DispositionModel:

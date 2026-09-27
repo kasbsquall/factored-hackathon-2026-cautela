@@ -129,6 +129,7 @@ class ConversationState:
     options: list[Option] = field(default_factory=list)
     clarify_rounds: int = 0  # turns that ended without a usable candidate (see agent/orchestrator/unmatched.py)
     searched: int | None = None  # size of the last 90-day pool the decide step read
+    plausible: list[str] = field(default_factory=list)  # charges of that pool the description could mean
     rejected: list[tuple[str, str]] = field(default_factory=list)  # (record id, label) shown and rejected
     missing_refs: list[str] = field(default_factory=list)  # references quoted that match no record of the customer
     pending: PendingConfirmation | None = None
