@@ -28,7 +28,8 @@ from deploy import lock
 
 ROOT = Path(__file__).resolve().parents[1]
 PATHS = ("pyproject.toml", "uv.lock", "agent", "api", "ml", "data_engineering", "deploy",
-         "docs/schemas/handoff.schema.json")  # read at runtime by agent/handoff.py
+         "docs/schemas/handoff.schema.json",  # read at runtime by agent/handoff.py
+         ":(exclude)ml/models/*.pkl")  # the committed models travel in the verified demo bundle, never in the code
 LOCK_REL = "deploy/demo-bundle.lock.json"
 FORBIDDEN = (".env", ".duckdb", ".pkl", ".parquet", ".csv")
 
