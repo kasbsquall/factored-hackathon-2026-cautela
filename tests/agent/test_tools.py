@@ -161,6 +161,19 @@ def test_transient_write_failures_are_retried_with_backoff(rig, people, purchase
     assert rig.cases._con.execute("SELECT count(*) FROM sandbox.dispute_cases").fetchone()[0] == 1
 
 
+def test_attempts_count_retries_of_one_call_not_the_number_of_reads(rig, people):
+    """get_customer_profile makes two reads (customer, products). Two first-try reads are one attempt, and the
+    audit record carries the same number, so a retry-rate metric over the log is not 100% on clean traffic."""
+    alice = rig.login(people["alice"])
+    clean = rig.call("get_customer_profile", {}, alice)
+    assert clean.ok and clean.attempts == 1
+    assert [r.attempts for r in rig.audit.records(clean.trace_id) if r.step == "tool"] == [1]
+    rig.faults.set("warehouse.read", "error", times=1)  # the first read fails once, then heals
+    retried = rig.call("get_customer_profile", {}, alice)
+    assert retried.ok and retried.attempts == 2
+    assert [r.attempts for r in rig.audit.records(retried.trace_id) if r.step == "tool"] == [2]
+
+
 @pytest.mark.parametrize(("op", "tool", "args"), [
     ("case_store.write", "open_dispute_case", None),
     ("warehouse.read", "list_recent_transactions", {}),

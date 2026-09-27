@@ -53,16 +53,20 @@ class ToolContext:
     ranker: CandidateRanker = field(default_factory=RuleBasedRanker)
     security_flags: frozenset[str] = frozenset()
     known_names: tuple[str, ...] = ()
-    attempts: int = 0
+    attempts: int = 0  # attempts of the most-retried single call in this tool run; 1 means no retry happened
 
     @property
     def customer_id(self) -> str:
         return self.session.customer_id
 
     def call(self, fn: Callable[[], Any]) -> Any:
-        """Bounded retries with backoff on transient failures. RetriesExhausted propagates to the service."""
+        """Bounded retries with backoff on transient failures. RetriesExhausted propagates to the service.
+
+        A tool can make several calls (the profile reads the customer and then the products). `attempts` keeps the
+        largest attempt count of any one call, so two first-try reads stay at 1 and never read as a retry.
+        """
         result, attempts = call_with_retries(fn, self.retry, self.sleep)
-        self.attempts += attempts
+        self.attempts = max(self.attempts, attempts)
         return result
 
 

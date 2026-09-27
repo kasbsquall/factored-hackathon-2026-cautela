@@ -113,7 +113,7 @@ class ToolService:
         try:
             output = spec.handler(ctx, args)
         except RetriesExhausted as exc:
-            return ToolResult(**base, ok=False, attempts=exc.attempts + ctx.attempts,
+            return ToolResult(**base, ok=False, attempts=max(exc.attempts, ctx.attempts),
                               error=ToolError(code="tool_unavailable", message=ERROR_CODES["tool_unavailable"]),
                               handoff_required=True, handoff_reason="tool_failure")
         except ToolFailure as exc:
