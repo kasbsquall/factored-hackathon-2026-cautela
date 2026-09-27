@@ -15,7 +15,7 @@ three times on a stratified subset of 284 conversations, and its injection and u
 times in full.
 
 The numbers below are those of the original agent. The seven agent bugs were fixed afterwards; the rerun on this same
-suite is in "After fixes (suite used for error analysis)".
+suite is in "After fixes (suite used for error analysis)", followed by a second fix round rerun with the LLM off.
 
 * **The rules baseline (a) has the highest safe automated resolution, and the most unsafe outcomes.** It resolves
   40.5% of in-scope conversations safely against 38.3% for (b) and 36.5% for (c), but it wrote a dispute on a charge
@@ -547,6 +547,51 @@ refused.
 
 The variance subset and the repeated injection runs were not rerun after the fixes.
 
+### Second fix round
+
+Two more changes, rerun with the LLM off on the same suite (USD 0). Configuration (c) was not rerun.
+
+* **Bounded clarification** (`672c33d`, `agent/orchestrator/unmatched.py`). Every turn that ends without a usable
+  candidate counts one round: a request for details, an option list, or a quoted reference that matches none of the
+  customer's records. After two rounds the service hands off instead of asking a third time, and the handoff lists
+  the charges shown and rejected and the references not found. The two-round limit already applied to option lists
+  and requests for details, so this changed what the handoff lists (196 handoffs of (a) and 8 of (b) now say they
+  were transferred at the limit), not the outcomes: every number of (a) is identical to the rerun of `55222bc`.
+* **Show the charges a description could mean before abstaining** (`4f630cc`, `Orchestrator._plausible_instead`).
+  The nine large disputes that (b) handed off as `low_confidence` were not a reason-code problem. In each of them the
+  learned disposition abstained on the first turn, before any charge was identified, because the description missed
+  its charge on one detail: an amount that does not match the stored amount within 25% (six cases), "early this
+  month" for the last days of the previous month, a merchant cue read from "por internet", and "29 de mayo" read as
+  an amount of 29 by the parser. Giving such a transfer a policy reason does not help: the gold expects the charge
+  to be identified, stored for review and named in the handoff. Now, when the model abstains and some charge fits
+  every cue, or all but one of three or more (`disposition.plausible_charges`, the labels' cue tests), those charges
+  are shown as options. A charge the customer rejected is never shown again, and one cue alone never names a charge.
+  On validation this changes 5 of 156 abstentions of (b): 2 `match` cases, both showing the target, and 3
+  `no_match` cases, which cost one extra question.
+
+Run ids: `rules-compliant-20260927T000907Z`, `learned-compliant-20260927T001117Z`. The baseline column is the rerun of
+`55222bc` (`rules-compliant-20260926T225250Z`, `learned-compliant-20260926T225524Z`), which reproduces the "after"
+column above.
+
+| metric | `rules` after fixes | `rules` second round | `learned` after fixes | `learned` second round |
+|---|---|---|---|---|
+| Safe automated resolution (in-scope) | 476/1176 = 40.5% | 476/1176 = 40.5% | 476/1176 = 40.5% | 479/1176 = 40.7% |
+| Correct outcome | 1439/1462 = 98.4% | 1439/1462 = 98.4% | 1431/1462 = 97.9% | 1440/1462 = 98.5% |
+| Unsafe outcomes | 8/1462 = 0.5% | 8/1462 = 0.5% | 2/1462 = 0.1% | 2/1462 = 0.1% |
+| Containment | 540/1462 = 36.9% | 540/1462 = 36.9% | 533/1462 = 36.5% | 536/1462 = 36.7% |
+| Automation attempted (in-scope) | 848/1176 = 72.1% | 848/1176 = 72.1% | 835/1176 = 71.0% | 842/1176 = 71.6% |
+| Missed transfers | 14/931 = 1.5% | 14/931 = 1.5% | 9/931 = 1.0% | 9/931 = 1.0% |
+| Unnecessary transfers | 5/531 = 0.9% | 5/531 = 0.9% | 7/531 = 1.3% | 4/531 = 0.8% |
+| Correct reason code (among correct transfers) | 913/917 = 99.6% | 913/917 = 99.6% | 905/922 = 98.2% | 911/922 = 98.8% |
+| Handoff passes every rubric item | 913/922 = 99.0% | 913/922 = 99.0% | 905/929 = 97.4% | 911/926 = 98.4% |
+
+In (b), nine conversations changed, all of them through the new option step, and none got worse: four of the nine large disputes now end in
+`amount_above_threshold` naming the charge (`dsp-test-00169-es`, `00469-es`, `00837-es`, `00899-es`), two more end in
+`policy_requires_review` (`dsp-test-00535-es`, `00535-pt`), and three are resolved where they were transferred
+(`dsp-test-00183-es`, `00183-pt`, `00631-es`). The two `no_match` conversations that a first attempt at this fix
+broke (`dsp-test-00743-es`, `00756-es`, both a single amount cue) are still correct. (a) did not change: its decider
+never abstains on a ranking.
+
 ### Not fixed
 
 * **Unsafe writes of the rules ranker.** (a) still has 8 wrong-charge writes (`bad1-test-00768-es`,
@@ -558,11 +603,16 @@ The variance subset and the repeated injection runs were not rerun after the fix
   turn already ended in a handoff (`low_confidence` or `amount_above_threshold`), a later out-of-scope message does
   not replace the handoff reason, so the case keeps the review reason instead of `out_of_scope`. Replacing it would
   drop the reason a person needs to review the charge.
-* **Clarifying where the gold is a transfer.** In no_match disputes the service sometimes keeps asking and the
-  customer leaves (7 in (a), 5 in (b) and (c)) where the gold is a `low_confidence` handoff.
-* **Reason code on large amounts.** In (b) and (c), 9 normal disputes above the amount threshold are handed off as
-  `low_confidence` before the charge is identified, where the gold reason is `amount_above_threshold`. Both are
-  transfers; the reason code differs.
+* **`no_match` disputes that end `abstained`.** 7 in (a) and 5 in (b) and (c), where the gold is a `low_confidence`
+  handoff. They are not clarifying loops: none reached a second question. The only charge that fits every cue the
+  customer gave was declined, so the status check reports that no money moved and there is nothing to dispute
+  (`SYN-STATUS-002`). We think that answer is defensible (see Limitations); the gold counts it as wrong.
+* **Large disputes still transferred as `low_confidence`.** Five of the nine remain in (b) (`dsp-test-00330-pt`,
+  `00347-es`, `00347-pt`, `00561-es`, `00651-es`). Each description gives two cues and the charge misses one of them,
+  so one cue is left, which is too little to show a charge. (c) was not rerun after the second round.
+* **Parser: a day of the month read as an amount.** In "el pasado 29 de mayo de 2026" the parser reads both the date
+  and an amount of 29 (`dsp-test-00837-es`). The parser feeds the learned models' features, so a fix needs a retrain
+  and a new component evaluation; it was not changed.
 
 ## Corrections made during the evaluation
 
