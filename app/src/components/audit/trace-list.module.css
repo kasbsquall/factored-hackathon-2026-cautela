@@ -68,8 +68,25 @@ ul.list {
   grid-row: 1 / span 2;
 }
 
+.who {
+  display: grid;
+  gap: var(--s-2);
+  min-width: 0;
+}
+
 .id {
   font-size: var(--t-15);
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  font-size: var(--t-12);
+  color: var(--ink2);
+  font-variant-numeric: tabular-nums;
+}
+
+.open {
+  color: var(--ink2);
 }
 
 .label {

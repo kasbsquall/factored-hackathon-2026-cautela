@@ -72,6 +72,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/console/conversations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Conversation Index
+         * @description Every conversation of this process, newest first: resolved, handed off or still open.
+         */
+        get: operations["conversation_index_console_conversations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/console/conversations/{conversation_id}/audit": {
         parameters: {
             query?: never;
@@ -299,8 +319,16 @@ export interface components {
         AuditRecordView: {
             /** Args Hash */
             args_hash: string | null;
-            /** Attempts */
+            /**
+             * Attempts
+             * @description Attempts of the most-retried single call in the step; 1 means no retry
+             */
             attempts: number;
+            /**
+             * Conversation Id
+             * @description Shared by every record of every turn of one conversation; null outside a conversation
+             */
+            conversation_id?: string | null;
             /** Customer Ref */
             customer_ref: string | null;
             /** Latency Ms */
@@ -364,8 +392,21 @@ export interface components {
              * Format: date-time
              */
             checked_at: string;
+            /** Files Checked */
+            files_checked: number;
+            /**
+             * First Bad Seq
+             * @description Sequence number of the first record that does not verify
+             */
+            first_bad_seq: number | null;
             /** Records Checked */
             records_checked: number;
+            /**
+             * Source
+             * @description stored_files: the audit files on disk were read and re-hashed. memory: the service runs without an audit directory, so only the copy in process memory was checked
+             * @enum {string}
+             */
+            source: "stored_files" | "memory";
             /**
              * Status
              * @enum {string}
@@ -502,6 +543,47 @@ export interface components {
             trace_ids: string[];
             /** Trail */
             trail: components["schemas"]["TrailStepView"][];
+        };
+        /**
+         * ConversationSummary
+         * @description One conversation in the audit index: resolved, handed off or still open.
+         */
+        ConversationSummary: {
+            /** Case Id */
+            case_id: string | null;
+            /** Conversation Id */
+            conversation_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Handoff Id */
+            handoff_id: string | null;
+            /**
+             * Language
+             * @enum {string}
+             */
+            language: "es" | "pt";
+            /**
+             * Records
+             * @description Audit records that carry this conversation id
+             */
+            records: number;
+            /**
+             * Stage
+             * @enum {string}
+             */
+            stage: "collecting" | "clarifying" | "awaiting_recognition" | "awaiting_confirmation" | "resolved" | "recognized" | "handed_off" | "abstained" | "closed";
+            /** Trace Ids */
+            trace_ids: string[];
+            /** Transfer Reason */
+            transfer_reason: string | null;
+            /**
+             * Turns
+             * @description Traces recorded for the conversation, one per turn
+             */
+            turns: number;
         };
         /** ConversationView */
         ConversationView: {
@@ -769,6 +851,16 @@ export interface components {
         /** TraceView */
         TraceView: {
             chain: components["schemas"]["ChainStatus"];
+            /**
+             * Conversation Id
+             * @description The conversation this trace is one turn of, if any
+             */
+            conversation_id: string | null;
+            /**
+             * Conversation Trace Ids
+             * @description Every trace of that conversation in turn order, this one included; empty outside a conversation
+             */
+            conversation_trace_ids: string[];
             /** Records */
             records: components["schemas"]["AuditRecordView"][];
             /** Trace Id */
@@ -815,8 +907,8 @@ export interface components {
         };
         /**
          * TranslateRequest
-         * @description One message of the conversation, as the transcript shows it (a part of it is accepted, since clients drop
-         *     the numbered option lines). Text that is not in the conversation answers 404, so this is no free translator.
+         * @description One whole message of the conversation, exactly as the transcript holds it (surrounding spaces aside). Any
+         *     other text, a part of a message included, answers 404, so the route cannot be used as a free translator.
          */
         TranslateRequest: {
             /**
@@ -1211,6 +1303,91 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CaseStatusResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    conversation_index_console_conversations_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-console-key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationSummary"][];
                 };
             };
             /** @description Unauthorized */
