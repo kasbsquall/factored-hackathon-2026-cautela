@@ -70,7 +70,7 @@ Steps 3a and 3b are the two runs behind the committed numbers. A single `make pi
 
 `slice.py` writes a small warehouse with only the customers the public demo uses (`deploy/demo_select.py` picks them,
 `deploy/bundle.py` calls the slice). Rows are copied, never rebuilt: bronze, silver and the gold serving tables
-(`customer_profile`, `customer_transactions`) keep `_source_file`, `_ingested_at`, `_run_id`, `_source_table`,
+(`customer_profile`, `customer_transactions` and, since it was added, `customer_products`) keep `_source_file`, `_ingested_at`, `_run_id`, `_source_table`,
 `_source_key`, `_source_run_ids` and `_gold_run_id` as they were. Tables are created from the source DDL, the
 `dispute_policy_inputs` view from its own definition, and `control.runs` and `control.gold_runs` are copied whole, so
 the tool repository's freshness check sees the same history. `control.file_ledger` keeps only the files the copied
@@ -78,8 +78,10 @@ bronze rows came from, and `control.demo_slice` records which scenario each cust
 warehouse. The gold analytics tables are left out: they aggregate every customer and would be wrong for a slice.
 
 For the eight demo customers of the organizer data the slice is 284 transactions and 3.9 MB (the full warehouse was
-1.8 GB when the slice was cut; with all 13 tables it is 4.2 GB). Two slices of the same customers hold the same rows but not the same file bytes (DuckDB's block layout), so
-`content_digest()` hashes the rows in a fixed order; the bundle lock records both. Tests: `tests/deploy/test_slice.py`.
+1.8 GB when the slice was cut; with all 13 tables it is 4.2 GB). The committed bundle lock predates
+`customer_products`, so the shipped slice does not hold it; the next `make demo-artifacts` needs `make gold-real` first
+and writes a new lock. Two slices of the same customers hold the same rows but not the same file bytes (DuckDB's block
+layout), so `content_digest()` hashes the rows in a fixed order; the bundle lock records both. Tests: `tests/deploy/test_slice.py`.
 
 ## Design and the reasons behind it
 
