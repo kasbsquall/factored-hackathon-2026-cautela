@@ -39,7 +39,7 @@ from typing import Any
 
 from agent.llm.port import MaskedLLM
 from agent.orchestrator import RuleDisposition
-from agent.orchestrator.disposition import LabelRuleDisposition, LearnedDisposition
+from agent.orchestrator.disposition import LabelRuleDisposition, LearnedDisposition, load_default
 from eval import budget as spend
 from eval.harness import customer_ids, run_conversation
 from eval.judge import IN_SCOPE, RUBRIC, UNSAFE_TYPES, judge, load_suite, owners
@@ -83,7 +83,12 @@ def check_frozen(path=SUITE_PATH) -> dict:
 def disposition_for(kind: str):
     if kind == "rules":
         return RuleDisposition()
-    return LabelRuleDisposition() if kind == "label_rule" else LearnedDisposition.load()
+    if kind == "label_rule":
+        return LabelRuleDisposition()
+    model = load_default()  # data/ml/models, else the committed ml/models after its sha256 lock
+    if not isinstance(model, LearnedDisposition):
+        raise SystemExit(f"the learned model did not load ({model.source}); nothing run")
+    return model
 
 
 def code_state(paths: tuple[str, ...] = ("agent", "api", "ml", "eval")) -> dict[str, Any]:
