@@ -7,9 +7,10 @@
   "source_is_fixture": false,
   "silver_runs": [
    "20260925T222037Z-1028ed",
-   "20260925T224334Z-40a446"
+   "20260925T224334Z-40a446",
+   "20260927T005031Z-8f4b0d"
   ],
-  "latest_gold_run": "20260926T032254Z-9e0aff"
+  "latest_gold_run": "20260927T012755Z-994fa0"
  },
  "data": [
   {

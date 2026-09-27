@@ -1,0 +1,597 @@
+{
+ "title": "Decision figures for the unrecognized-charge workflow",
+ "provenance": {
+  "warehouse": "warehouse_real.duckdb",
+  "source_is_fixture": false,
+  "silver_runs": [
+   "20260925T222037Z-1028ed",
+   "20260925T224334Z-40a446",
+   "20260927T005031Z-8f4b0d"
+  ],
+  "latest_gold_run": "20260927T012755Z-994fa0",
+  "eval_source": "eval/results.json",
+  "eval_config": "llm",
+  "eval_run_id": "llm-compliant-20260926T192124Z",
+  "ml_source": "ml/reports/results.json",
+  "ml_data_version": "0189e386ce7fe882",
+  "report": "data_analytics/reports/why-this-workflow.md"
+ },
+ "workflow_ranking": {
+  "unit": "agent-hours per year",
+  "formula": {
+   "agent_hours_per_year": "contacts_per_year * handling_seconds / 3600",
+   "unresolved_contact_hours_per_year": "agent_hours_per_year * (1 - first_contact_resolution)"
+  },
+  "judgment_columns": [
+   "workflow",
+   "proxy",
+   "verifiable",
+   "record"
+  ],
+  "chosen_rank": 7,
+  "candidates": 7,
+  "contact_center_agent_hours_per_year": 20373.3,
+  "rows": [
+   {
+    "rank": 1,
+    "workflow": "(not a named workflow) general complaints",
+    "proxy": "contact reason Complaint",
+    "contacts_per_year": 38900.4,
+    "handling_seconds": 434.6,
+    "first_contact_resolution": 0.436,
+    "agent_hours_per_year": 4696.2,
+    "unresolved_contact_hours_per_year": 2648.7,
+    "verifiable": "no",
+    "record": "complaint types are mixed and 0 complaints link to a contact; only the dispute subtype names a fact a record can check"
+   },
+   {
+    "rank": 2,
+    "workflow": "(not a named workflow) technical support",
+    "proxy": "contact reason Technical",
+    "contacts_per_year": 34206,
+    "handling_seconds": 360.5,
+    "first_contact_resolution": 0.6993,
+    "agent_hours_per_year": 3425,
+    "unresolved_contact_hours_per_year": 1029.8,
+    "verifiable": "no",
+    "record": "app faults have no record in the data"
+   },
+   {
+    "rank": 3,
+    "workflow": "Credit-product information and eligibility",
+    "proxy": "contact reason Commercial",
+    "contacts_per_year": 18243,
+    "handling_seconds": 539.9,
+    "first_contact_resolution": 0.6521,
+    "agent_hours_per_year": 2736.1,
+    "unresolved_contact_hours_per_year": 951.9,
+    "verifiable": "no",
+    "record": "no approved eligibility policy in the data; the problem statement requires a labeled synthetic policy service"
+   },
+   {
+    "rank": 4,
+    "workflow": "Account or payment inquiries",
+    "proxy": "contact reason Transactional",
+    "contacts_per_year": 79800,
+    "handling_seconds": 220.8,
+    "first_contact_resolution": 0.9151,
+    "agent_hours_per_year": 4894.5,
+    "unresolved_contact_hours_per_year": 415.6,
+    "verifiable": "partly",
+    "record": "balances and transactions answer the question, but what the customer asked is not recorded (one detected-intent value over all transcripts)"
+   },
+   {
+    "rank": 5,
+    "workflow": "Card-service support",
+    "proxy": "contact reason Product",
+    "contacts_per_year": 50150.3,
+    "handling_seconds": 266.4,
+    "first_contact_resolution": 0.8963,
+    "agent_hours_per_year": 3710.9,
+    "unresolved_contact_hours_per_year": 385,
+    "verifiable": "partly",
+    "record": "product status and expiry are recorded; card actions (block, replace) have no outcome record"
+   },
+   {
+    "rank": 6,
+    "workflow": "(not a named workflow) retention",
+    "proxy": "contact reason Retención",
+    "contacts_per_year": 6840.6,
+    "handling_seconds": 479.2,
+    "first_contact_resolution": 0.6016,
+    "agent_hours_per_year": 910.6,
+    "unresolved_contact_hours_per_year": 362.8,
+    "verifiable": "no",
+    "record": "a retention offer has no right answer in the records"
+   },
+   {
+    "rank": 7,
+    "workflow": "Transaction-dispute intake (unrecognized charge, the chosen workflow)",
+    "proxy": "Cargo no reconocido complaints; handling time and FCR of the Complaint reason",
+    "contacts_per_year": 4087.8,
+    "handling_seconds": 434.6,
+    "first_contact_resolution": 0.436,
+    "agent_hours_per_year": 493.5,
+    "unresolved_contact_hours_per_year": 278.3,
+    "verifiable": "yes",
+    "record": "the customer's own transactions, with merchant, channel, amount and date"
+   }
+  ],
+  "dispute_record_coverage": {
+   "complaints": 12297,
+   "with_charge_in_window": 8998,
+   "window_days": 90,
+   "share": 0.731723
+  }
+ },
+ "cost_per_resolution": {
+  "scenario": "central: complaint contact time, one contact",
+  "human_minutes_per_dispute": 7.24,
+  "human_usd_per_dispute_by_hourly_cost": {
+   "5.0": 0.6,
+   "10.0": 1.21,
+   "20.0": 2.41
+  },
+  "llm_usd_per_safe_automated_resolution": 0.0005812,
+  "llm_usd_per_conversation": 0.0001705,
+  "cost_per_routed_dispute_with_bot_by_hourly_cost": {
+   "5.0": 0.3836,
+   "10.0": 0.767,
+   "20.0": 1.5338
+  },
+  "rate": "conservative",
+  "hosting": "not defined",
+  "source_llm": "eval/results.json",
+  "units": {
+   "human_usd_per_dispute_by_hourly_cost": "USD per dispute, keyed by USD per agent-hour",
+   "llm_usd_per_safe_automated_resolution": "USD per safe automated resolution (LLM tokens only)",
+   "llm_usd_per_conversation": "USD per conversation (LLM tokens only)",
+   "cost_per_routed_dispute_with_bot_by_hourly_cost": "USD per dispute sent to the bot, failed attempts at full human cost"
+  }
+ },
+ "projection_range": {
+  "units": {
+   "hours_saved_per_year": "agent-hours per year",
+   "net_savings_per_year_usd": "USD per year",
+   "reach_share": "share of dispute complaints",
+   "llm_usd_per_year": "USD per year"
+  },
+  "hourly_cost_usd": 10,
+  "headline": {
+   "conservative_chat_only": {
+    "handling": "central",
+    "reach": "App and Web disputes (measured share)",
+    "reach_share": 0.2526,
+    "rate": "conservative",
+    "safe_automated_resolution_rate": 0.3648,
+    "disputes_routed_per_year": 1032.6,
+    "hours_saved_per_year": 45.5,
+    "human_hours_left_per_year": 79.2,
+    "handoffs_per_year": 655.9,
+    "share_of_contact_center_hours": 0.00223,
+    "llm_usd_per_year": 0.18,
+    "net_savings_per_year_usd": 455
+   },
+   "optimistic_with_call_center": {
+    "handling": "central",
+    "reach": "App, Web and call-center disputes (assumption: call center routed to the flow)",
+    "reach_share": 0.7561,
+    "rate": "optimistic",
+    "safe_automated_resolution_rate": 0.5691,
+    "disputes_routed_per_year": 3090.8,
+    "hours_saved_per_year": 212.3,
+    "human_hours_left_per_year": 160.8,
+    "handoffs_per_year": 1331.8,
+    "share_of_contact_center_hours": 0.01042,
+    "llm_usd_per_year": 0.53,
+    "net_savings_per_year_usd": 2123
+   }
+  },
+  "rows": [
+   {
+    "handling": "low",
+    "reach": "App and Web disputes (measured share)",
+    "reach_share": 0.2526,
+    "rate": "conservative",
+    "safe_automated_resolution_rate": 0.3648,
+    "disputes_routed_per_year": 1032.6,
+    "hours_saved_per_year": 23.1,
+    "human_hours_left_per_year": 40.2,
+    "handoffs_per_year": 655.9,
+    "share_of_contact_center_hours": 0.00113,
+    "llm_usd_per_year": 0.18,
+    "net_savings_per_year_usd": 231
+   },
+   {
+    "handling": "low",
+    "reach": "App and Web disputes (measured share)",
+    "reach_share": 0.2526,
+    "rate": "optimistic",
+    "safe_automated_resolution_rate": 0.5691,
+    "disputes_routed_per_year": 1032.6,
+    "hours_saved_per_year": 36,
+    "human_hours_left_per_year": 27.3,
+    "handoffs_per_year": 444.9,
+    "share_of_contact_center_hours": 0.00177,
+    "llm_usd_per_year": 0.18,
+    "net_savings_per_year_usd": 360
+   },
+   {
+    "handling": "low",
+    "reach": "App, Web and call-center disputes (assumption: call center routed to the flow)",
+    "reach_share": 0.7561,
+    "rate": "conservative",
+    "safe_automated_resolution_rate": 0.3648,
+    "disputes_routed_per_year": 3090.8,
+    "hours_saved_per_year": 69.2,
+    "human_hours_left_per_year": 120.4,
+    "handoffs_per_year": 1963.3,
+    "share_of_contact_center_hours": 0.00339,
+    "llm_usd_per_year": 0.53,
+    "net_savings_per_year_usd": 691
+   },
+   {
+    "handling": "low",
+    "reach": "App, Web and call-center disputes (assumption: call center routed to the flow)",
+    "reach_share": 0.7561,
+    "rate": "optimistic",
+    "safe_automated_resolution_rate": 0.5691,
+    "disputes_routed_per_year": 3090.8,
+    "hours_saved_per_year": 107.9,
+    "human_hours_left_per_year": 81.7,
+    "handoffs_per_year": 1331.8,
+    "share_of_contact_center_hours": 0.0053,
+    "llm_usd_per_year": 0.53,
+    "net_savings_per_year_usd": 1078
+   },
+   {
+    "handling": "central",
+    "reach": "App and Web disputes (measured share)",
+    "reach_share": 0.2526,
+    "rate": "conservative",
+    "safe_automated_resolution_rate": 0.3648,
+    "disputes_routed_per_year": 1032.6,
+    "hours_saved_per_year": 45.5,
+    "human_hours_left_per_year": 79.2,
+    "handoffs_per_year": 655.9,
+    "share_of_contact_center_hours": 0.00223,
+    "llm_usd_per_year": 0.18,
+    "net_savings_per_year_usd": 455
+   },
+   {
+    "handling": "central",
+    "reach": "App and Web disputes (measured share)",
+    "reach_share": 0.2526,
+    "rate": "optimistic",
+    "safe_automated_resolution_rate": 0.5691,
+    "disputes_routed_per_year": 1032.6,
+    "hours_saved_per_year": 70.9,
+    "human_hours_left_per_year": 53.7,
+    "handoffs_per_year": 444.9,
+    "share_of_contact_center_hours": 0.00348,
+    "llm_usd_per_year": 0.18,
+    "net_savings_per_year_usd": 709
+   },
+   {
+    "handling": "central",
+    "reach": "App, Web and call-center disputes (assumption: call center routed to the flow)",
+    "reach_share": 0.7561,
+    "rate": "conservative",
+    "safe_automated_resolution_rate": 0.3648,
+    "disputes_routed_per_year": 3090.8,
+    "hours_saved_per_year": 136.1,
+    "human_hours_left_per_year": 237,
+    "handoffs_per_year": 1963.3,
+    "share_of_contact_center_hours": 0.00668,
+    "llm_usd_per_year": 0.53,
+    "net_savings_per_year_usd": 1361
+   },
+   {
+    "handling": "central",
+    "reach": "App, Web and call-center disputes (assumption: call center routed to the flow)",
+    "reach_share": 0.7561,
+    "rate": "optimistic",
+    "safe_automated_resolution_rate": 0.5691,
+    "disputes_routed_per_year": 3090.8,
+    "hours_saved_per_year": 212.3,
+    "human_hours_left_per_year": 160.8,
+    "handoffs_per_year": 1331.8,
+    "share_of_contact_center_hours": 0.01042,
+    "llm_usd_per_year": 0.53,
+    "net_savings_per_year_usd": 2123
+   },
+   {
+    "handling": "high",
+    "reach": "App and Web disputes (measured share)",
+    "reach_share": 0.2526,
+    "rate": "conservative",
+    "safe_automated_resolution_rate": 0.3648,
+    "disputes_routed_per_year": 1032.6,
+    "hours_saved_per_year": 104.3,
+    "human_hours_left_per_year": 181.6,
+    "handoffs_per_year": 655.9,
+    "share_of_contact_center_hours": 0.00512,
+    "llm_usd_per_year": 0.18,
+    "net_savings_per_year_usd": 1043
+   },
+   {
+    "handling": "high",
+    "reach": "App and Web disputes (measured share)",
+    "reach_share": 0.2526,
+    "rate": "optimistic",
+    "safe_automated_resolution_rate": 0.5691,
+    "disputes_routed_per_year": 1032.6,
+    "hours_saved_per_year": 162.7,
+    "human_hours_left_per_year": 123.2,
+    "handoffs_per_year": 444.9,
+    "share_of_contact_center_hours": 0.00799,
+    "llm_usd_per_year": 0.18,
+    "net_savings_per_year_usd": 1627
+   },
+   {
+    "handling": "high",
+    "reach": "App, Web and call-center disputes (assumption: call center routed to the flow)",
+    "reach_share": 0.7561,
+    "rate": "conservative",
+    "safe_automated_resolution_rate": 0.3648,
+    "disputes_routed_per_year": 3090.8,
+    "hours_saved_per_year": 312.3,
+    "human_hours_left_per_year": 543.7,
+    "handoffs_per_year": 1963.3,
+    "share_of_contact_center_hours": 0.01533,
+    "llm_usd_per_year": 0.53,
+    "net_savings_per_year_usd": 3122
+   },
+   {
+    "handling": "high",
+    "reach": "App, Web and call-center disputes (assumption: call center routed to the flow)",
+    "reach_share": 0.7561,
+    "rate": "optimistic",
+    "safe_automated_resolution_rate": 0.5691,
+    "disputes_routed_per_year": 3090.8,
+    "hours_saved_per_year": 487.1,
+    "human_hours_left_per_year": 368.8,
+    "handoffs_per_year": 1331.8,
+    "share_of_contact_center_hours": 0.02391,
+    "llm_usd_per_year": 0.53,
+    "net_savings_per_year_usd": 4871
+   }
+  ]
+ },
+ "handoff_queue": {
+  "weeks_in_window": 156.86,
+  "weekday_hour_cells": 168,
+  "disputes_per_week_peak_cell": 0.701,
+  "peak_cell": {
+   "iso_dow": 3,
+   "hour_of_day": 8
+  },
+  "disputes_per_week_median_cell": 0.51,
+  "disputes_per_day": {
+   "mean_per_day": 11.2,
+   "p95_per_day": 18,
+   "max_per_day": 26
+  },
+  "interactions_per_week_peak_cell": 31.8,
+  "interactions_peak_cell": {
+   "iso_dow": 2,
+   "hour_of_day": 3
+  },
+  "contact_center_agent_minutes_peak_hour": 170.4,
+  "scenarios": [
+   {
+    "reach": "App and Web disputes (measured share)",
+    "rate": "conservative",
+    "handoff_share_of_disputes": 0.1605,
+    "handoffs_per_day_mean": 1.8,
+    "handoffs_per_day_p95": 2.89,
+    "handoffs_per_day_max": 4.17,
+    "handoffs_peak_hour": 0.112,
+    "handoffs_median_hour": 0.082,
+    "agent_minutes_peak_hour": 0.81,
+    "agent_minutes_p95_day": 20.9,
+    "human_minutes_per_handoff": 7.24
+   },
+   {
+    "reach": "App and Web disputes (measured share)",
+    "rate": "optimistic",
+    "handoff_share_of_disputes": 0.1088,
+    "handoffs_per_day_mean": 1.22,
+    "handoffs_per_day_p95": 1.96,
+    "handoffs_per_day_max": 2.83,
+    "handoffs_peak_hour": 0.076,
+    "handoffs_median_hour": 0.056,
+    "agent_minutes_peak_hour": 0.55,
+    "agent_minutes_p95_day": 14.2,
+    "human_minutes_per_handoff": 7.24
+   },
+   {
+    "reach": "App, Web and call-center disputes (assumption: call center routed to the flow)",
+    "rate": "conservative",
+    "handoff_share_of_disputes": 0.4803,
+    "handoffs_per_day_mean": 5.38,
+    "handoffs_per_day_p95": 8.64,
+    "handoffs_per_day_max": 12.49,
+    "handoffs_peak_hour": 0.337,
+    "handoffs_median_hour": 0.245,
+    "agent_minutes_peak_hour": 2.44,
+    "agent_minutes_p95_day": 62.6,
+    "human_minutes_per_handoff": 7.24
+   },
+   {
+    "reach": "App, Web and call-center disputes (assumption: call center routed to the flow)",
+    "rate": "optimistic",
+    "handoff_share_of_disputes": 0.3258,
+    "handoffs_per_day_mean": 3.65,
+    "handoffs_per_day_p95": 5.86,
+    "handoffs_per_day_max": 8.47,
+    "handoffs_peak_hour": 0.228,
+    "handoffs_median_hour": 0.166,
+    "agent_minutes_peak_hour": 1.65,
+    "agent_minutes_p95_day": 42.5,
+    "human_minutes_per_handoff": 7.24
+   }
+  ]
+ },
+ "channel_reach": {
+  "complaints": 12297,
+  "chat_eligible_share": 0.252582,
+  "call_center_share": 0.503537,
+  "chat_plus_call_center_share": 0.756119,
+  "digital_event_30d_total": 2835
+ },
+ "thresholds": {
+  "policy_version": "2026-09-26.2",
+  "amount": {
+   "rule_id": "SYN-AMOUNT-001",
+   "threshold_usd": 450,
+   "disputable_charges": 3586032,
+   "share_routed": 0.454751,
+   "percentiles_usd": {
+    "p50": 414.1,
+    "p75": 1510.78,
+    "p90": 5786.858999999999,
+    "p95": 7892.4744999999975,
+    "p99": 9575.1338
+   },
+   "eda_month": {
+    "month": "2024-03",
+    "transactions": 121588,
+    "purchases": 29739,
+    "purchases_with_usd": 12611,
+    "purchase_p90_usd": 452.6
+   },
+   "purchase_p90_by_month": {
+    "months": 37,
+    "min": 447.9,
+    "max": 452.97
+   }
+  },
+  "fraud": {
+   "rule_id": "SYN-FRAUD-001",
+   "score_at_least": 50,
+   "unflagged_max_score": 30,
+   "flagged_with_score": 3425,
+   "flagged_above_unflagged_max": 2373,
+   "share_routed": 0.000977,
+   "routed_by_score_only": 0,
+   "by_label": [
+    {
+     "is_fraud": false,
+     "transactions": 4420692,
+     "with_score": 3536426,
+     "max_score": 30,
+     "p50_score": 15,
+     "at_or_above": 0
+    },
+    {
+     "is_fraud": true,
+     "transactions": 4316,
+     "with_score": 3425,
+     "max_score": 99.99,
+     "p50_score": 48.93,
+     "at_or_above": 1670
+    }
+   ]
+  },
+  "either_share_routed": 0.4553,
+  "units": {
+   "share_routed": "share of disputable charges sent to a person",
+   "threshold_usd": "USD"
+  }
+ },
+ "satisfaction": {
+  "survey_csat_by_first_contact_resolution": [
+   {
+    "was_resolved": false,
+    "surveys": 30005,
+    "mean_score": 2.003
+   },
+   {
+    "was_resolved": true,
+    "surveys": 97851,
+    "mean_score": 2.999
+   }
+  ],
+  "survey_csat_scale": {
+   "surveys": 127856,
+   "min_score": 1,
+   "max_score": 4
+  },
+  "survey_csat_by_reason": [
+   {
+    "reason_category": "Complaint",
+    "surveys": 21843,
+    "mean_score": 2.434,
+    "mean_resolved": 2.997,
+    "mean_unresolved": 2.002,
+    "fcr_of_surveyed": 0.4342
+   },
+   {
+    "reason_category": "Retención",
+    "surveys": 3798,
+    "mean_score": 2.606,
+    "mean_resolved": 3.003,
+    "mean_unresolved": 2,
+    "fcr_of_surveyed": 0.6043
+   },
+   {
+    "reason_category": "Commercial",
+    "surveys": 10243,
+    "mean_score": 2.659,
+    "mean_resolved": 2.993,
+    "mean_unresolved": 2.031,
+    "fcr_of_surveyed": 0.6534
+   },
+   {
+    "reason_category": "Technical",
+    "surveys": 19193,
+    "mean_score": 2.695,
+    "mean_resolved": 3.003,
+    "mean_unresolved": 1.999,
+    "fcr_of_surveyed": 0.6936
+   },
+   {
+    "reason_category": "Product",
+    "surveys": 27942,
+    "mean_score": 2.895,
+    "mean_resolved": 2.997,
+    "mean_unresolved": 2.007,
+    "fcr_of_surveyed": 0.897
+   },
+   {
+    "reason_category": "Transactional",
+    "surveys": 44837,
+    "mean_score": 2.913,
+    "mean_resolved": 3,
+    "mean_unresolved": 1.986,
+    "fcr_of_surveyed": 0.9145
+   }
+  ],
+  "dispute_resolution_satisfaction": [
+   {
+    "is_unrecognized_charge": false,
+    "complaints": 54798,
+    "with_score": 2013,
+    "mean_score": 3.01,
+    "min_score": 1,
+    "max_score": 5
+   },
+   {
+    "is_unrecognized_charge": true,
+    "complaints": 12297,
+    "with_score": 471,
+    "mean_score": 3.066,
+    "min_score": 1,
+    "max_score": 5
+   }
+  ]
+ },
+ "assumptions": [
+  "USD 10 per agent-hour is an illustrative placeholder (illustrative placeholder).",
+  "only in the second reach scenario: the bank sends call-center disputes to the same flow; nothing in the data measures that they would use it",
+  "a conversation the bot does not resolve safely costs its tokens and then the whole human handling time; a structured handoff may shorten the human contact, not measured",
+  "Handling time per dispute is the Complaint contact-reason mean (complaints cannot be linked to contacts).",
+  "The workflow-to-contact-reason mapping and the verifiable column are team judgments."
+ ]
+}

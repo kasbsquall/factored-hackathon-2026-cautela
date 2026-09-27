@@ -30,6 +30,7 @@ const ANALYTICS = [
   "demand_daily",
   "dispute_breakdowns",
   "data_limits",
+  "insights",
 ];
 const SYSTEMS = ["rules_fixed", "rules_tuned", "learned_ranker_calibrated", "learned_ranker_disposition"];
 
