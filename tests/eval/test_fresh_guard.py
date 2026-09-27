@@ -184,3 +184,12 @@ def test_partial_run_without_override_is_refused(stubbed):
 def test_unknown_configuration_is_rejected(stubbed):
     with pytest.raises(SystemExit):
         fresh_run.main(["--configs", "gpt"])
+
+
+def test_policy_files_read_by_the_fresh_builder_are_unchanged_since_the_freeze():
+    """The oracle of eval_fresh was built from these files; any byte change, comments included, breaks the freeze."""
+    root = Path(__file__).resolve().parents[2]
+    frozen = json.loads((root / "eval/fresh/manifest.json").read_text(encoding="utf-8"))["agent_code_read_by_the_builder"]
+    for rel, sha in frozen.items():
+        data = (root / rel).read_bytes().replace(b"\r\n", b"\n")
+        assert hashlib.sha256(data).hexdigest() == sha, f"{rel} changed after the eval_fresh freeze"
