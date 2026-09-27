@@ -1,6 +1,6 @@
 # Data engineering
 
-Bronze and silver layers for the LATAM Bank dataset, built against the organizer data dictionary and a labeled synthetic test fixture. The organizer data has not arrived yet (it may come as files or through an S3 connection), so everything here is source-agnostic and tested without it.
+Bronze, silver and gold layers for the LATAM Bank dataset, built against the organizer data dictionary, tested on a labeled synthetic test fixture and run on the organizer data (CSV files in an S3 bucket, under `data/`). The reader is source-agnostic: a local directory and an `s3://` prefix go through the same code.
 
 ## Run it
 
@@ -19,7 +19,7 @@ The real dataset is on Amazon S3 with read-only participant credentials. Copy `.
 make pipeline-s3   # uv run python -m data_engineering.pipelines.run --target data/warehouse_s3.duckdb
 ```
 
-Without `--source`, the pipeline reads `LATAM_BANK_S3_URI`. The real data gets its own warehouse file on purpose: a warehouse refuses to load a second source, because the file ledger keys files by path relative to the source root and a fixture file could otherwise shadow a real file with the same relative path.
+Without `--source`, the pipeline reads `LATAM_BANK_S3_URI`, which must end in the prefix that holds the tables (`s3://<bucket>/data`); pointed at the bucket root it would only find `marketing_campaigns.csv`. The real data gets its own warehouse file on purpose: a warehouse refuses to load a second source, because the file ledger keys files by path relative to the source root and a fixture file could otherwise shadow a real file with the same relative path.
 
 ## Layout
 
@@ -38,6 +38,8 @@ Without `--source`, the pipeline reads `LATAM_BANK_S3_URI`. The real data gets i
 | `pipelines/run.py` | CLI entry point |
 | `pipelines/gold.py` | Old placeholder, superseded by `gold/` |
 | `gold/` | Gold layer: contracts, SQL, incremental build, checks and CLI (see the gold section) |
+| `freshness/` | Freshness status against the policy, and the update test on organizer data (stage, compare, demo, report); see the freshness section |
+| `reports/` | Committed reports built from organizer data (aggregates only) |
 | `slice.py` | Copies chosen customers from a built warehouse into a small one with every lineage column, for the public demo bundle (see below) |
 
 ## Demo slice
@@ -128,10 +130,11 @@ The upsert only touches keys present in the batch: it deletes them from silver a
 
 ### Incremental loads, idempotency and late arrivals
 
-`control.file_ledger` records every file already loaded, and `control.watermarks` stores the high-water mark (max partition value) per table. A run reads only files that are not in the ledger. Two properties follow:
+`control.file_ledger` records every file version loaded, with its size and modification time (S3 `LastModified` for `s3://` sources), and `control.watermarks` stores the high-water mark (max partition value) per table. A run reads files that are not in the ledger and files whose size or modification time changed. Three properties follow:
 
 - A rerun on the same source reads nothing and changes nothing.
 - A file that lands late inside an old partition is still loaded. A pure date watermark would skip it; the report counts such rows as `late_partition_rows`.
+- A file rewritten under the same name is loaded again, and its old version is withdrawn (see the freshness section).
 
 Each table is processed in one transaction: bronze insert, quarantine, silver upsert, ledger and watermark commit together or not at all. A crash leaves the ledger untouched, and the next run reloads the files.
 
@@ -225,7 +228,7 @@ The first run's customer quarantine (149,995 orphans) was not a cascade from the
 
 ### Observations reported, not changed
 
-- **Row counts differ from the summary.** transactions 4,425,008 (summary 5,000,000); call_center_interactions 686,296 (800,000); satisfaction_surveys 212,759 (250,000); call_transcripts 171,321 (200,000); complaints 67,095 (80,000); daily_exchange_rates 13,164 (3,000). customers 150,000, products 400,000, branches 350, service_agents 1,200 and marketing_campaigns 200 match. `digital_events` and `campaign_sends` are not in the delivery.
+- **Row counts differ from the summary.** transactions 4,425,008 (summary 5,000,000); call_center_interactions 686,296 (800,000); satisfaction_surveys 212,759 (250,000); call_transcripts 171,321 (200,000); complaints 67,095 (80,000); daily_exchange_rates 13,164 (3,000). customers 150,000, products 400,000, branches 350, service_agents 1,200 and marketing_campaigns 200 match. `digital_events` and `campaign_sends` were not in the local mirror this first run read, but they are in the delivery: 1,097 daily files (3.76 GB) and 1,083 daily files (326 MB) under `data/` in the bucket. The mirror did not have them, so this first run never loaded them.
 - **No duplicates.** No delivered table has a repeated key. Detection ignores `process_date` and ingestion columns, so a re-delivered record would count. A direct check on bronze also finds no rows that repeat the same content under a different id (transactions by customer, product, timestamp, amount and type; complaints by customer, timestamp, category and description; interactions by customer, timestamp and reason; surveys by customer, timestamp and interaction). The "~2%" in the summary is not reproduced.
 - **Mexican accounts are in USD.** All 200,398 products and 2,216,431 transactions of Mexican customers are in USD; MXN never appears in products or transactions. Argentina uses ARS (792,585) and USD (87,420), Colombia COP (1,194,444) and USD (134,128). In total 2,437,979 transactions are in USD.
 - **Exchange rates cover every directed pair.** 12 pairs among MXN, COP, ARS and USD for each of 1,097 days (2023-06-17 to 2026-06-17) give the 13,164 rows. The pair names the direction, which resolves that question from the dictionary.
@@ -279,12 +282,49 @@ The agent tools in `agent/tools/repository.py` read `customer_profile`, `custome
 
 A new complaint changes the prior and next complaint features of the same customer's other complaints, so `complaint_facts` recomputes every complaint of a touched customer. `tests/gold/test_gold_incremental.py` loads the fixture in the same two waves as the silver test, builds gold after each, and requires the result to equal gold built once over a full load, row for row, apart from the run ids.
 
-**Freshness policy.** Gold runs after every silver load (`make pipeline` then `make gold`). The data is delivered as static files, so there is no schedule to meet; the serving tables are as fresh as the last silver load, and the policy tools compute transaction age at request time, which is why no age is stored.
+**Freshness policy.** Gold runs after every silver load (`make pipeline` then `make gold`), and the tool repository refuses to start when gold is older than silver. The policy tools compute transaction age at request time, which is why no age is stored. The full policy, including what happens after a rewritten file, is in the freshness section below.
 
 **Result on the organizer data.** First build 32 s on a laptop, rerun 3 s (every table skipped). Rows: 4,425,008 transactions, 150,000 customer profiles, 67,095 complaint facts, 154 complaint outcome rows, 98 interaction outcome rows, 32,053 hour cells and 111,771 day cells. Every check passes.
 
 **Findings the gold build surfaced.** `is_repeat_complainer` does not match the complaint history: of 10,086 flagged complaints, 333 have an earlier complaint within 90 days, while 2,315 complaints have one. `sla_breached` does not follow resolution time (median 15 days when breached, 16 when not). `resolution_days` exists only for Resolved and Closed complaints. The claimed-amount currency of a complaint does not follow the customer's country (Argentine customers file in MXN and COP), and MXN appears in complaints although no product or transaction is in MXN. These are reported in the analytics, not corrected.
 
+## Freshness and update policy
+
+```bash
+make freshness-status TARGET=data/warehouse_real.duckdb   # uv run python -m data_engineering.freshness.status --target ...
+make freshness-demo                                       # update test on organizer data, writes reports/freshness_backup_vs_current.md
+```
+
+**Cadence and staleness thresholds.** The contract's `partitioning` sets the expected cadence, and `freshness/status.py` (`MAX_LAG_DAYS`) holds the limits.
+
+| Cadence | Tables | Measured by | Stale when |
+|---|---|---|---|
+| Daily partitions | transactions, call_center_interactions, call_transcripts, complaints, satisfaction_surveys, daily_exchange_rates, digital_events, campaign_sends | newest `process_date` in silver (rate date for exchange rates) | more than 1 day behind the reference date. Partition D is expected by D+1, because event times reach at most one day past the partition date in the organizer data |
+| Monthly snapshot | customers, products, service_agents | modification time of the newest loaded file (snapshots carry no snapshot date) | more than 35 days behind |
+| Full snapshot | branches, marketing_campaigns | same | never: the dictionary gives no cadence, so the status is `no_policy` |
+
+The reference date is `--as-of` (today in UTC by default). For a daily table the status also gives the lag behind the dataset clock, the newest partition of any daily table in the warehouse, which is the useful number while the data is a static delivery: measured against the calendar, every daily table of the organizer data is months stale. `freshness-status` exits with code 1 when a table is stale or not loaded, or when gold is stale.
+
+**Gold.** Gold runs after every silver load. It is stale when its latest successful run is older than the latest successful silver run, or when a materialized table's recorded source marks no longer match silver. After a rewritten file, every gold table that reads the affected silver table is rebuilt in full instead of patched by key, because a rewrite can withdraw keys that the key queries cannot see.
+
+**Fail-closed serving.** The tool repository (`agent/tools/repository.py`, `check_gold_ready`) refuses to start when a gold serving table is missing or when the latest successful gold run is older than the latest successful silver run, so the agent never answers from gold that lags silver. The check runs when the repository opens the warehouse. The calendar thresholds above are reported, not enforced by the repository: with a static delivery they would keep the service down permanently. Transaction age is computed at request time by the policy tools.
+
+**Changed files.** The ledger compares each file's size and modification time with the version it loaded.
+
+| Situation | What the pipeline does |
+|---|---|
+| New file | Loaded |
+| Same size and time | Not read |
+| Size or time changed | The old version's rows leave bronze, silver and quarantine; the new version is loaded; keys whose silver row came from the old version and that still have a version in another file compete again (replayed from bronze, not re-quarantined); the old ledger row is kept with `superseded_by_run` |
+| Ledger row from before fingerprints existed | Treated as unchanged, so an upgrade does not reload the whole warehouse |
+| File no longer in the source | Counted as `missing_from_source`; its rows are kept. A listing that comes back short should not empty a table |
+
+The rewrite path is tested on the fixture in `tests/test_freshness.py`: seed 42 followed by seed 43 converges to a single load of seed 43 (bronze, silver, gold, quarantine and ledger); a rewritten partition that changes one row and withdraws another matches a single load of the final files; a withdrawn winner brings back its older version from another file; gold rebuilds in full and matches a single load.
+
+**Update test on organizer data.** The bucket holds the current delivery under `data/` and an earlier generation of the dataset under `data_backup_20260831/`. `make freshness-demo` loads the earlier generation, overwrites the landing directory with the current one and loads again into the same warehouse, then compares it with a warehouse built in one load. The earlier generation is not an incremental predecessor: 2,650 of the 2,653 paths the two states share hold different bytes and most keys were regenerated, so the run exercises the rewrite path at full volume (2,653 files rewritten, 2,838 new, 1,839,229 transaction rows and 581,513 quarantined interaction rows withdrawn) rather than a daily increment. The updated warehouse matched the single load in all 31 compared objects, every gold table that reads a rewritten table was rebuilt in full, and a rerun read nothing. Replay was not exercised there (every file of a table was rewritten); the fixture tests cover it. Full numbers and what the run does not prove: `reports/freshness_backup_vs_current.md`.
+
+One conservative effect showed up in that run: a silver run that loads nothing still counts as a newer silver run, so the repository refuses to start until gold runs again. Gold then skips every table in a few seconds.
+
 ## Capacity limits and route to production
 
-DuckDB runs on one machine. The organizer dataset (about 19 million rows, the largest table at 10 million) fits comfortably; the fixture run takes a few seconds. Past what one machine's disk and memory hold, the same SQL can run on Databricks or Snowflake with the ledger and watermark tables kept as they are. Other known limits: files are assumed immutable once landed (a file rewritten under the same name is not reloaded); rows quarantined as orphans are not replayed automatically when their parent arrives later; deletions in snapshot tables are not propagated; and VARCHAR lengths are not enforced.
+DuckDB runs on one machine. The organizer dataset (about 19 million rows, the largest table at 10 million) fits comfortably; the fixture run takes a few seconds. Past what one machine's disk and memory hold, the same SQL can run on Databricks or Snowflake with the ledger and watermark tables kept as they are. Other known limits: a rewrite is detected by size and modification time, not by content, so a file re-uploaded with identical bytes is reloaded (the result does not change, the run just costs more); a file that disappears from the source is counted as `missing_from_source` but its rows are kept; rows quarantined as orphans are not replayed automatically when their parent arrives later; deletions in snapshot tables are not propagated; and VARCHAR lengths are not enforced.
