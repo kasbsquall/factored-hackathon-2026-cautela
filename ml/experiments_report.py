@@ -30,7 +30,8 @@ OUT_MD = REPORTS_DIR / "experiments.md"
 IMPORTED = "cautela.imported_from"
 KEPT_TAGS = ("mlflow.source.git.commit", "mlflow.source.git.branch")
 TRAIN_REPORTS = ("fitted.json", "previous/fitted.json")
-EVAL_REPORTS = ("results.json", "results_fresh.json", "previous/results.json")
+EVAL_REPORTS = ("results.json", "results_fresh.json", "previous/results.json", "baselines_val.json",
+                "baselines_test.json")
 IMPORTABLE = ("results_llm.json", "probe/*.json")
 EVAL_KEYS = ("n_cases", "correct_decision_rate.value", "unsafe.count", "top1_accuracy.value", "mrr.value",
              "safe_automated_resolution_rate.value")

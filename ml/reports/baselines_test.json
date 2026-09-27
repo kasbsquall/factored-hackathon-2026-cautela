@@ -1,0 +1,931 @@
+{
+  "generated_by": "ml/evaluate_baselines.py",
+  "data_version": "0189e386ce7fe882",
+  "split": "test",
+  "note": "val was used to fit and choose the learned systems and test for error analysis; neither is a fresh estimate. Nothing was fitted or tuned by this script.",
+  "systems": {
+    "rules_tuned": {
+      "ranker": "rules_v1",
+      "decider": "calibrated_thresholds",
+      "decider_params": {
+        "calibrator": {
+          "coef": [
+            2.855,
+            8.9381,
+            0.6134
+          ],
+          "intercept": -5.8761,
+          "features": [
+            "top_score",
+            "margin",
+            "log_pool_size"
+          ]
+        },
+        "policy": {
+          "t_act": 0.635,
+          "t_abstain": 0.2857,
+          "k": 3,
+          "max_unsafe_rate": 0.01,
+          "fitted_on": "val",
+          "act_floor": 0.6
+        },
+        "abstain_score": "1 - top_score"
+      },
+      "summary": {
+        "n_cases": 1107,
+        "n_by_label": {
+          "ambiguous": 205,
+          "match": 678,
+          "no_match": 224
+        },
+        "n_groups": 900,
+        "top1_accuracy": {
+          "value": 0.9912,
+          "ci95": [
+            0.9829,
+            0.9971
+          ]
+        },
+        "top3_recall": {
+          "value": 1.0,
+          "ci95": [
+            1.0,
+            1.0
+          ]
+        },
+        "top3_recall_pool_ge4": {
+          "value": 1.0,
+          "ci95": [
+            1.0,
+            1.0
+          ]
+        },
+        "mrr": {
+          "value": 0.9956,
+          "ci95": [
+            0.9914,
+            0.9986
+          ]
+        },
+        "ece": {
+          "value": 0.028,
+          "ci95": [
+            0.0227,
+            0.0515
+          ]
+        },
+        "correct_decision_rate": {
+          "value": 0.8681,
+          "ci95": [
+            0.8457,
+            0.8905
+          ]
+        },
+        "unsafe_rate": {
+          "value": 0.019,
+          "ci95": [
+            0.0108,
+            0.0282
+          ]
+        },
+        "safe_automated_resolution_rate": {
+          "value": 0.5032,
+          "ci95": [
+            0.4726,
+            0.5348
+          ]
+        },
+        "decisions": {
+          "abstain": 293,
+          "act": 578,
+          "clarify": 236
+        },
+        "automation_attempted_share": 0.5221,
+        "unsafe": {
+          "count": 21,
+          "denominator": 1107,
+          "acted_denominator": 578
+        },
+        "per_label": {
+          "ambiguous": {
+            "n": 205,
+            "decisions": {
+              "abstain": 2,
+              "act": 11,
+              "clarify": 192
+            },
+            "outcomes": {
+              "correct": 191,
+              "safe_other": 3,
+              "unsafe": 11
+            }
+          },
+          "match": {
+            "n": 678,
+            "decisions": {
+              "abstain": 78,
+              "act": 557,
+              "clarify": 43
+            },
+            "outcomes": {
+              "correct": 557,
+              "safe_other": 121
+            }
+          },
+          "no_match": {
+            "n": 224,
+            "decisions": {
+              "abstain": 213,
+              "act": 10,
+              "clarify": 1
+            },
+            "outcomes": {
+              "correct": 213,
+              "safe_other": 1,
+              "unsafe": 10
+            }
+          }
+        },
+        "clarify_correct_on_ambiguous": {
+          "count": 191,
+          "denominator": 205
+        },
+        "abstain_correct_on_no_match": {
+          "count": 213,
+          "denominator": 224
+        },
+        "asked_on_no_match": {
+          "count": 1,
+          "denominator": 224
+        },
+        "containment_rate": 0.7353,
+        "missed_transfers": {
+          "count": 11,
+          "denominator": 224
+        },
+        "unnecessary_transfers": {
+          "count": 80,
+          "denominator": 883
+        },
+        "recall_error_match": {
+          "n": 112,
+          "top1_accuracy": 1.0,
+          "acted_correctly": 31
+        },
+        "latency_ms": {
+          "p50": 3.25,
+          "p95": 8.415
+        },
+        "safe_automated_resolution_ceiling": {
+          "count": 678,
+          "denominator": 1107,
+          "note": "only a correct act on a match case counts"
+        }
+      }
+    },
+    "label_rule": {
+      "ranker": "rules_v1",
+      "decider": "label_rule_on_parsed_cues",
+      "decider_params": {
+        "rule": "ml/scenarios/hints.py label rule on parsed cues",
+        "k": 3,
+        "near_min_cues": 3,
+        "fitted": false
+      },
+      "summary": {
+        "n_cases": 1107,
+        "n_by_label": {
+          "ambiguous": 205,
+          "match": 678,
+          "no_match": 224
+        },
+        "n_groups": 900,
+        "top1_accuracy": {
+          "value": 0.9912,
+          "ci95": [
+            0.9829,
+            0.9971
+          ]
+        },
+        "top3_recall": {
+          "value": 1.0,
+          "ci95": [
+            1.0,
+            1.0
+          ]
+        },
+        "top3_recall_pool_ge4": {
+          "value": 1.0,
+          "ci95": [
+            1.0,
+            1.0
+          ]
+        },
+        "mrr": {
+          "value": 0.9956,
+          "ci95": [
+            0.9914,
+            0.9986
+          ]
+        },
+        "ece": {
+          "value": 0.0289,
+          "ci95": [
+            0.018,
+            0.0415
+          ]
+        },
+        "correct_decision_rate": {
+          "value": 0.963,
+          "ci95": [
+            0.9494,
+            0.975
+          ]
+        },
+        "unsafe_rate": {
+          "value": 0.009,
+          "ci95": [
+            0.0036,
+            0.0147
+          ]
+        },
+        "safe_automated_resolution_rate": {
+          "value": 0.589,
+          "ci95": [
+            0.5577,
+            0.6232
+          ]
+        },
+        "decisions": {
+          "abstain": 236,
+          "act": 662,
+          "clarify": 209
+        },
+        "automation_attempted_share": 0.598,
+        "unsafe": {
+          "count": 10,
+          "denominator": 1107,
+          "acted_denominator": 662
+        },
+        "per_label": {
+          "ambiguous": {
+            "n": 205,
+            "decisions": {
+              "abstain": 3,
+              "act": 2,
+              "clarify": 200
+            },
+            "outcomes": {
+              "correct": 199,
+              "safe_other": 4,
+              "unsafe": 2
+            }
+          },
+          "match": {
+            "n": 678,
+            "decisions": {
+              "abstain": 18,
+              "act": 652,
+              "clarify": 8
+            },
+            "outcomes": {
+              "correct": 652,
+              "safe_other": 26
+            }
+          },
+          "no_match": {
+            "n": 224,
+            "decisions": {
+              "abstain": 215,
+              "act": 8,
+              "clarify": 1
+            },
+            "outcomes": {
+              "correct": 215,
+              "safe_other": 1,
+              "unsafe": 8
+            }
+          }
+        },
+        "clarify_correct_on_ambiguous": {
+          "count": 199,
+          "denominator": 205
+        },
+        "abstain_correct_on_no_match": {
+          "count": 215,
+          "denominator": 224
+        },
+        "asked_on_no_match": {
+          "count": 1,
+          "denominator": 224
+        },
+        "containment_rate": 0.7868,
+        "missed_transfers": {
+          "count": 9,
+          "denominator": 224
+        },
+        "unnecessary_transfers": {
+          "count": 21,
+          "denominator": 883
+        },
+        "recall_error_match": {
+          "n": 112,
+          "top1_accuracy": 1.0,
+          "acted_correctly": 99
+        },
+        "latency_ms": {
+          "p50": 0.908,
+          "p95": 1.744
+        },
+        "safe_automated_resolution_ceiling": {
+          "count": 678,
+          "denominator": 1107,
+          "note": "only a correct act on a match case counts"
+        }
+      }
+    },
+    "learned_ranker_disposition": {
+      "ranker": "learned_hgb_d6_lr0.1",
+      "decider": "disposition_multinomial_logreg_C1",
+      "decider_params": {
+        "model": "multinomial_logreg_C1",
+        "features": [
+          "s1",
+          "s2",
+          "s3",
+          "margin",
+          "n_ge_050",
+          "n_ge_020",
+          "pool_size",
+          "amt_cue",
+          "date_cue",
+          "merch_cue",
+          "type_cue",
+          "chan_cue",
+          "n_cues",
+          "n_full",
+          "n_near",
+          "top1_full"
+        ],
+        "policy": {
+          "t_act": 0.79,
+          "t_abstain": 0.0464,
+          "k": 3,
+          "max_unsafe_rate": 0.01,
+          "fitted_on": "val",
+          "act_floor": 0.6
+        },
+        "act_score": "P(match)",
+        "abstain_score": "P(no_match)"
+      },
+      "summary": {
+        "n_cases": 1107,
+        "n_by_label": {
+          "ambiguous": 205,
+          "match": 678,
+          "no_match": 224
+        },
+        "n_groups": 900,
+        "top1_accuracy": {
+          "value": 0.9985,
+          "ci95": [
+            0.9953,
+            1.0
+          ]
+        },
+        "top3_recall": {
+          "value": 1.0,
+          "ci95": [
+            1.0,
+            1.0
+          ]
+        },
+        "top3_recall_pool_ge4": {
+          "value": 1.0,
+          "ci95": [
+            1.0,
+            1.0
+          ]
+        },
+        "mrr": {
+          "value": 0.9993,
+          "ci95": [
+            0.9977,
+            1.0
+          ]
+        },
+        "ece": {
+          "value": 0.0251,
+          "ci95": [
+            0.0159,
+            0.0377
+          ]
+        },
+        "correct_decision_rate": {
+          "value": 0.9386,
+          "ci95": [
+            0.9205,
+            0.9545
+          ]
+        },
+        "unsafe_rate": {
+          "value": 0.0027,
+          "ci95": [
+            0.0,
+            0.0063
+          ]
+        },
+        "safe_automated_resolution_rate": {
+          "value": 0.5691,
+          "ci95": [
+            0.5378,
+            0.6024
+          ]
+        },
+        "decisions": {
+          "abstain": 270,
+          "act": 633,
+          "clarify": 204
+        },
+        "automation_attempted_share": 0.5718,
+        "unsafe": {
+          "count": 3,
+          "denominator": 1107,
+          "acted_denominator": 633
+        },
+        "per_label": {
+          "ambiguous": {
+            "n": 205,
+            "decisions": {
+              "abstain": 16,
+              "act": 1,
+              "clarify": 188
+            },
+            "outcomes": {
+              "correct": 188,
+              "safe_other": 16,
+              "unsafe": 1
+            }
+          },
+          "match": {
+            "n": 678,
+            "decisions": {
+              "abstain": 33,
+              "act": 630,
+              "clarify": 15
+            },
+            "outcomes": {
+              "correct": 630,
+              "safe_other": 48
+            }
+          },
+          "no_match": {
+            "n": 224,
+            "decisions": {
+              "abstain": 221,
+              "act": 2,
+              "clarify": 1
+            },
+            "outcomes": {
+              "correct": 221,
+              "safe_other": 1,
+              "unsafe": 2
+            }
+          }
+        },
+        "clarify_correct_on_ambiguous": {
+          "count": 188,
+          "denominator": 205
+        },
+        "abstain_correct_on_no_match": {
+          "count": 221,
+          "denominator": 224
+        },
+        "asked_on_no_match": {
+          "count": 1,
+          "denominator": 224
+        },
+        "containment_rate": 0.7561,
+        "missed_transfers": {
+          "count": 3,
+          "denominator": 224
+        },
+        "unnecessary_transfers": {
+          "count": 49,
+          "denominator": 883
+        },
+        "recall_error_match": {
+          "n": 112,
+          "top1_accuracy": 1.0,
+          "acted_correctly": 88
+        },
+        "latency_ms": {
+          "p50": 4.571,
+          "p95": 6.303
+        },
+        "safe_automated_resolution_ceiling": {
+          "count": 678,
+          "denominator": 1107,
+          "note": "only a correct act on a match case counts"
+        }
+      }
+    },
+    "learned_deployed": {
+      "ranker": "learned_hgb_d6_lr0.1",
+      "decider": "disposition_multinomial_logreg_C1+deployed_abstain_rule",
+      "decider_params": {
+        "model": "multinomial_logreg_C1",
+        "features": [
+          "s1",
+          "s2",
+          "s3",
+          "margin",
+          "n_ge_050",
+          "n_ge_020",
+          "pool_size",
+          "amt_cue",
+          "date_cue",
+          "merch_cue",
+          "type_cue",
+          "chan_cue",
+          "n_cues",
+          "n_full",
+          "n_near",
+          "top1_full"
+        ],
+        "policy": {
+          "t_act": 0.79,
+          "t_abstain": 0.0464,
+          "k": 3,
+          "max_unsafe_rate": 0.01,
+          "fitted_on": "val",
+          "act_floor": 0.6
+        },
+        "act_score": "P(match)",
+        "abstain_score": "P(no_match)",
+        "abstain_rule": "abstain only when P(no_match) >= t_abstain and no_match is the most likely class; otherwise clarify with the top k"
+      },
+      "summary": {
+        "n_cases": 1107,
+        "n_by_label": {
+          "ambiguous": 205,
+          "match": 678,
+          "no_match": 224
+        },
+        "n_groups": 900,
+        "top1_accuracy": {
+          "value": 0.9985,
+          "ci95": [
+            0.9953,
+            1.0
+          ]
+        },
+        "top3_recall": {
+          "value": 1.0,
+          "ci95": [
+            1.0,
+            1.0
+          ]
+        },
+        "top3_recall_pool_ge4": {
+          "value": 1.0,
+          "ci95": [
+            1.0,
+            1.0
+          ]
+        },
+        "mrr": {
+          "value": 0.9993,
+          "ci95": [
+            0.9977,
+            1.0
+          ]
+        },
+        "ece": {
+          "value": 0.0251,
+          "ci95": [
+            0.0159,
+            0.0377
+          ]
+        },
+        "correct_decision_rate": {
+          "value": 0.9494,
+          "ci95": [
+            0.9334,
+            0.963
+          ]
+        },
+        "unsafe_rate": {
+          "value": 0.0027,
+          "ci95": [
+            0.0,
+            0.0063
+          ]
+        },
+        "safe_automated_resolution_rate": {
+          "value": 0.5691,
+          "ci95": [
+            0.5378,
+            0.6024
+          ]
+        },
+        "decisions": {
+          "abstain": 234,
+          "act": 633,
+          "clarify": 240
+        },
+        "automation_attempted_share": 0.5718,
+        "unsafe": {
+          "count": 3,
+          "denominator": 1107,
+          "acted_denominator": 633
+        },
+        "per_label": {
+          "ambiguous": {
+            "n": 205,
+            "decisions": {
+              "act": 1,
+              "clarify": 204
+            },
+            "outcomes": {
+              "correct": 204,
+              "unsafe": 1
+            }
+          },
+          "match": {
+            "n": 678,
+            "decisions": {
+              "abstain": 17,
+              "act": 630,
+              "clarify": 31
+            },
+            "outcomes": {
+              "correct": 630,
+              "safe_other": 48
+            }
+          },
+          "no_match": {
+            "n": 224,
+            "decisions": {
+              "abstain": 217,
+              "act": 2,
+              "clarify": 5
+            },
+            "outcomes": {
+              "correct": 217,
+              "safe_other": 5,
+              "unsafe": 2
+            }
+          }
+        },
+        "clarify_correct_on_ambiguous": {
+          "count": 204,
+          "denominator": 205
+        },
+        "abstain_correct_on_no_match": {
+          "count": 217,
+          "denominator": 224
+        },
+        "asked_on_no_match": {
+          "count": 5,
+          "denominator": 224
+        },
+        "containment_rate": 0.7886,
+        "missed_transfers": {
+          "count": 7,
+          "denominator": 224
+        },
+        "unnecessary_transfers": {
+          "count": 17,
+          "denominator": 883
+        },
+        "recall_error_match": {
+          "n": 112,
+          "top1_accuracy": 1.0,
+          "acted_correctly": 88
+        },
+        "latency_ms": {
+          "p50": 6.318,
+          "p95": 9.241
+        },
+        "safe_automated_resolution_ceiling": {
+          "count": 678,
+          "denominator": 1107,
+          "note": "only a correct act on a match case counts"
+        }
+      }
+    }
+  },
+  "paired_differences": {
+    "learned_ranker_disposition_minus_label_rule": {
+      "correct_decision_rate": {
+        "diff": -0.0244,
+        "ci95": [
+          -0.0387,
+          -0.0108
+        ],
+        "n_cases": 1107
+      },
+      "unsafe_rate": {
+        "diff": -0.0063,
+        "ci95": [
+          -0.011,
+          -0.0019
+        ],
+        "n_cases": 1107
+      },
+      "safe_automated_resolution_rate": {
+        "diff": -0.0199,
+        "ci95": [
+          -0.0312,
+          -0.0091
+        ],
+        "n_cases": 1107
+      }
+    },
+    "learned_deployed_minus_label_rule": {
+      "correct_decision_rate": {
+        "diff": -0.0136,
+        "ci95": [
+          -0.027,
+          -0.0009
+        ],
+        "n_cases": 1107
+      },
+      "unsafe_rate": {
+        "diff": -0.0063,
+        "ci95": [
+          -0.011,
+          -0.0019
+        ],
+        "n_cases": 1107
+      },
+      "safe_automated_resolution_rate": {
+        "diff": -0.0199,
+        "ci95": [
+          -0.0312,
+          -0.0091
+        ],
+        "n_cases": 1107
+      }
+    },
+    "learned_deployed_minus_learned_ranker_disposition": {
+      "correct_decision_rate": {
+        "diff": 0.0108,
+        "ci95": [
+          0.0019,
+          0.0206
+        ],
+        "n_cases": 1107
+      },
+      "unsafe_rate": {
+        "diff": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n_cases": 1107
+      },
+      "safe_automated_resolution_rate": {
+        "diff": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n_cases": 1107
+      }
+    },
+    "label_rule_minus_rules_tuned": {
+      "correct_decision_rate": {
+        "diff": 0.0949,
+        "ci95": [
+          0.0741,
+          0.1169
+        ],
+        "n_cases": 1107
+      },
+      "unsafe_rate": {
+        "diff": -0.0099,
+        "ci95": [
+          -0.0192,
+          -0.0018
+        ],
+        "n_cases": 1107
+      },
+      "safe_automated_resolution_rate": {
+        "diff": 0.0858,
+        "ci95": [
+          0.0673,
+          0.1049
+        ],
+        "n_cases": 1107
+      }
+    }
+  },
+  "agreement": {
+    "label_rule_vs_learned_ranker_disposition": {
+      "same_decision_kind": {
+        "count": 1058,
+        "denominator": 1107
+      },
+      "same_decision_and_charges": {
+        "count": 891,
+        "denominator": 1107
+      },
+      "same_kind_other_charges": {
+        "correct -> correct": 157,
+        "safe_other -> safe_other": 9,
+        "safe_other -> correct": 1
+      },
+      "decision_changes": {
+        "act -> abstain": 25,
+        "clarify -> abstain": 13,
+        "act -> clarify": 7,
+        "abstain -> act": 3,
+        "abstain -> clarify": 1
+      },
+      "outcome_changes": {
+        "correct -> safe_other": 38,
+        "unsafe -> correct": 7,
+        "safe_other -> correct": 3,
+        "safe_other -> safe_other": 1
+      }
+    },
+    "label_rule_vs_learned_deployed": {
+      "same_decision_kind": {
+        "count": 1060,
+        "denominator": 1107
+      },
+      "same_decision_and_charges": {
+        "count": 883,
+        "denominator": 1107
+      },
+      "same_kind_other_charges": {
+        "correct -> correct": 167,
+        "safe_other -> safe_other": 9,
+        "safe_other -> correct": 1
+      },
+      "decision_changes": {
+        "act -> clarify": 19,
+        "act -> abstain": 13,
+        "abstain -> clarify": 12,
+        "abstain -> act": 3
+      },
+      "outcome_changes": {
+        "correct -> safe_other": 28,
+        "safe_other -> safe_other": 6,
+        "unsafe -> correct": 6,
+        "safe_other -> correct": 6,
+        "unsafe -> safe_other": 1
+      }
+    },
+    "learned_ranker_disposition_vs_learned_deployed": {
+      "same_decision_kind": {
+        "count": 1071,
+        "denominator": 1107
+      },
+      "same_decision_and_charges": {
+        "count": 1071,
+        "denominator": 1107
+      },
+      "same_kind_other_charges": {},
+      "decision_changes": {
+        "abstain -> clarify": 36
+      },
+      "outcome_changes": {
+        "safe_other -> safe_other": 16,
+        "safe_other -> correct": 16,
+        "correct -> safe_other": 4
+      }
+    },
+    "rules_tuned_vs_label_rule": {
+      "same_decision_kind": {
+        "count": 986,
+        "denominator": 1107
+      },
+      "same_decision_and_charges": {
+        "count": 837,
+        "denominator": 1107
+      },
+      "same_kind_other_charges": {
+        "correct -> correct": 141,
+        "safe_other -> safe_other": 8
+      },
+      "decision_changes": {
+        "abstain -> act": 66,
+        "clarify -> act": 34,
+        "act -> clarify": 10,
+        "act -> abstain": 6,
+        "clarify -> abstain": 4,
+        "abstain -> clarify": 1
+      },
+      "outcome_changes": {
+        "safe_other -> correct": 96,
+        "unsafe -> correct": 16,
+        "correct -> unsafe": 5,
+        "safe_other -> safe_other": 2,
+        "correct -> safe_other": 2
+      }
+    }
+  }
+}

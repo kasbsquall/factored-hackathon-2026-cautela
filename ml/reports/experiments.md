@@ -14,16 +14,17 @@ logged latency also matches is the run that wrote the file; the others are ident
 ## What the local store holds
 
 * Experiment `Default`: 0 runs.
-* Experiment `cautela-which-charge`: 54 runs.
+* Experiment `cautela-which-charge`: 62 runs.
 
 | kind | runs | data versions | first | last |
 |---|---|---|---|---|
-| evaluate on test | 38 | `0189e386ce7fe882`, `7d4d22c3837a267c` | 2026-09-25 22:53 | 2026-09-26 00:11 |
+| evaluate on test | 42 | `0189e386ce7fe882`, `7d4d22c3837a267c` | 2026-09-25 22:53 | 2026-09-27 01:51 |
 | evaluate on test_fresh | 4 | `0189e386ce7fe882` | 2026-09-26 03:53 | 2026-09-26 03:53 |
+| evaluate on val | 4 | `0189e386ce7fe882` | 2026-09-27 01:50 | 2026-09-27 01:50 |
 | imported from committed JSON | 4 | `0189e386ce7fe882`, `none` | 2026-09-27 00:48 | 2026-09-27 00:48 |
 | train | 8 | `0189e386ce7fe882`, `7d4d22c3837a267c`, `bd9519f007c6ac18` | 2026-09-25 22:48 | 2026-09-26 07:50 |
 
-54 runs from 8 git commits. 27 of them hold numbers that a committed report file contains. No committed file holds the numbers of the other 27; the appendix lists them, with their data version and git commit, as "not in a committed report".
+62 runs from 9 git commits. 35 of them hold numbers that a committed report file contains. No committed file holds the numbers of the other 27; the appendix lists them, with their data version and git commit, as "not in a committed report".
 
 ## Training runs
 
@@ -39,9 +40,9 @@ logged latency also matches is the run that wrote the file; the others are ident
 | system | run | ranker | decider and thresholds | correct decisions | unsafe (of all; acted) | safe automated resolution | top-1 on match | act / clarify / abstain |
 |---|---|---|---|---|---|---|---|---|
 | `rules_fixed` | `293fb661` 2026-09-26 00:11 @6f3c4e1<br>identical re-run: `3d623b13` | `rules_v1` | `fixed_top0.60_margin0.15`: top >= 0.6, margin >= 0.15 (fixed, never fitted) | 71.9% [68.9, 74.9] of 1107 | 45 of 1107; 665 acted | 56.0% of 1107 | 99.1% of 678 | 665 / 442 / 0 |
-| `rules_tuned` | `c4d5ff55` 2026-09-26 00:11 @6f3c4e1<br>identical re-run: `7c65f8cc` | `rules_v1` | `calibrated_thresholds`: t_act 0.635, t_abstain 0.2857, act floor 0.6, k 3, max unsafe 0.01 on val | 86.8% [84.6, 89.0] of 1107 | 21 of 1107; 578 acted | 50.3% of 1107 | 99.1% of 678 | 578 / 236 / 293 |
+| `rules_tuned` | `c4d5ff55` 2026-09-26 00:11 @6f3c4e1<br>identical re-run: `7c65f8cc`, `8c5a0c0e` | `rules_v1` | `calibrated_thresholds`: t_act 0.635, t_abstain 0.2857, act floor 0.6, k 3, max unsafe 0.01 on val | 86.8% [84.6, 89.0] of 1107 | 21 of 1107; 578 acted | 50.3% of 1107 | 99.1% of 678 | 578 / 236 / 293 |
 | `learned_ranker_calibrated` | `00f0b4cf` 2026-09-26 00:11 @6f3c4e1<br>identical re-run: `1b03f4da` | `learned_hgb_d6_lr0.1` | `calibrated_thresholds`: t_act 0.91, t_abstain 0.0147, act floor 0.6, k 3, max unsafe 0.01 on val | 79.4% [76.7, 81.9] of 1107 | 20 of 1107; 569 acted | 49.6% of 1107 | 99.9% of 678 | 569 / 148 / 390 |
-| `learned_ranker_disposition` | `3906e95f` 2026-09-26 00:11 @6f3c4e1<br>identical re-run: `f6f3cdf9` | `learned_hgb_d6_lr0.1` | `disposition_multinomial_logreg_C1`: t_act 0.79, t_abstain 0.0464, act floor 0.6, k 3, max unsafe 0.01 on val | 93.9% [92.0, 95.5] of 1107 | 3 of 1107; 633 acted | 56.9% of 1107 | 99.9% of 678 | 633 / 204 / 270 |
+| `learned_ranker_disposition` | `3906e95f` 2026-09-26 00:11 @6f3c4e1<br>identical re-run: `f6f3cdf9`, `8d2a33b9` | `learned_hgb_d6_lr0.1` | `disposition_multinomial_logreg_C1`: t_act 0.79, t_abstain 0.0464, act floor 0.6, k 3, max unsafe 0.01 on val | 93.9% [92.0, 95.5] of 1107 | 3 of 1107; 633 acted | 56.9% of 1107 | 99.9% of 678 | 633 / 204 / 270 |
 
 `results_fresh.json`: split `test_fresh`, 1240 cases, data version `0189e386ce7fe882`, fresh version `8c86c3495632906f`, written by `ml/evaluate.py`.
 
@@ -60,6 +61,24 @@ logged latency also matches is the run that wrote the file; the others are ident
 | `rules_tuned` | `94fe5c86` 2026-09-25 23:17 @8fbdee7<br>identical re-run: `690ab681` | `rules_v1` | `calibrated_thresholds`: t_act 0.61, t_abstain 0.2857, act floor none, k 3, max unsafe 0.01 on val | 82.2% [79.7, 84.7] of 1107 | 24 of 1107; 548 acted | 47.3% of 1107 | 98.7% of 678 | 548 / 234 / 325 |
 | `learned_ranker_calibrated` | `5a4ed004` 2026-09-25 23:17 @8fbdee7<br>identical re-run: `fe16a6eb` | `learned_hgb_d6_lr0.1` | `calibrated_thresholds`: t_act 0.915, t_abstain 0.8607, act floor none, k 3, max unsafe 0.01 on val | 75.0% [71.9, 77.8] of 1107 | 9 of 1107; 449 acted | 39.8% of 1107 | 99.0% of 678 | 449 / 400 / 258 |
 | `learned_ranker_disposition` | `d7d46370` 2026-09-25 23:17 @8fbdee7<br>identical re-run: `9d3e42f0` | `learned_hgb_d6_lr0.1` | `disposition_hgb_d3`: t_act 0.28, t_abstain 0.772, act floor none, k 3, max unsafe 0.01 on val | 92.2% [90.4, 93.9] of 1107 | 17 of 1107; 644 acted | 56.6% of 1107 | 99.0% of 678 | 644 / 224 / 239 |
+
+`baselines_val.json`: split `val`, 754 cases, data version `0189e386ce7fe882`, written by `ml/evaluate_baselines.py`.
+
+| system | run | ranker | decider and thresholds | correct decisions | unsafe (of all; acted) | safe automated resolution | top-1 on match | act / clarify / abstain |
+|---|---|---|---|---|---|---|---|---|
+| `rules_tuned` | `41d52623` 2026-09-27 01:50 @916d4ae | `rules_v1` | `calibrated_thresholds`: t_act 0.635, t_abstain 0.2857, act floor 0.6, k 3, max unsafe 0.01 on val | 91.0% [88.7, 93.2] of 754 | 6 of 754; 392 acted | 51.2% of 754 | 100.0% of 446 | 392 / 164 / 198 |
+| `label_rule` | `e5b219aa` 2026-09-27 01:50 @916d4ae | `rules_v1` | `label_rule_on_parsed_cues`: ml/scenarios/hints.py label rule on parsed cues, nothing fitted | 98.7% [97.7, 99.5] of 754 | 4 of 754; 448 acted | 58.9% of 754 | 100.0% of 446 | 448 / 148 / 158 |
+| `learned_ranker_disposition` | `2a919226` 2026-09-27 01:50 @916d4ae | `learned_hgb_d6_lr0.1` | `disposition_multinomial_logreg_C1`: t_act 0.79, t_abstain 0.0464, act floor 0.6, k 3, max unsafe 0.01 on val | 98.0% [96.8, 99.1] of 754 | 0 of 754; 436 acted | 57.8% of 754 | 100.0% of 446 | 436 / 152 / 166 |
+| `learned_deployed` | `71f7dca2` 2026-09-27 01:50 @916d4ae | `learned_hgb_d6_lr0.1` | `disposition_multinomial_logreg_C1+deployed_abstain_rule`: t_act 0.79, t_abstain 0.0464, act floor 0.6, k 3, max unsafe 0.01 on val | 98.4% [97.3, 99.3] of 754 | 0 of 754; 436 acted | 57.8% of 754 | 100.0% of 446 | 436 / 162 / 156 |
+
+`baselines_test.json`: split `test`, 1107 cases, data version `0189e386ce7fe882`, written by `ml/evaluate_baselines.py`.
+
+| system | run | ranker | decider and thresholds | correct decisions | unsafe (of all; acted) | safe automated resolution | top-1 on match | act / clarify / abstain |
+|---|---|---|---|---|---|---|---|---|
+| `rules_tuned` | `8c5a0c0e` 2026-09-27 01:51 @916d4ae<br>identical re-run: `7c65f8cc`, `c4d5ff55` | `rules_v1` | `calibrated_thresholds`: t_act 0.635, t_abstain 0.2857, act floor 0.6, k 3, max unsafe 0.01 on val | 86.8% [84.6, 89.0] of 1107 | 21 of 1107; 578 acted | 50.3% of 1107 | 99.1% of 678 | 578 / 236 / 293 |
+| `label_rule` | `158e9c18` 2026-09-27 01:51 @916d4ae | `rules_v1` | `label_rule_on_parsed_cues`: ml/scenarios/hints.py label rule on parsed cues, nothing fitted | 96.3% [94.9, 97.5] of 1107 | 10 of 1107; 662 acted | 58.9% of 1107 | 99.1% of 678 | 662 / 209 / 236 |
+| `learned_ranker_disposition` | `8d2a33b9` 2026-09-27 01:51 @916d4ae<br>identical re-run: `f6f3cdf9`, `3906e95f` | `learned_hgb_d6_lr0.1` | `disposition_multinomial_logreg_C1`: t_act 0.79, t_abstain 0.0464, act floor 0.6, k 3, max unsafe 0.01 on val | 93.9% [92.0, 95.5] of 1107 | 3 of 1107; 633 acted | 56.9% of 1107 | 99.9% of 678 | 633 / 204 / 270 |
+| `learned_deployed` | `40e69e55` 2026-09-27 01:51 @916d4ae | `learned_hgb_d6_lr0.1` | `disposition_multinomial_logreg_C1+deployed_abstain_rule`: t_act 0.79, t_abstain 0.0464, act floor 0.6, k 3, max unsafe 0.01 on val | 94.9% [93.3, 96.3] of 1107 | 3 of 1107; 633 acted | 56.9% of 1107 | 99.9% of 678 | 633 / 240 / 234 |
 
 ## LLM ranker rung (`results_llm.json`)
 
@@ -112,6 +131,20 @@ Paired against `rules_tuned` on the same 1240 test_fresh cases (`results_fresh.j
 * `previous/fitted.json`: val log loss `multinomial_logreg_C1` 0.0777, `hgb_d3` 0.0757; `hgb_d3` is lower than the next family by 0.0020; selected `hgb_d3`.
 
 The family is chosen on val log loss alone. The two runs disagree on which family has the lower val log loss, and the margins above are small, so the family choice rests on a narrow val difference; either family is defensible.
+
+### 2b. After the fact: the label rule on parsed text, and the deployed decision
+
+Added after test_fresh was spent, so it has no test_fresh column. The disposition model's features `n_full`, `n_near` and `top1_full` restate the label rule; `label_rule` applies that rule to the parsed cues with nothing fitted (`ml/label_rule.py`), and `learned_deployed` is the decision the service runs (`ml.decision.deployed_abstain_rule`). Val was used to fit and choose the learned systems.
+
+| system | val correct | val unsafe | test correct | test unsafe | test safe act rate (ceiling) |
+|---|---|---|---|---|---|
+| `rules_tuned` | 91.0% [88.7, 93.2] | 6 of 754 | 86.8% [84.6, 89.0] | 21 of 1107 | 50.3% (678 of 1107) |
+| `label_rule` | 98.7% [97.7, 99.5] | 4 of 754 | 96.3% [94.9, 97.5] | 10 of 1107 | 58.9% (678 of 1107) |
+| `learned_ranker_disposition` | 98.0% [96.8, 99.1] | 0 of 754 | 93.9% [92.0, 95.5] | 3 of 1107 | 56.9% (678 of 1107) |
+| `learned_deployed` | 98.4% [97.3, 99.3] | 0 of 754 | 94.9% [93.3, 96.3] | 3 of 1107 | 56.9% (678 of 1107) |
+
+* val (`baselines_val.json`), fitted disposition minus label rule, same 754 cases: correct -0.7 [-1.9, +0.5], unsafe -0.5 [-1.2, +0.0], safe act rate -1.1 [-2.0, -0.4].
+* test (`baselines_test.json`), fitted disposition minus label rule, same 1107 cases: correct -2.4 [-3.9, -1.1], unsafe -0.6 [-1.1, -0.2], safe act rate -2.0 [-3.1, -0.9].
 
 ### 4. Why the LLM ranker does not decide (`results_llm.json`)
 
@@ -183,13 +216,13 @@ Limit of this evidence: the probes score the ranking prompt. No committed file c
 | `d7d46370` | evaluate:learned_ranker_disposition | 2026-09-25 23:17 | 8fbdee7 | 0189e386ce7fe882 | test | learned_hgb_d6_lr0.1 | disposition_hgb_d3 | correct 92.2%, unsafe 17 of 1107 | `previous/results.json` |
 | `782b11d0` | train | 2026-09-26 00:08 | 6f3c4e1 | 0189e386ce7fe882 |  | hgb_d6_lr0.1 | multinomial_logreg_C1 | disposition val correct 98.0% | `fitted.json` |
 | `3d623b13` | evaluate:rules_fixed | 2026-09-26 00:10 | 6f3c4e1 | 0189e386ce7fe882 | test | rules_v1 | fixed_top0.60_margin0.15 | correct 71.9%, unsafe 45 of 1107 | `results.json` |
-| `7c65f8cc` | evaluate:rules_tuned | 2026-09-26 00:10 | 6f3c4e1 | 0189e386ce7fe882 | test | rules_v1 | calibrated_thresholds | correct 86.8%, unsafe 21 of 1107 | `results.json` |
+| `7c65f8cc` | evaluate:rules_tuned | 2026-09-26 00:10 | 6f3c4e1 | 0189e386ce7fe882 | test | rules_v1 | calibrated_thresholds | correct 86.8%, unsafe 21 of 1107 | `results.json`, `baselines_test.json` |
 | `1b03f4da` | evaluate:learned_ranker_calibrated | 2026-09-26 00:10 | 6f3c4e1 | 0189e386ce7fe882 | test | learned_hgb_d6_lr0.1 | calibrated_thresholds | correct 79.4%, unsafe 20 of 1107 | `results.json` |
-| `f6f3cdf9` | evaluate:learned_ranker_disposition | 2026-09-26 00:10 | 6f3c4e1 | 0189e386ce7fe882 | test | learned_hgb_d6_lr0.1 | disposition_multinomial_logreg_C1 | correct 93.9%, unsafe 3 of 1107 | `results.json` |
+| `f6f3cdf9` | evaluate:learned_ranker_disposition | 2026-09-26 00:10 | 6f3c4e1 | 0189e386ce7fe882 | test | learned_hgb_d6_lr0.1 | disposition_multinomial_logreg_C1 | correct 93.9%, unsafe 3 of 1107 | `results.json`, `baselines_test.json` |
 | `293fb661` | evaluate:rules_fixed | 2026-09-26 00:11 | 6f3c4e1 | 0189e386ce7fe882 | test | rules_v1 | fixed_top0.60_margin0.15 | correct 71.9%, unsafe 45 of 1107 | `results.json` |
-| `c4d5ff55` | evaluate:rules_tuned | 2026-09-26 00:11 | 6f3c4e1 | 0189e386ce7fe882 | test | rules_v1 | calibrated_thresholds | correct 86.8%, unsafe 21 of 1107 | `results.json` |
+| `c4d5ff55` | evaluate:rules_tuned | 2026-09-26 00:11 | 6f3c4e1 | 0189e386ce7fe882 | test | rules_v1 | calibrated_thresholds | correct 86.8%, unsafe 21 of 1107 | `results.json`, `baselines_test.json` |
 | `00f0b4cf` | evaluate:learned_ranker_calibrated | 2026-09-26 00:11 | 6f3c4e1 | 0189e386ce7fe882 | test | learned_hgb_d6_lr0.1 | calibrated_thresholds | correct 79.4%, unsafe 20 of 1107 | `results.json` |
-| `3906e95f` | evaluate:learned_ranker_disposition | 2026-09-26 00:11 | 6f3c4e1 | 0189e386ce7fe882 | test | learned_hgb_d6_lr0.1 | disposition_multinomial_logreg_C1 | correct 93.9%, unsafe 3 of 1107 | `results.json` |
+| `3906e95f` | evaluate:learned_ranker_disposition | 2026-09-26 00:11 | 6f3c4e1 | 0189e386ce7fe882 | test | learned_hgb_d6_lr0.1 | disposition_multinomial_logreg_C1 | correct 93.9%, unsafe 3 of 1107 | `results.json`, `baselines_test.json` |
 | `2afae9d7` | evaluate:test_fresh:rules_fixed | 2026-09-26 03:53 | 4903a38 | 0189e386ce7fe882 | test_fresh | rules_v1 | fixed_top0.60_margin0.15 | correct 69.6%, unsafe 55 of 1240 | `results_fresh.json` |
 | `b343d25f` | evaluate:test_fresh:rules_tuned | 2026-09-26 03:53 | 4903a38 | 0189e386ce7fe882 | test_fresh | rules_v1 | calibrated_thresholds | correct 82.2%, unsafe 24 of 1240 | `results_fresh.json` |
 | `4b0f0ffd` | evaluate:test_fresh:learned_ranker_calibrated | 2026-09-26 03:53 | 4903a38 | 0189e386ce7fe882 | test_fresh | learned_hgb_d6_lr0.1 | calibrated_thresholds | correct 76.5%, unsafe 19 of 1240 | `results_fresh.json` |
@@ -199,3 +232,11 @@ Limit of this evidence: the probes score the ranking prompt. No committed file c
 | `c5b96895` | imported:probe/openai__gpt-4o-mini.json | 2026-09-27 00:48 | f0b343c |  | val | gpt-4o-mini |  |  | `probe/openai__gpt-4o-mini.json` (imported) |
 | `366e8049` | imported:probe/openai__gpt-6-luna.json | 2026-09-27 00:48 | f0b343c |  | val | gpt-6-luna |  |  | `probe/openai__gpt-6-luna.json` (imported) |
 | `128e9de1` | imported:results_llm.json | 2026-09-27 00:48 | f0b343c | 0189e386ce7fe882 | test | gpt-6-luna |  | correct 54.0%, unsafe 12 of 1107 | `results_llm.json` (imported) |
+| `41d52623` | evaluate_baselines:val:rules_tuned | 2026-09-27 01:50 | 916d4ae | 0189e386ce7fe882 | val | rules_v1 | calibrated_thresholds | correct 91.0%, unsafe 6 of 754 | `baselines_val.json` |
+| `e5b219aa` | evaluate_baselines:val:label_rule | 2026-09-27 01:50 | 916d4ae | 0189e386ce7fe882 | val | rules_v1 | label_rule_on_parsed_cues | correct 98.7%, unsafe 4 of 754 | `baselines_val.json` |
+| `2a919226` | evaluate_baselines:val:learned_ranker_disposition | 2026-09-27 01:50 | 916d4ae | 0189e386ce7fe882 | val | learned_hgb_d6_lr0.1 | disposition_multinomial_logreg_C1 | correct 98.0%, unsafe 0 of 754 | `baselines_val.json` |
+| `71f7dca2` | evaluate_baselines:val:learned_deployed | 2026-09-27 01:50 | 916d4ae | 0189e386ce7fe882 | val | learned_hgb_d6_lr0.1 | disposition_multinomial_logreg_C1+deployed_abstain_rule | correct 98.4%, unsafe 0 of 754 | `baselines_val.json` |
+| `8c5a0c0e` | evaluate_baselines:test:rules_tuned | 2026-09-27 01:51 | 916d4ae | 0189e386ce7fe882 | test | rules_v1 | calibrated_thresholds | correct 86.8%, unsafe 21 of 1107 | `results.json`, `baselines_test.json` |
+| `158e9c18` | evaluate_baselines:test:label_rule | 2026-09-27 01:51 | 916d4ae | 0189e386ce7fe882 | test | rules_v1 | label_rule_on_parsed_cues | correct 96.3%, unsafe 10 of 1107 | `baselines_test.json` |
+| `8d2a33b9` | evaluate_baselines:test:learned_ranker_disposition | 2026-09-27 01:51 | 916d4ae | 0189e386ce7fe882 | test | learned_hgb_d6_lr0.1 | disposition_multinomial_logreg_C1 | correct 93.9%, unsafe 3 of 1107 | `results.json`, `baselines_test.json` |
+| `40e69e55` | evaluate_baselines:test:learned_deployed | 2026-09-27 01:51 | 916d4ae | 0189e386ce7fe882 | test | learned_hgb_d6_lr0.1 | disposition_multinomial_logreg_C1+deployed_abstain_rule | correct 94.9%, unsafe 3 of 1107 | `baselines_test.json` |

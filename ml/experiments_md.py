@@ -59,6 +59,8 @@ def _eval_run_cell(runs: dict, match: dict) -> str:
 
 
 def _thresholds(params: dict) -> str:
+    if "rule" in params:
+        return f"{params['rule']}, nothing fitted"
     if "min_top" in params:
         return f"top >= {params['min_top']}, margin >= {params['min_margin']} (fixed, never fitted)"
     p = params["policy"]
@@ -189,9 +191,36 @@ def selection_section(reports: dict) -> list[str]:
         lines += _decision_choice(reports)
     if "fitted.json" in reports:
         lines += _family_choice(reports)
+    if {"baselines_val.json", "baselines_test.json"} <= reports.keys():
+        lines += _label_rule_check(reports)
     if {"results_llm.json", "results.json"} <= reports.keys():
         lines += _llm_choice(reports)
     return lines + _provider_choice(reports)
+
+
+def _label_rule_check(reports: dict) -> list[str]:
+    lines = ["### 2b. After the fact: the label rule on parsed text, and the deployed decision", "",
+             "Added after test_fresh was spent, so it has no test_fresh column. The disposition model's features "
+             "`n_full`, `n_near` and `top1_full` restate the label rule; `label_rule` applies that rule to the parsed "
+             "cues with nothing fitted (`ml/label_rule.py`), and `learned_deployed` is the decision the service runs "
+             "(`ml.decision.deployed_abstain_rule`). Val was used to fit and choose the learned systems.", "",
+             "| system | val correct | val unsafe | test correct | test unsafe | test safe act rate (ceiling) |",
+             "|---|---|---|---|---|---|"]
+    val, test = reports["baselines_val.json"], reports["baselines_test.json"]
+    for name, body in test["systems"].items():
+        v, t = val["systems"][name]["summary"], body["summary"]
+        ceil = t["safe_automated_resolution_ceiling"]
+        lines.append(f"| `{name}` | {_ci(v['correct_decision_rate'])} | {v['unsafe']['count']} of {v['n_cases']} | "
+                     f"{_ci(t['correct_decision_rate'])} | {t['unsafe']['count']} of {t['n_cases']} | "
+                     f"{_pct(t['safe_automated_resolution_rate']['value'])} "
+                     f"({ceil['count']} of {ceil['denominator']}) |")
+    lines.append("")
+    for split, body in (("val", val), ("test", test)):
+        d = body["paired_differences"]["learned_ranker_disposition_minus_label_rule"]
+        lines.append(f"* {split} (`baselines_{split}.json`), fitted disposition minus label rule, same "
+                     f"{d['correct_decision_rate']['n_cases']} cases: correct {_pts(d['correct_decision_rate'])}, "
+                     f"unsafe {_pts(d['unsafe_rate'])}, safe act rate {_pts(d['safe_automated_resolution_rate'])}.")
+    return lines + [""]
 
 
 def _ranker_choice(f: dict) -> list[str]:

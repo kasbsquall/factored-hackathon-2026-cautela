@@ -48,21 +48,31 @@ def systems() -> dict:
 
 
 def agreement(a: list[dict], b: list[dict]) -> dict:
-    """Case by case: same decision on the same charges, and the outcomes where the two differ."""
+    """Case by case: same decision kind, same decision on the same charges, and what changes where they differ.
+
+    ``outcome_changes`` counts cases whose decision kind differs; a clarify listing other charges is only in
+    ``same_kind_other_charges`` (with the outcome pair), since both are clarifications.
+    """
     by_case = {r["case_id"]: r for r in a}
-    same = diff = 0
+    same = same_kind = 0
     outcomes: Counter = Counter()
     decisions: Counter = Counter()
+    other_charges: Counter = Counter()
     for rb in b:
         ra = by_case[rb["case_id"]]
-        if ra["decision"] == rb["decision"] and ra["top_k"] == rb["top_k"]:
-            same += 1
+        if ra["decision"] == rb["decision"]:
+            same_kind += 1
+            if ra["top_k"] == rb["top_k"]:
+                same += 1
+            else:
+                other_charges[f"{ra['outcome']} -> {rb['outcome']}"] += 1
             continue
-        diff += 1
         outcomes[f"{ra['outcome']} -> {rb['outcome']}"] += 1
         decisions[f"{ra['decision']} -> {rb['decision']}"] += 1
-    return {"same_decision": {"count": same, "denominator": len(b)}, "differ": diff,
-            "outcome_changes": dict(outcomes.most_common()), "decision_changes": dict(decisions.most_common())}
+    return {"same_decision_kind": {"count": same_kind, "denominator": len(b)},
+            "same_decision_and_charges": {"count": same, "denominator": len(b)},
+            "same_kind_other_charges": dict(other_charges.most_common()),
+            "decision_changes": dict(decisions.most_common()), "outcome_changes": dict(outcomes.most_common())}
 
 
 def evaluate_split(split: str, version: str, systems_: dict) -> dict:
