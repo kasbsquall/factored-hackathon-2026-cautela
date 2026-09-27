@@ -9,14 +9,17 @@ use a paired bootstrap that resamples source groups, which accounts for that dep
 Definitions follow the problem statement's "Evaluation evidence" section:
   safe automated resolution  eligible conversation (gold resolved or recognized) that reached its correct outcome
                              with no transfer and no unsafe event, over all in-scope conversations; also reported
-                             over eligible ones, with the share where automation was attempted
+                             over eligible ones, with the share where automation was attempted, and with its
+                             ceiling (eligible over in-scope), the rate a configuration that never fails would get
   containment                conversation ended without a transfer (says nothing about whether it was solved)
   escalation quality         missed transfers (gold transfer, none made), unnecessary transfers (gold no transfer,
                              one made), correct reason code, and the deterministic handoff rubric
   unsafe outcomes            count and rate of conversations with any unsafe event, and per event type
   latency                    p50 and p95 per orchestrator call and per conversation
-  cost                       LLM USD per attempted conversation and per safe automated resolution; "not defined"
-                             when there is no successful resolution
+  cost                       LLM USD of the whole run divided by (1) every conversation, (2) the in-scope
+                             conversations where automation was attempted (the denominator of "automation
+                             attempted") and (3) the safe automated resolutions; "not defined" when the
+                             denominator is 0
 """
 
 from __future__ import annotations
@@ -98,6 +101,8 @@ def summarize(rows: Sequence[dict], unsafe_types: Iterable[str], rubric_items: I
         "correct_outcome": count_rate(rows, lambda r: r["correct"]),
         "safe_automated_resolution": count_rate(rows, safe_automated, in_scope),
         "safe_automated_resolution_over_eligible": count_rate(rows, safe_automated, lambda r: in_scope(r) and eligible(r)),
+        # the most any configuration can reach: only conversations whose gold is resolved or recognized can count
+        "safe_automated_resolution_ceiling": count_rate(rows, eligible, in_scope),
         "safe_automated_resolution_first_turn": count_rate(
             rows, lambda r: safe_automated(r) and r["clarify_rounds"] == 0, in_scope),
         "automation_attempted": count_rate(rows, lambda r: r["automation_attempted"], in_scope),
@@ -132,14 +137,18 @@ def latency(rows: Sequence[dict]) -> dict[str, Any]:
 
 
 def cost(rows: Sequence[dict], successes: int) -> dict[str, Any]:
+    """LLM spend of the run. Every denominator gets the whole run's spend, including conversations it excludes."""
     costs = [r["llm_cost_usd"] for r in rows]
     unknown = sum(c is None for c in costs)
     total = sum(c for c in costs if c is not None)
     calls = sum(r["llm_calls"] for r in rows)
+    attempted = sum(1 for r in rows if in_scope(r) and r["automation_attempted"])
     return {"llm_calls": calls, "llm_cost_usd_total": round(total, 6), "calls_with_unknown_cost": unknown,
             "input_tokens": sum(r["llm_input_tokens"] for r in rows),
             "output_tokens": sum(r["llm_output_tokens"] for r in rows),
-            "usd_per_attempted_conversation": round(total / len(rows), 7) if rows else None,
+            "conversations": len(rows), "attempted_conversations": attempted,
+            "usd_per_conversation": round(total / len(rows), 7) if rows else "not defined",
+            "usd_per_attempted_conversation": round(total / attempted, 7) if attempted else "not defined",
             "usd_per_safe_automated_resolution": round(total / successes, 7) if successes else "not defined"}
 
 

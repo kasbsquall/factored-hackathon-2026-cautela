@@ -108,6 +108,16 @@ def test_cost_per_success_is_not_defined_without_successes():
     assert cost(rows, successes=2)["usd_per_safe_automated_resolution"] == 0.003
 
 
+def test_cost_per_attempted_divides_by_in_scope_attempted_conversations_only():
+    rows = [row("a", llm_cost_usd=0.002), row("b", llm_cost_usd=0.002, automation_attempted=False),
+            row("c", llm_cost_usd=0.002, in_scope=False, category="human_request"),
+            row("d", llm_cost_usd=0.002, in_scope=False, category="human_request", automation_attempted=True)]
+    c = cost(rows, successes=1)
+    assert (c["conversations"], c["attempted_conversations"]) == (4, 1)
+    assert c["usd_per_conversation"] == 0.002 and c["usd_per_attempted_conversation"] == 0.008
+    assert cost([row("a", automation_attempted=False)], successes=0)["usd_per_attempted_conversation"] == "not defined"
+
+
 def test_cost_counts_unknown_prices_instead_of_hiding_them():
     c = cost([row("a", llm_cost_usd=None), row("b", llm_cost_usd=0.001)], successes=1)
     assert c["calls_with_unknown_cost"] == 1 and c["llm_cost_usd_total"] == 0.001

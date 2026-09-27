@@ -3,11 +3,18 @@
     uv run python -m eval.run                         # rules and learned, LLM off (no network, no cost)
     uv run python -m eval.run --configs llm --variance-runs 2   # gpt-6-luna, capped by eval/budget.py
     uv run python -m eval.run --configs rules,learned,llm       # everything
+    uv run python -m eval.run --configs rules,learned,label_rule --out eval/results_after_fix.json
+    uv run python -m eval.run --configs llm --out eval/results_after_fix.json --cap-usd 2.00 --ledger PATH
 
 Configurations (same conversations, same simulated customer):
   rules    RuleDisposition (hand-weighted ranker + fixed clarify rule), deterministic parser and templates
   learned  LearnedDisposition (ml/ learned ranker + disposition model), deterministic parser and templates
   llm      LearnedDisposition, MaskedLLM over OpenAI gpt-6-luna (reasoning_effort none) for extraction and replies
+  label_rule  baseline for this command only: the scenario label rule on the parsed cues (ml/label_rule.py), LLM off
+
+Every configuration records the git commit it ran on and the paths under agent/, api/, ml/ and eval/ that differed
+from that commit when it started, so a results file says which code produced it. Paid runs can use their own ledger
+and cap (--ledger, --cap-usd); the cap is enforced per call by eval/budget.py.
 
 The suite is checked against the sha256 in eval/heldout/manifest.json before anything runs. Full transcripts,
 audit records and per-conversation rows go to data/eval/runs/<run id>/ (git-ignored); results.json keeps the
@@ -20,23 +27,25 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import subprocess
 import threading
 import time
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 from agent.llm.port import MaskedLLM
 from agent.orchestrator import RuleDisposition
-from agent.orchestrator.disposition import LearnedDisposition
+from agent.orchestrator.disposition import LabelRuleDisposition, LearnedDisposition
 from eval import budget as spend
 from eval.harness import customer_ids, run_conversation
 from eval.judge import IN_SCOPE, RUBRIC, UNSAFE_TYPES, judge, load_suite, owners
 from eval.metrics import breakdown, cost, latency, paired_bootstrap, safe_automated, summarize
 from eval.oracle import rules
-from eval.paths import MANIFEST_PATH, RESULTS_PATH, RUNS_DIR, SLICE_PATH, SUITE_PATH
+from eval.paths import MANIFEST_PATH, RESULTS_PATH, ROOT, RUNS_DIR, SLICE_PATH, SPEND_LEDGER, SUITE_PATH
 from eval.pools import pool_bucket_of
 
 CONFIGS = {
@@ -48,6 +57,12 @@ CONFIGS = {
             "description": "learned disposition, LLM on: openai gpt-6-luna, reasoning_effort none, "
                            "extraction and replies through agent/llm (masked, schema-checked, grounded)"},
 }
+# Baselines that only this module's command line runs; CONFIGS stays the protocol of the frozen suites.
+BASELINE_CONFIGS = {
+    "label_rule": {"disposition": "label_rule", "llm": False,
+                   "description": "label rule on the parsed cues (ml/label_rule.py, nothing fitted), LLM off"},
+}
+ALL_CONFIGS = CONFIGS | BASELINE_CONFIGS
 COST_PER_CONV_ESTIMATE = 0.0006  # USD, upper estimate for the pre-flight budget check (pilot: see report)
 
 
@@ -66,7 +81,21 @@ def check_frozen(path=SUITE_PATH) -> dict:
 
 
 def disposition_for(kind: str):
-    return RuleDisposition() if kind == "rules" else LearnedDisposition.load()
+    if kind == "rules":
+        return RuleDisposition()
+    return LabelRuleDisposition() if kind == "label_rule" else LearnedDisposition.load()
+
+
+def code_state(paths: tuple[str, ...] = ("agent", "api", "ml", "eval")) -> dict[str, Any]:
+    """The commit a run starts from and the code paths that differ from it (uncommitted changes)."""
+    def git(*args: str) -> str:
+        try:
+            return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip()
+        except (OSError, subprocess.CalledProcessError):
+            return ""
+    dirty = git("status", "--porcelain", "--", *paths).splitlines()
+    return {"git_commit": git("rev-parse", "HEAD") or "unknown",
+            "uncommitted_paths": sorted(line[3:] for line in dirty if not line.endswith(".md"))}
 
 
 def row_of(spec: dict, t, verdict) -> dict[str, Any]:
@@ -96,7 +125,7 @@ def row_of(spec: dict, t, verdict) -> dict[str, Any]:
 
 def run_config(name: str, suite: list[dict], customer: str, workers: int, ledger=None, tag: str = "",
                slice_path=SLICE_PATH) -> dict:
-    cfg = CONFIGS[name]
+    cfg = ALL_CONFIGS[name]
     disposition = disposition_for(cfg["disposition"])
     llm_factory = None
     if cfg["llm"]:
@@ -128,7 +157,8 @@ def run_config(name: str, suite: list[dict], customer: str, workers: int, ledger
             fh.write(json.dumps(r, ensure_ascii=False) + "\n")
     status = ledger.status() if ledger is not None else None
     return {"run_id": run_id, "config": name, "customer": customer, "rows": rows, "wall_s": round(wall, 1),
-            "workers": workers, "budget_status": status}
+            "workers": workers, "budget_status": status, "disposition_model": disposition.name,
+            "disposition_source": getattr(disposition, "source", None)}
 
 
 def aggregate(run: dict) -> dict[str, Any]:
@@ -147,6 +177,7 @@ def aggregate(run: dict) -> dict[str, Any]:
               for (c, s), rs in _group(rows, lambda r: (r["category"], r["subcategory"])).items()}
     return {
         "run_id": run["run_id"], "customer": run["customer"], "wall_s": run["wall_s"], "workers": run["workers"],
+        **{k: run[k] for k in ("disposition_model", "disposition_source") if k in run},
         "summary": summary, "latency": latency(rows), "cost": cost(rows, successes),
         "by_category": by_cat, "by_subcategory": dict(sorted(by_sub.items())),
         "by_language": breakdown(rows, "language"), "by_country": breakdown(rows, "country"),
@@ -229,6 +260,13 @@ def variance(runs: list[dict]) -> dict[str, Any]:
             "spread": {k: spread(k) for k in ("correct_outcome", "safe_automated_resolution", "unsafe", "containment")}}
 
 
+def _rel(path: Path) -> str:
+    try:
+        return path.resolve().relative_to(ROOT).as_posix()
+    except ValueError:
+        return str(path)
+
+
 def _r4(x):
     return None if x is None else round(x, 4)
 
@@ -240,30 +278,34 @@ def main() -> None:
     ap.add_argument("--variance-runs", type=int, default=0, help="extra LLM runs on the variance subset")
     ap.add_argument("--workers", type=int, default=6, help="threads for the LLM configuration")
     ap.add_argument("--limit", type=int, default=0, help="debug: first N conversations only (not for results)")
+    ap.add_argument("--out", type=Path, default=RESULTS_PATH, help="results file; configs already in it are kept")
+    ap.add_argument("--cap-usd", type=float, default=spend.CAP_USD, help="hard USD cap of the ledger for paid calls")
+    ap.add_argument("--ledger", type=Path, default=SPEND_LEDGER, help="spend ledger the cap is counted on")
     args = ap.parse_args()
     manifest = check_frozen()
     suite = load_suite(SUITE_PATH)
     if args.limit:
         suite = suite[:args.limit]
-    results = json.loads(RESULTS_PATH.read_text(encoding="utf-8")) if RESULTS_PATH.exists() and not args.limit else {}
+    results = json.loads(args.out.read_text(encoding="utf-8")) if args.out.exists() and not args.limit else {}
     results.update({"generated_by": "eval/run.py", "suite_sha256": manifest["suite_sha256"],
                     "warehouse_slice_content_hash": manifest["warehouse_slice_content_hash"],
                     "suite_conversations": len(suite)})
     results.setdefault("configs", {})
-    ledger = spend.ledger()
+    ledger = spend.ledger(args.cap_usd, args.ledger)
     runs: dict[str, dict] = {}
     for name in [c for c in args.configs.split(",") if c]:
-        workers = args.workers if CONFIGS[name]["llm"] else 1
-        if CONFIGS[name]["llm"]:
+        workers = args.workers if ALL_CONFIGS[name]["llm"] else 1
+        state = code_state()
+        if ALL_CONFIGS[name]["llm"]:
             need = COST_PER_CONV_ESTIMATE * len(suite) * (1 + 0.25 * args.variance_runs)
             if spend.remaining(ledger) < need:
                 raise SystemExit(f"estimated spend {need:.2f} USD exceeds the remaining cap "
                                  f"{spend.remaining(ledger):.2f} USD; nothing run")
         refused_before = ledger.status()["refused_calls"]
-        run = run_config(name, suite, "compliant", workers, ledger if CONFIGS[name]["llm"] else None)
+        run = run_config(name, suite, "compliant", workers, ledger if ALL_CONFIGS[name]["llm"] else None)
         runs[name] = run
-        body = {"description": CONFIGS[name]["description"], **aggregate(run)}
-        if CONFIGS[name]["llm"]:
+        body = {"description": ALL_CONFIGS[name]["description"], "code": state, **aggregate(run)}
+        if ALL_CONFIGS[name]["llm"]:
             body["budget_after_run"] = ledger.status()
             refused = ledger.status()["refused_calls"] - refused_before
             body["valid"] = refused == 0
@@ -276,7 +318,7 @@ def main() -> None:
             if args.variance_runs:
                 body["variance"] = variance(extra)
                 body["budget_after_variance"] = ledger.status()
-        if args.attentive and not CONFIGS[name]["llm"]:
+        if args.attentive and not ALL_CONFIGS[name]["llm"]:
             att = run_config(name, suite, "attentive", workers)
             body["attentive_customer"] = {"run_id": att["run_id"],
                                           "summary": summarize(att["rows"], UNSAFE_TYPES, RUBRIC),
@@ -289,12 +331,14 @@ def main() -> None:
             path = RUNS_DIR / body["run_id"] / "rows.jsonl"
             if path.exists():
                 runs[name] = {"rows": [json.loads(x) for x in path.read_text(encoding="utf-8").splitlines() if x]}
-    for a, b in (("rules", "learned"), ("learned", "llm"), ("rules", "llm")):
+    for a, b in (("rules", "learned"), ("learned", "llm"), ("rules", "llm"), ("label_rule", "learned"),
+                 ("rules", "label_rule")):
         if a in runs and b in runs:
             results.setdefault("comparisons", {})[f"{b}_minus_{a}"] = compare(runs[a], runs[b])
-    results["spend"] = ledger.status() | {"cap_usd": spend.CAP_USD, "ledger": "data/eval/llm_spend.json"}
+    if any(ALL_CONFIGS[n]["llm"] for n in runs if n in ALL_CONFIGS) or "spend" not in results:
+        results["spend"] = ledger.status() | {"cap_usd": args.cap_usd, "ledger": _rel(args.ledger)}
     if not args.limit:
-        RESULTS_PATH.write_text(json.dumps(results, indent=1, ensure_ascii=False) + "\n", encoding="utf-8",
+        args.out.write_text(json.dumps(results, indent=1, ensure_ascii=False) + "\n", encoding="utf-8",
                                 newline="\n")
 
 

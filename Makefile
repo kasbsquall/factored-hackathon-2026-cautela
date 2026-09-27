@@ -65,6 +65,20 @@ eval:  ## rules and learned configurations, compliant and attentive customer: ev
 eval-llm:  ## llm configuration plus two repeated runs on the variance subset (paid, capped)
 	uv run python -m eval.run --configs llm --variance-runs 2 --workers 6
 
+# After-fix rerun of the deployed agent on the same suite, into the committed eval/results_after_fix.json. Every
+# configuration records the git commit it ran on. The LLM run has its own ledger and a hard USD 2.00 cap.
+AFTER_FIX ?= eval/results_after_fix.json
+.PHONY: eval-after-fix eval-after-fix-llm report
+
+eval-after-fix:  ## rules, learned (deployed decision) and the label-rule baseline, no LLM, no cost
+	uv run python -m eval.run --configs rules,learned,label_rule --out $(AFTER_FIX)
+
+eval-after-fix-llm:  ## llm configuration (gpt-6-luna, reasoning effort none), USD 2.00 cap on its own ledger
+	uv run python -m eval.run --configs llm --workers 6 --out $(AFTER_FIX) --cap-usd 2.00 --ledger data/eval/llm_spend_after_fix.json
+
+report:  ## eval/report.md from eval/report_template.md, eval/results.json and eval/results_after_fix.json
+	uv run python -m eval.report_tables
+
 # Update and freshness test on organizer data (data_engineering/freshness/). Copies data_backup_20260831/ (earlier
 # state) and data/ (current state) from the .env bucket into the git-ignored data/freshness/ (about 1.9 GB), loads
 # one after the other into a scratch warehouse, checks it against a single load, and writes the committed report
@@ -83,3 +97,16 @@ freshness-status:  ## freshness of TARGET against the policy; exit code 1 when a
 
 experiments:  ## ml/reports/experiments.md: every MLflow run behind a committed ML result, and the model-selection story
 	uv run python -m ml.experiments_report
+
+# The fitted disposition model is committed in ml/models with a sha256 lock; the service loads it when the local
+# training output data/ml/models is absent. `model-lock` refreshes the copy after `uv run python -m ml.train`.
+.PHONY: model-verify model-lock ml-baselines
+
+model-verify:  ## check ml/models/*.pkl against ml/models/models.lock.json (exit code 1 on a mismatch)
+	uv run python -m ml.model_lock
+
+model-lock:  ## copy data/ml/models into ml/models and rewrite the lock (commit both afterwards)
+	uv run python -m ml.model_lock --write
+
+ml-baselines:  ## label rule on parsed text and the deployed decision on val and test -> ml/reports/baselines_*.json
+	uv run python -m ml.evaluate_baselines
