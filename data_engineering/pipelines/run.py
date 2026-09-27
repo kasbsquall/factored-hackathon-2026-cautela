@@ -78,6 +78,10 @@ def process_table(con: duckdb.DuckDBPyConnection, loc: SourceLocation, contract:
     ingested_at = datetime.now(timezone.utc).replace(tzinfo=None)
     con.execute("BEGIN TRANSACTION")
     try:
+        # Tables are altered before any delete: DuckDB refuses to commit a transaction that deletes rows from a
+        # table and then alters it (a rewritten file can bring a new column).
+        warehouse.ensure_bronze(con, name, sorted({c for cols in schemas.values() for c in cols}))
+        warehouse.ensure_silver(con, contract)
         retracted = silver.retract_files(con, contract, [f.rel_path for f in rewritten])
         batch_columns = bronze.load_batch(con, loc, contract, new_files, schemas, run_id, ingested_at)
         encoding = bronze.check_encoding(con, name, new_files, batch_columns)
@@ -85,7 +89,6 @@ def process_table(con: duckdb.DuckDBPyConnection, loc: SourceLocation, contract:
         replayed = 0
         if retracted["silver_rows"]:
             batch_columns, replayed = bronze.append_replay(con, contract, batch_columns, silver.RETRACTED_KEYS)
-        warehouse.ensure_silver(con, contract)
         fk_tables = checks.prepare_parent_keys(con, contract)
         checks.build_checked(con, contract, batch_columns, fk_tables)
         quarantined = checks.quarantine_failed(con, contract, run_id)
