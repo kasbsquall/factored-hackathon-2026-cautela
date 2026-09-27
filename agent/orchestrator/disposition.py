@@ -4,13 +4,19 @@ The learned disposition model from ml/ (ranker plus case-level classifier, thres
 floor 0.60) proposes resolve / clarify / escalate. It only proposes: the policy engine decides what is allowed, and
 narrow() lets the proposal remove actions or add escalation, never the reverse.
 
-The fitted artifacts live in data/ml/models (git-ignored, written by `uv run python -m ml.train`). When they are
-missing, the fixed rule baseline from ml/ is used and every decision says so (`model` names it), so a result is
-never attributed to a model that did not run.
+The fitted artifacts are read from data/ml/models (git-ignored, written by `uv run python -m ml.train`) when they
+exist, otherwise from the committed copy in ml/models after its sha256 lock is checked (ml/model_lock.py). When
+neither loads, the fixed rule baseline from ml/ runs: `load_default` logs a warning with the reason, the model's
+`source` says it is a fallback (GET /health can show it), and every decision names the model that ran.
+
+The decision the service runs is the fitted rule plus `ml.decision.deployed_abstain_rule`: an abstention stands only
+when no_match is the most likely class, otherwise the customer is asked to pick. `ml/evaluate_baselines.py` scores
+that same decision on val and test, and eval/results_after_fix.json holds it end to end.
 """
 
 from __future__ import annotations
 
+import logging
 import pickle
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
@@ -18,14 +24,19 @@ from datetime import date
 from pathlib import Path
 from typing import Any, Literal, Protocol
 
-from ml.decision import K_CLARIFY, FixedRuleDecider
+from ml.decision import FixedRuleDecider, deployed_abstain_rule
 from ml.disposition import _cue_hits, cue_fits
 from ml.features.pairwise import candidate_features
+from ml.label_rule import LabelRuleDecider
+from ml.model_lock import COMMITTED_DIR
+from ml.model_lock import verify as verify_committed
 from ml.rankers.learned import LearnedRanker
 from ml.rankers.protocol import coerce_features
 from ml.rankers.rules import RuleRanker
 
 MODELS_DIR = Path(__file__).resolve().parents[2] / "data" / "ml" / "models"
+COMMITTED_MODELS_DIR = COMMITTED_DIR  # ml/models, committed with models.lock.json
+log = logging.getLogger("cautela.disposition")
 LEARNED_SYSTEM = "learned_ranker_disposition"
 _MAP = {"act": "resolve", "clarify": "clarify", "abstain": "escalate"}
 DISPUTABLE_STATUSES = frozenset({"Approved", "Pending"})  # the label rule's disputable charges (ml/scenarios/hints.py)
@@ -55,16 +66,16 @@ def ranker_input(text: str, report_date: date, overrides: Mapping[str, Any]) -> 
 
 
 class LearnedDisposition:
-    def __init__(self, ranker: Any, decider: Any) -> None:
-        self.ranker, self.decider = ranker, decider
+    def __init__(self, ranker: Any, decider: Any, source: str = "in memory") -> None:
+        self.ranker, self.decider, self.source = ranker, decider, source
         self.name = f"{LEARNED_SYSTEM}:{decider.name}"
 
     @classmethod
     def load(cls, models_dir: Path = MODELS_DIR) -> LearnedDisposition:
-        with (models_dir / "systems.pkl").open("rb") as fh:  # local artifact written by ml/train.py
+        with (models_dir / "systems.pkl").open("rb") as fh:  # artifact written by ml/train.py (or its locked copy)
             systems = pickle.load(fh)
         _, decider = systems[LEARNED_SYSTEM]
-        return cls(LearnedRanker.load(models_dir / "learned.pkl"), decider)
+        return cls(LearnedRanker.load(models_dir / "learned.pkl"), decider, source=_where(models_dir))
 
     def decide(self, text: str, report_date: date, overrides: Mapping[str, Any],
                pool: Sequence[Mapping[str, Any]]) -> Disposition:
@@ -73,15 +84,14 @@ class LearnedDisposition:
         ranked = self.ranker.rank(inp, candidates) if candidates else []
         if not ranked:
             return Disposition("escalate", 0.0, [], self.name)
-        probabilities = {str(k): round(float(v), 4) for k, v in self.decider.proba(inp, candidates, ranked).items()}
+        raw = {str(k): float(v) for k, v in self.decider.proba(inp, candidates, ranked).items()}
         confidence, decided = self.decider.decide_case(inp, candidates, ranked)
-        note = None
-        if decided["decision"] == "abstain" and max(probabilities, key=probabilities.get) != "no_match":
-            # The fitted rule abstains once P(no_match) reaches t_abstain (0.046), even when the classifier puts
-            # most of its mass on match or ambiguous. The component metric scores abstain and clarify alike on
-            # those cases; in the service they differ: a clarify shows the charges, and only the customer's
-            # explicit pick (or "none of these") follows. So the service asks instead of transferring.
-            decided, note = {"decision": "clarify", "top_k": [t for t, _ in ranked[:K_CLARIFY]]}, "abstain_to_clarify"
+        # The fitted rule abstains once P(no_match) reaches t_abstain (0.0464), even when the classifier puts most
+        # of its mass on match or ambiguous. In the service a clarify shows the charges and only the customer's
+        # explicit pick (or "none of these") follows, so it asks instead of transferring unless no_match is the most
+        # likely class. ml/evaluate_baselines.py scores this same function as the deployed decision.
+        decided, note = deployed_abstain_rule(decided, ranked, raw)
+        probabilities = {k: round(v, 4) for k, v in raw.items()}
         return Disposition(_MAP[decided["decision"]], round(float(confidence), 4), list(decided["top_k"]),
                            self.name, probabilities, note)
 
@@ -91,8 +101,8 @@ class RuleDisposition:
 
     name = "rules_fixed_baseline"
 
-    def __init__(self) -> None:
-        self.ranker, self.decider = RuleRanker(), FixedRuleDecider()
+    def __init__(self, source: str = "rules baseline, chosen explicitly") -> None:
+        self.ranker, self.decider, self.source = RuleRanker(), FixedRuleDecider(), source
 
     def decide(self, text: str, report_date: date, overrides: Mapping[str, Any],
                pool: Sequence[Mapping[str, Any]]) -> Disposition:
@@ -103,6 +113,19 @@ class RuleDisposition:
             return Disposition("escalate", 0.0, [], self.name)
         confidence, decided = self.decider.decide_case(inp, candidates, ranked)
         return Disposition(_MAP[decided["decision"]], round(float(confidence), 4), list(decided["top_k"]), self.name)
+
+
+class LabelRuleDisposition(RuleDisposition):
+    """Evaluation baseline, never loaded by the service: the scenario label rule on the parsed cues (ml/label_rule.py).
+
+    It orders a clarifying list with the hand-weighted ranker, so nothing in it is fitted.
+    """
+
+    name = "label_rule_on_parsed_cues"
+
+    def __init__(self) -> None:
+        super().__init__(source="label rule baseline, chosen explicitly")
+        self.decider = LabelRuleDecider()
 
 
 def non_disputable_fit(text: str, report_date: date, overrides: Mapping[str, Any],
@@ -145,11 +168,38 @@ def plausible_charges(text: str, report_date: date, overrides: Mapping[str, Any]
     return sorted(missed, key=missed.get)  # charges that fit every cue first, then pool order (newest first)
 
 
-def load_default(models_dir: Path = MODELS_DIR) -> DispositionModel:
-    """The learned model when its artifacts exist, otherwise the labeled rule baseline."""
-    if (models_dir / "systems.pkl").is_file() and (models_dir / "learned.pkl").is_file():
+def _where(models_dir: Path) -> str:
+    root = Path(__file__).resolve().parents[2]
+    try:
+        return models_dir.resolve().relative_to(root).as_posix()
+    except ValueError:
+        return str(models_dir)
+
+
+def load_default(models_dir: Path | None = None) -> DispositionModel:
+    """The learned model, else the rule baseline with a logged warning that says why.
+
+    Without ``models_dir`` it tries data/ml/models (a local ml.train run), then the committed ml/models after its
+    sha256 lock passes. The returned model's ``source`` names the directory it came from, or the fallback reason.
+    """
+    reasons = []
+    for directory in ([models_dir] if models_dir is not None else [MODELS_DIR, COMMITTED_MODELS_DIR]):
+        if not ((directory / "systems.pkl").is_file() and (directory / "learned.pkl").is_file()):
+            reasons.append(f"{_where(directory)}: model files not found")
+            continue
+        if directory == COMMITTED_MODELS_DIR:
+            problems = verify_committed(directory)
+            if problems:
+                reasons.append(f"{_where(directory)}: {'; '.join(problems)}")
+                continue
         try:
-            return LearnedDisposition.load(models_dir)
-        except (OSError, KeyError, pickle.UnpicklingError, AttributeError, ModuleNotFoundError):
-            pass
-    return RuleDisposition()
+            model = LearnedDisposition.load(directory)
+        except (OSError, KeyError, pickle.UnpicklingError, AttributeError, ModuleNotFoundError) as exc:
+            reasons.append(f"{_where(directory)}: {type(exc).__name__}")
+            continue
+        log.info("disposition: %s loaded from %s", model.name, model.source)
+        return model
+    reason = " | ".join(reasons)
+    log.warning("disposition: the learned model did not load (%s); running the rule baseline %s",
+                reason, RuleDisposition.name)
+    return RuleDisposition(source=f"fallback: {reason}")

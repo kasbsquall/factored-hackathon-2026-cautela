@@ -1,0 +1,16 @@
+{
+  "format": 1,
+  "data_version": "0189e386ce7fe882",
+  "disposition_model": "learned_ranker_disposition:disposition_multinomial_logreg_C1",
+  "written_by": "ml/model_lock.py --write, from the output of ml/train.py",
+  "files": {
+    "learned.pkl": {
+      "bytes": 830712,
+      "sha256": "eac5b14a2b6cd7134efe04b6239539de463eb34968e8dfacb9f0012fa68bde75"
+    },
+    "systems.pkl": {
+      "bytes": 3239,
+      "sha256": "320eca7831d68816e0421c09f773b9a22f48c5ccf76858764bf60f027580b517"
+    }
+  }
+}
