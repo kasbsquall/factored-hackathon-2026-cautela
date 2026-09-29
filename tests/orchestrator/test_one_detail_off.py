@@ -88,3 +88,18 @@ def test_a_rejected_charge_is_never_acted_on_afterwards(rig, make_orchestrator, 
     assert next(s for s in after.trail if s.step == "decide.rejected").outcome == "escalate"
     assert after.stage == "handed_off" and after.recognition is None
     assert "tool.get_transaction" not in steps(after) and case_rows(rig, case.customer_id) == 0
+
+
+def test_a_resolve_whose_runner_up_was_rejected_still_acts_on_its_top_charge(make_orchestrator, cases, login):
+    case = cases["normal"]
+    tx = case.transaction
+    rejected = "TX-REJECTED"  # a charge the customer rejected earlier, second in the model's ranking
+    orch = make_orchestrator(disposition=Scripted(
+        Disposition("resolve", 0.95, [case.transaction_id, rejected], "scripted")))
+    token = login(case)
+    conversation = orch.store.create(case.customer_id, case.customer_id, "es", orch.service.clock())
+    conversation.rejected.append((rejected, "a charge shown before"))
+    after = orch.turn(token, f"Me aparece un cargo de {float(tx['amount']):.2f} {tx['currency']} que no hice",
+                      conversation.conversation_id)
+    assert next(s for s in after.trail if s.step == "decide.rejected").outcome == "filtered"
+    assert after.stage == "awaiting_recognition" and after.recognition["charge"]["amount"] == float(tx["amount"])

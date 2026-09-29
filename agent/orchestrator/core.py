@@ -263,7 +263,7 @@ class Orchestrator(RoutingMixin):
         kept = [tid for tid in disposition.top_k if tid not in rejected]
         if disposition.decision == "escalate" or kept == disposition.top_k:
             return disposition
-        dropped = disposition.decision == "resolve" or not kept
+        dropped = disposition.top_k[0] in rejected if disposition.decision == "resolve" else not kept
         self._step(turn, "decide.rejected", "escalate" if dropped else "filtered",
                    {"removed": [tid for tid in disposition.top_k if tid in rejected]})
         if dropped:
