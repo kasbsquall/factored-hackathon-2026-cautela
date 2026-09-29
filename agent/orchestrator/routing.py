@@ -81,12 +81,29 @@ class RoutingMixin(FollowUpMixin):
         found = found.model_copy(update={"injection": quote})
         if dropped:
             found = found.model_copy(update={"fallback_reason": "dropped_unstated:" + ",".join(dropped)})
+        if found.intent == "out_of_scope" and self._detail_in_scope(turn, strict, message):
+            found = found.model_copy(update={"intent": "dispute_charge", "topic": None,
+                                             "fallback_reason": f"charge_detail_in_scope:{found.topic}"})
         # Escalation signals the parser reads (a person, an out-of-scope topic) apply whatever the model said:
         # they can only make the outcome stricter, like narrow().
         if strict.intent in ("request_human", "out_of_scope") and found.intent != strict.intent:
             found = strict.model_copy(update={"fallback_reason": f"parser_escalation_over_llm:{found.intent}",
                                               "injection": quote})
         return found, kept
+
+    def _detail_in_scope(self, turn: Turn, strict: nlu.DisputeIntent, message: str) -> bool:
+        """While the service waits for charge details (it asked, and the conversation is collecting or clarifying),
+        a message the parser reads as a dispute and that carries a charge cue answers that question: "fue una
+        transferencia de 1700 dólares" describes the disputed charge, it does not ask for a transfer. The model's
+        out-of-scope label is then replaced by the parser's own reading, so the model never leads to more than the
+        parser alone would; an explicit request the parser reads ("quiero transferir 500") still escalates, and the
+        first message of a conversation keeps the model's label."""
+        state = turn.state
+        if state.stage not in ("collecting", "clarifying") or state.clarify_rounds == 0:
+            return False
+        if strict.intent != "dispute_charge":
+            return False
+        return strict.has_charge_cues() or self._new_description(strict, message)
 
     # ---- security screen -----------------------------------------------------------------------------------
     def _screen(self, turn: Turn, message: str) -> bool:
