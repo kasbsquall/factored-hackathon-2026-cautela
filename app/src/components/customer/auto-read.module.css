@@ -1,0 +1,98 @@
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-12);
+  padding: var(--s-8) var(--s-16);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-8);
+  min-height: 44px;
+  padding: 0 var(--s-8);
+  margin-inline: calc(var(--s-8) * -1);
+  border: 0;
+  border-radius: var(--r-btn);
+  background: transparent;
+  color: var(--ink);
+  font-size: var(--t-13);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--d-ui) var(--ease-out), transform var(--d-fast) var(--ease-out);
+}
+
+.switch svg {
+  width: 18px;
+  height: 18px;
+  color: var(--ink2);
+}
+
+.switch:hover:not([aria-disabled="true"]),
+.switch:focus-visible {
+  background: var(--sf2);
+}
+
+.switch:active:not([aria-disabled="true"]) {
+  transform: scale(0.97);
+}
+
+.switch[aria-disabled="true"] {
+  color: var(--ink2);
+  cursor: not-allowed;
+}
+
+.switch[aria-checked="true"] svg {
+  color: var(--ring);
+}
+
+/* The track and knob are drawn in CSS; the knob moves with transform only. */
+.track {
+  position: relative;
+  width: 34px;
+  height: 20px;
+  flex: 0 0 auto;
+  border-radius: var(--r-btn);
+  border: 1px solid var(--btn-s-line);
+  transition: background-color var(--d-ui) var(--ease-out), border-color var(--d-ui) var(--ease-out);
+}
+
+.knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--ink2);
+  transition: transform var(--d-ui) var(--ease-out), background-color var(--d-ui) var(--ease-out);
+}
+
+.switch[aria-checked="true"] .track {
+  background: color-mix(in oklab, var(--ring) 22%, transparent);
+  border-color: var(--ring);
+}
+
+.switch[aria-checked="true"] .knob {
+  transform: translateX(14px);
+  background: var(--ring);
+}
+
+.switch[aria-disabled="true"] .track {
+  border-style: dashed;
+}
+
+.note {
+  font-family: var(--f-mono);
+  font-size: var(--t-11);
+  letter-spacing: 0.02em;
+  color: var(--ink2);
+}
+
+@media (min-width: 768px) {
+  .bar {
+    padding-inline: var(--s-24);
+  }
+}

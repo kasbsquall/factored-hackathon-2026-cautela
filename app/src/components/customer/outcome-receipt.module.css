@@ -42,3 +42,94 @@
   color: var(--ink2);
   text-align: right;
 }
+
+/* "What we checked" and "What happens next": separated from the case number by a hairline, grouped tight inside. */
+.section {
+  display: grid;
+  gap: var(--s-8);
+  padding-top: var(--s-12);
+  border-top: 1px solid var(--line-soft);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--s-12);
+}
+
+.item {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: var(--s-8);
+  align-items: start;
+  font-size: var(--t-13);
+  line-height: 1.4;
+}
+
+.tick,
+.nextIcon {
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+}
+
+.tick {
+  color: var(--ok);
+}
+
+.nextIcon {
+  color: var(--ink2);
+}
+
+.body {
+  display: grid;
+  gap: var(--s-2);
+  min-width: 0;
+}
+
+.value {
+  color: var(--ink2);
+  overflow-wrap: anywhere;
+}
+
+.label {
+  font-weight: 600;
+}
+
+.small {
+  font-size: var(--t-12);
+  color: var(--ink2);
+}
+
+.tools {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* After a filed case: a person is one tap away, on the same surface as the receipt. */
+.ask {
+  display: grid;
+  gap: var(--s-12);
+  justify-items: start;
+  padding: var(--s-16);
+  border-radius: var(--r-card);
+  border: 1px solid var(--line);
+  background: var(--sf);
+}
+
+.askText {
+  display: grid;
+  gap: var(--s-4);
+}
+
+.askTitle {
+  font-family: var(--f-body);
+  font-size: var(--t-15);
+  font-weight: 700;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
