@@ -1,0 +1,60 @@
+{
+  "version": "noisy-v1",
+  "seed": 20260929,
+  "split": "test_fresh",
+  "role": "sealed",
+  "suite_sha256": "5e7f398853fe1f2243f0e67261edbfebdf156196dbad1a3986d6864cefb26938",
+  "gold_sha256": "26b4cc05b7671204d76114d925351f2021494cf8868dac6c388604dc7badd368",
+  "generator_sha256": {
+    "eval/noisy/build.py": "e8337e93226e5d3ba37208cf1da54783a356278ecb1e04b94cb23de7b17c6eea",
+    "eval/noisy/texts.py": "f65607e51bb1a3191db3a73c931f80c34e29ba7adbca1536f75d1b75bc6b02fb",
+    "eval/noisy/texts_sealed.py": "feb06bcd7a239b02eb0512302e1b68ecc291c84ae0d04219fe2bd1562a992e66",
+    "eval/build.py": "b1c8e625c47d0bbdd8e1032ff3b66738f152a55d8a8d0fc0d00f79cc49f68383",
+    "eval/oracle.py": "36c0c6c70c7e81fbcf15041ee5276dbdd9b52e520221cb6ef608245963f9ee3b",
+    "combined": "3bf923d959cf5c0e08567f878bbc1481d76d762efc4d968c7619741e17946808"
+  },
+  "policy_version": "2026-09-26.2",
+  "warehouse_slice_content_hash": "ad599f5def614a53357166da4140d5835edd6562cec0d745ddd34db4dc289eb7",
+  "sources": {
+    "cases_file": "eval/cases/disputes/test_fresh.jsonl",
+    "cases_sha256": "8c86c3495632906f168986e8266916972632211752c0f258b0cc5fa0720aa900"
+  },
+  "built_on_commit": "d205e45ed18e19c4a5fb3f447827dc6b8d689c76",
+  "conversations": 240,
+  "by_family": {
+    "approx_amount": 40,
+    "chat_style": 40,
+    "partial_merchant": 40,
+    "self_correction": 40,
+    "wrong_date": 40,
+    "wrong_restatement": 40
+  },
+  "by_language": {
+    "es": 180,
+    "pt": 60
+  },
+  "by_family_language": {
+    "approx_amount/es": 30,
+    "approx_amount/pt": 10,
+    "chat_style/es": 30,
+    "chat_style/pt": 10,
+    "partial_merchant/es": 30,
+    "partial_merchant/pt": 10,
+    "self_correction/es": 30,
+    "self_correction/pt": 10,
+    "wrong_date/es": 30,
+    "wrong_date/pt": 10,
+    "wrong_restatement/es": 30,
+    "wrong_restatement/pt": 10
+  },
+  "by_gold": {
+    "handoff:amount_above_threshold": 114,
+    "handoff:policy_requires_review": 22,
+    "resolved": 104
+  },
+  "by_label": {
+    "ambiguous": 59,
+    "match": 181
+  },
+  "note": "Written before any configuration runs. suite.jsonl is git-ignored (organizer-derived ids and values); rebuild it with `uv run python -m eval.noisy.build --split test_fresh --verify`."
+}
