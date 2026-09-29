@@ -53,6 +53,32 @@ describe("the composer after the conversation ends", () => {
   });
 });
 
+describe("a person after the case is filed", () => {
+  beforeAll(() => {
+    Element.prototype.scrollIntoView = () => undefined;
+    window.matchMedia ??= ((query: string) => ({ matches: false, media: query }) as MediaQueryList);
+  });
+  afterEach(() => setApiForTests(null));
+
+  it("keeps the receipt by default and, when asked, shows that a person takes over with the case number", async () => {
+    await start("1020000001");
+    fireEvent.click(screen.getByRole("button", { name: /Me cobraron algo|No reconozco/ }));
+    fireEvent.click(await screen.findByRole("button", { name: /MERCANUBE/ }));
+    fireEvent.click(await screen.findByRole("button", { name: en.recognizeNo }));
+    fireEvent.click(await screen.findByRole("button", { name: en.confirm }));
+    const filed = await screen.findByRole("region", { name: en.receiptOpen });
+    const caseId = within(filed).getByText(/^CASE-[0-9A-F]{12}$/).textContent ?? "";
+    expect(screen.getByRole("region", { name: en.askPersonTitle })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: en.askTakeover }));
+    const takeover = await screen.findByRole("region", { name: en.receiptTakeover });
+    expect(within(takeover).getByText(caseId)).toBeInTheDocument();
+    expect(within(takeover).getByRole("region", { name: en.checksTitle })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: en.askTakeover })).toBeNull();
+    expect(screen.getByText(en.handedOffNote)).toBeInTheDocument();
+  });
+});
+
 describe("withoutOptionLines", () => {
   it("drops the numbered options and the blank lines around them", () => {
     const reply = "Encontré más de un cargo que coincide. ¿Cuál no reconoces?\n\n1) Cable TV\n2) Servicios\n3) Super Ahorro\n\nSi no es ninguno, dímelo.";

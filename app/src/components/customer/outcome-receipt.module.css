@@ -8,6 +8,14 @@
   color: var(--ink2);
 }
 
+/* The one sentence under the case number that says what the person receives. */
+.lede {
+  font-size: var(--t-15);
+  line-height: 1.45;
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
 .trace {
   display: inline-flex;
   align-items: center;

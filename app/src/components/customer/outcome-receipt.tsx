@@ -71,15 +71,17 @@ function Checks({ checks, copy }: { checks: Check[]; copy: CustomerCopy }) {
             <CheckCircle className={styles.tick} aria-hidden />
             <span className={styles.body}>
               <span>{c.text}</span>
-              <span className={styles.value} data-speech={c.spoken}>
-                {c.valueLabel ? `${c.valueLabel}: ` : null}
-                <span className={c.mono ? "mono" : "num"}>
-                  {/* Each fact stays on one line ("COP 48.900" never splits); the list wraps between facts. */}
-                  {c.value.split(" · ").map((part, j) => (
-                    <span key={j}>{j ? " · " : null}<span className={styles.nowrap}>{part}</span></span>
-                  ))}
+              {c.value ? (
+                <span className={styles.value} data-speech={c.spoken}>
+                  {c.valueLabel ? `${c.valueLabel}: ` : null}
+                  <span className="num">
+                    {/* Each fact stays on one line ("COP 48.900" never splits); the list wraps between facts. */}
+                    {c.value.split(" · ").map((part, j) => (
+                      <span key={j}>{j ? " · " : null}<span className={styles.nowrap}>{part}</span></span>
+                    ))}
+                  </span>
                 </span>
-              </span>
+              ) : null}
             </span>
           </li>
         ))}
@@ -134,6 +136,26 @@ export function OutcomeReceipt({ entry, copy, lang, demoClock, turns, sessionUnt
     </>
   );
 
+  // A person asked for after the case was filed: the handoff carries the case, so the receipt shows what they receive.
+  if (turn.case && turn.stage === "handed_off" && reason === "customer_requested_human") {
+    const checks = receiptChecks({ turn, caseView, chargeView: entry.chargeView, turns, sessionUntil, copy, lang });
+    const next: NextItem[] = [
+      { key: "person", icon: UserSwitch, text: copy.nextTakeover },
+      ...(caseView?.status === "open" ? [{ key: "status", icon: FolderOpen, text: copy.nextOpen }] : []),
+    ];
+    return (
+      <div className={styles.stack} ref={stackRef}>
+        <Receipt kind="hu" title={copy.receiptTakeover}
+          rows={[{ label: copy.rowReason, value: copy.transferReason[reason] ?? reason }, ...handoff]} foot={foot}>
+          <CaseNumber id={turn.case.case_id} copy={copy}>{listen}</CaseNumber>
+          <p className={styles.lede}>{copy.takeoverBody}</p>
+          <Checks checks={checks} copy={copy} />
+          <Next items={next} copy={copy} />
+        </Receipt>
+      </div>
+    );
+  }
+
   if (turn.case) {
     const readBack = caseView !== null && caseView.case_id === turn.case.case_id;
     const verified = turn.case.verified && readBack;
@@ -166,7 +188,7 @@ export function OutcomeReceipt({ entry, copy, lang, demoClock, turns, sessionUnt
               <h4 className={styles.askTitle}>{copy.askPersonTitle}</h4>
               <p className={styles.note}>{copy.askPersonBody}</p>
             </div>
-            <Button variant="secondary" size="sm" icon={<UserSwitch aria-hidden />} onClick={onAskHuman} disabled={busy}>{copy.askHuman}</Button>
+            <Button variant="secondary" size="sm" icon={<UserSwitch aria-hidden />} onClick={onAskHuman} disabled={busy}>{copy.askTakeover}</Button>
           </section>
         ) : null}
       </div>

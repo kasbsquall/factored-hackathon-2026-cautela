@@ -96,8 +96,31 @@ describe("OutcomeReceipt", () => {
     expect(within(receipt).getByText("CO-WINDOW-001")).toBeInTheDocument();
 
     const ask = screen.getByRole("region", { name: es.askPersonTitle });
-    fireEvent.click(within(ask).getByRole("button", { name: es.askHuman }));
+    fireEvent.click(within(ask).getByRole("button", { name: es.askTakeover }));
     expect(onAskHuman).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows the case number once: the case line points at it instead of repeating it", () => {
+    const t = turn();
+    render(<OutcomeReceipt entry={entry(t, read, charge)} copy={en} lang="en" demoClock={null} turns={[earlier, t]} sessionUntil={null} />);
+    expect(screen.getAllByText(CASE_ID)).toHaveLength(1);
+    const line = screen.getAllByRole("listitem").find((li) => li.getAttribute("data-check") === "case")!;
+    expect(line).toHaveTextContent(en.checkCase);
+    expect(line).not.toHaveTextContent(CASE_ID);
+  });
+
+  it("confirms that a person takes over with the case and the checked facts when asked after filing", () => {
+    const filed = turn();
+    const after = turn({ stage: "handed_off", handoff_id: "ho_0123456789abcdef", transfer_reason: "customer_requested_human", trail: [] });
+    render(<OutcomeReceipt entry={entry(after, read, charge)} copy={en} lang="en" demoClock={null} turns={[earlier, filed, after]}
+      sessionUntil="2026-05-30T12:15:00Z" onAskHuman={() => undefined} />);
+    const receipt = screen.getByRole("region", { name: en.receiptTakeover });
+    expect(within(receipt).getByText(CASE_ID)).toBeInTheDocument();
+    expect(within(receipt).getByText(en.takeoverBody)).toBeInTheDocument();
+    expect(checkIds()).toEqual(["identity", "charge", "confirmed", "case", "readBack"]);
+    expect(within(receipt).getByText(en.nextTakeover)).toBeInTheDocument();
+    expect(within(receipt).getByText("ho_0123456789abcdef")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: en.askTakeover })).toBeNull();
   });
 
   it("shows only the case line when the read-back, charge and confirmation are missing", () => {

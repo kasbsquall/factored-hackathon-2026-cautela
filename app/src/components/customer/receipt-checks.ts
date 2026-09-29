@@ -1,7 +1,6 @@
 import type { CaseView, ChargeView, TurnResponse } from "@/lib/api/types";
 import type { CustomerCopy, UiLang } from "@/lib/i18n/customer";
 import { dateOnly, timeOnly } from "@/lib/format";
-import { spellId } from "@/lib/speech";
 import { cardText, chargeAmount } from "./charge-facts";
 
 export type CheckId = "identity" | "charge" | "confirmed" | "case" | "readBack";
@@ -10,12 +9,12 @@ export type CheckId = "identity" | "charge" | "confirmed" | "case" | "readBack";
 export interface Check {
   id: CheckId;
   text: string;
-  value: string;
+  /** Absent when the text already says it (the case line points at the case number shown above it). */
+  value?: string;
   /** Prefix shown before the value ("Status in the system"). */
   valueLabel?: string;
   /** How the value is read aloud, when the written form reads badly (a spelled id, a masked card). */
   spoken?: string;
-  mono?: boolean;
 }
 
 export interface CheckInput {
@@ -60,7 +59,8 @@ export function receiptChecks({ turn, caseView, chargeView, turns, sessionUntil,
   }
   const charge = chargeView ? chargeCheck(chargeView, copy, lang) : null;
   if (charge) checks.push(charge);
-  if (hasStep([turn], "confirm.answer", "accepted")) {
+  // A later turn (a person asked for after filing) shows the confirmation the case came from.
+  if (hasStep(all, "confirm.answer", "accepted")) {
     const denied = hasStep(all, "recognize.answer", "not_recognized");
     checks.push({
       id: "confirmed",
@@ -69,7 +69,8 @@ export function receiptChecks({ turn, caseView, chargeView, turns, sessionUntil,
     });
   }
   if (turn.case) {
-    checks.push({ id: "case", text: copy.checkCase, value: turn.case.case_id, spoken: spellId(turn.case.case_id), mono: true });
+    // The number itself is the large one at the top of the receipt; repeating it here only made it read twice.
+    checks.push({ id: "case", text: copy.checkCase });
     if (turn.case.verified && caseView && caseView.case_id === turn.case.case_id) {
       checks.push({
         id: "readBack",

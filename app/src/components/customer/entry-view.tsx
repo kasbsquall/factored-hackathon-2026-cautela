@@ -73,7 +73,9 @@ export function EntryView({ entry, isLast, flow, copy, talk, lang, ui, demoClock
       return <ConfirmCard entry={entry} copy={copy} lang={ui} demoClock={demoClock} onConfirm={() => flow.confirm(entry)} onCancel={() => flow.cancel(entry)} />;
     case "receipt":
       return <OutcomeReceipt entry={entry} copy={copy} lang={ui} demoClock={demoClock} turns={flow.turns.map((t) => t.turn)}
-        sessionUntil={sessionUntil} onAskHuman={flow.askHuman} busy={flow.busy} />;
+        sessionUntil={sessionUntil} busy={flow.busy}
+        // Once a person has the case, the offer on the earlier receipt is gone.
+        onAskHuman={flow.turns.some((t) => t.turn.stage === "handed_off") ? undefined : flow.askHuman} />;
     case "error":
       return (
         <Notice tone="error" icon={<WarningOctagon aria-hidden />} title={entry.title?.(copy) ?? copy.loadFailTitle}
