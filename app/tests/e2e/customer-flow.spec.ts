@@ -33,8 +33,8 @@ test("customer picks one of several charges and gets a verified case, in Spanish
   await expect(receipt.getByText("abierta", { exact: true })).toBeVisible();
   await expect(receipt.getByText("CO-WINDOW-001", { exact: true })).toBeVisible();
   await expect(receipt.getByRole("region", { name: "Lo que verificamos" }).getByRole("listitem")).toHaveCount(5);
-  await expect(page.getByRole("region", { name: "¿Prefieres hablar con una persona?" })
-    .getByRole("button", { name: "Hablar con una persona" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "No tienes que hacer nada más" })
+    .getByRole("button", { name: "Que una persona siga con mi caso" })).toBeVisible();
 
   await receipt.getByRole("link", { name: "Ver registro técnico (en inglés)" }).click();
   await expect(page.getByText("Hash chain intact")).toBeVisible();
@@ -83,6 +83,25 @@ test("the customer can keep the receipt: copy the case number and hear what was 
   expect(said).toContain("Volvimos a leer el caso en el sistema del banco");
   expect(said).toContain("tarjeta de débito terminada en 4821");
   expect(said).not.toContain("Copiar número");
+});
+
+test("after filing, a person takes over with the case number and the checked facts", async ({ page }) => {
+  await page.goto("/customer");
+  await login(page, /Descripción vaga/, "Ingresar");
+  await page.getByRole("button", { name: /Me cobraron algo/ }).click();
+  await page.getByRole("button", { name: /MERCANUBE/ }).click();
+  await page.getByRole("button", { name: /No lo reconozco/ }).click();
+  await page.getByRole("button", { name: "Confirmar disputa" }).click();
+  const caseId = (await page.getByRole("region", { name: "Disputa abierta" }).getByText(/^CASE-[0-9A-F]{12}$/).first().textContent()) ?? "";
+
+  await page.getByRole("button", { name: "Que una persona siga con mi caso" }).click();
+  const takeover = page.getByRole("region", { name: "Una persona seguirá con tu caso" });
+  await expect(takeover).toBeVisible();
+  await expect(takeover.getByText(caseId, { exact: true })).toBeVisible();
+  await expect(takeover.getByText(/^ho_[0-9a-f]{16}$/)).toBeVisible();
+  await expect(takeover.getByRole("region", { name: "Lo que verificamos" }).getByRole("listitem")).toHaveCount(5);
+  await expect(page.locator("#conversation ol").getByText(new RegExp(`Te paso con una persona del banco.*${caseId}`))).toBeVisible();
+  await expect(page.getByRole("button", { name: "Que una persona siga con mi caso" })).toHaveCount(0);
 });
 
 test("a high amount is registered for review and handed to a person, in Portuguese", async ({ page }) => {
