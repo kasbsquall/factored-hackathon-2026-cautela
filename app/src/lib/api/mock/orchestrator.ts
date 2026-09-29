@@ -31,7 +31,8 @@ export interface MockBackend {
   record(traceId: string, s: MockSession, step: string, detail: Record<string, unknown>, extra: ToolResultSpec & { latency_ms: number }): void;
   recordTool(traceId: string, s: MockSession, tool: string, args: Record<string, unknown>, result: ToolResultSpec & { latency_ms: number }): void;
   openCase(s: MockSession, transactionId: string, ruleIds: string[]): CaseView;
-  createHandoff(s: MockSession, traceId: string, language: Language, reason: TransferReasonCode, ruleIds: string[], tx?: TransactionView, caseView?: CaseView): string;
+  createHandoff(s: MockSession, traceId: string, language: Language, reason: TransferReasonCode, ruleIds: string[], tx?: TransactionView,
+    caseView?: CaseView, questions?: string[]): string;
 }
 
 interface Pending {
@@ -51,6 +52,8 @@ interface Conversation {
   recognition: Pending | null;
   pending: (Pending & { expiresAt: number }) | null;
   caseRef: TurnResponse["case"];
+  /** The case this conversation filed and read back, kept for a person asked for after filing. */
+  filed: CaseView | null;
   handoffId: string | null;
   reason: TransferReasonCode | null;
 }
@@ -104,6 +107,7 @@ export class MockOrchestrator {
     conv.language = language;
     const turn = new Turn(this.backend, session);
     turn.step("gate", "session_valid", { conversation_id: conv.id });
+    if (conv.stage === "resolved" && conv.filed && intentOf(message) === "customer_requested_human") return this.personAfterFiling(conv, turn, conv.filed);
     if (ENDED.includes(conv.stage)) return this.respond(conv, turn, "closed", reply("closed", conv.language));
 
     const intent = intentOf(message);
@@ -178,6 +182,7 @@ export class MockOrchestrator {
     turn.tool("get_case_status", { case_id: opened.case_id });
     turn.step("verify", "verified", { case_id: opened.case_id, expected_status: opened.status, read_status: opened.status });
     conv.caseRef = { case_id: opened.case_id, verified: true, claim_window: this.claimWindow(conv, pending.transactionId) };
+    conv.filed = opened;
     if (opened.status === "pending_human_review") return this.handOff(conv, turn, "amount_above_threshold", rules, tx, opened);
     conv.stage = "resolved";
     return this.respond(conv, turn, "resolved", reply("resolved", conv.language, { label: pending.label, case_id: opened.case_id }));
@@ -185,7 +190,7 @@ export class MockOrchestrator {
 
   private start(session: MockSession, language: Language): Conversation {
     const conv: Conversation = { id: `cv_${hex(16)}`, session, language, stage: "collecting", options: [], recognition: null,
-      pending: null, caseRef: null, handoffId: null, reason: null };
+      pending: null, caseRef: null, filed: null, handoffId: null, reason: null };
     this.conversations.set(conv.id, conv);
     return conv;
   }
@@ -238,8 +243,20 @@ export class MockOrchestrator {
     return this.respond(conv, turn, "recognize_check", reply("recognize_check", conv.language, { label: conv.recognition.label }));
   }
 
-  private handOff(conv: Conversation, turn: Turn, reason: TransferReasonCode, rules: string[], tx?: TransactionView, caseView?: CaseView): TurnResponse {
-    const id = this.backend.createHandoff(conv.session, turn.traceId, conv.language, reason, rules, tx, caseView);
+  /**
+   * Like agent/orchestrator/routing.py _person_after_resolution: after the case was filed and read back, a request
+   * for a person is a customer_requested_human transfer that carries the filed case, so nothing is filed again.
+   */
+  private personAfterFiling(conv: Conversation, turn: Turn, filed: CaseView): TurnResponse {
+    turn.step("understand", "deterministic_parser", { intent: "customer_requested_human", fallback_reason: "mock_mode" });
+    const tx = conv.session.customer.transactions.find((t) => t.transaction_id === filed.transaction_id);
+    return this.handOff(conv, turn, "customer_requested_human", ["SYN-HUMAN-001"], tx, filed,
+      [`The customer asked for a person after dispute case ${filed.case_id} was filed and verified; continue from it, nothing has to be filed again.`]);
+  }
+
+  private handOff(conv: Conversation, turn: Turn, reason: TransferReasonCode, rules: string[], tx?: TransactionView, caseView?: CaseView,
+    questions?: string[]): TurnResponse {
+    const id = this.backend.createHandoff(conv.session, turn.traceId, conv.language, reason, rules, tx, caseView, questions);
     turn.step("escalate", reason, { handoff_id: id }, rules);
     conv.stage = "handed_off";
     conv.handoffId = id;

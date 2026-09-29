@@ -88,7 +88,8 @@ export class MockCautelaApi implements CautelaApi, MockBackend {
     return view;
   }
 
-  createHandoff(s: MockSession, traceId: string, language: Language, reason: TransferReasonCode, ruleIds: string[], tx?: TransactionView, caseView?: CaseView): string {
+  createHandoff(s: MockSession, traceId: string, language: Language, reason: TransferReasonCode, ruleIds: string[], tx?: TransactionView,
+    caseView?: CaseView, questions: string[] = []): string {
     const id = `ho_${hex(16)}`;
     const rules = ruleIds.length ? [...ruleIds].sort() : reason === "customer_requested_human" ? ["SYN-HUMAN-001"] : [];
     const action: Handoff["actions_taken"] = caseView
@@ -106,7 +107,7 @@ export class MockCautelaApi implements CautelaApi, MockBackend {
       ],
       actions_taken: action,
       evidence: ["Created in this browser session (mock mode)"],
-      open_questions: reason === "tool_failure" ? ["Open the dispute manually; the customer already confirmed"] : [],
+      open_questions: [...(reason === "tool_failure" ? ["Open the dispute manually; the customer already confirmed"] : []), ...questions],
     });
     return id;
   }
