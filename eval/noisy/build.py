@@ -21,7 +21,9 @@ value of that charge, so a failure can be traced to the family. Gold is the held
 eval/build.py's case_gold (the policy oracle on the charge the customer means) at the same clock start.
 
 The split is a parameter because the same frozen generator builds the sealed half from test_fresh after the code
-freeze; that split is refused unless allow_sealed=True (--allow-sealed). Seeded and order-independent: two builds
+freeze; that split is refused unless allow_sealed=True (--allow-sealed). Each half has its own phrasings: the dev
+half renders from eval/noisy/texts.py, the sealed half from eval/noisy/texts_sealed.py, written blind to the dev
+results, so the sealed half tests new phrasings as well as new charges. Seeded and order-independent: two builds
 of a split give the same bytes. The manifest records the sha256 of suite, gold and generator source.
 """
 
@@ -40,7 +42,7 @@ from pathlib import Path
 from typing import Any
 
 from eval import build as heldout
-from eval.noisy import texts
+from eval.noisy import texts, texts_sealed
 from eval.oracle import rules as oracle_rules
 from eval.paths import (DISPUTES_DIR, EVAL_DIR, FRESH_SLICE_PATH, NOISY_DEV_DIR, NOISY_SEALED_DIR, ROOT,
                         SLICE_PATH)
@@ -52,7 +54,9 @@ PER_FAMILY = {"es": 30, "pt": 10}  # 40 per family, 240 in all, 75% Spanish
 SPLITS = {"test": (SLICE_PATH, NOISY_DEV_DIR), "test_fresh": (FRESH_SLICE_PATH, NOISY_SEALED_DIR)}
 SEALED_SPLITS = frozenset({"test_fresh"})
 CUE_ORDER = ("merchant", "amount", "date", "channel", "city")
-GENERATOR_SOURCES = (Path(__file__), Path(texts.__file__), EVAL_DIR / "build.py", EVAL_DIR / "oracle.py")
+TEMPLATES = {"test": texts, "test_fresh": texts_sealed}  # split -> the phrasings its conversations are rendered from
+GENERATOR_SOURCES = (Path(__file__), Path(texts.__file__), Path(texts_sealed.__file__), EVAL_DIR / "build.py",
+                     EVAL_DIR / "oracle.py")
 
 
 class SealedSplitError(RuntimeError):
@@ -86,9 +90,9 @@ def sig(x: float, digits: int) -> float:
     return float(f"{x:.{digits}g}")
 
 
-def amount_text(value: float, currency: str, lang: str, country: str) -> str:
+def amount_text(value: float, currency: str, lang: str, country: str, t=texts) -> str:
     """The exact amount as it reads on a statement: cents for dollars, whole pesos with dot thousands."""
-    word = texts.CURRENCY.get(currency, texts.CURRENCY["MXN"])[lang]
+    word = t.CURRENCY.get(currency, t.CURRENCY["MXN"])[lang]
     if currency == "USD":
         num = f"{value:.2f}".removesuffix(".00")
         if country != "MX" or lang == "pt":
@@ -97,12 +101,12 @@ def amount_text(value: float, currency: str, lang: str, country: str) -> str:
     return f"{round(value):,}".replace(",", ".") + f" {word}"
 
 
-def round_text(value: float, currency: str, lang: str, with_currency: bool = True) -> str:
+def round_text(value: float, currency: str, lang: str, with_currency: bool = True, t=texts) -> str:
     """A round figure as people say it: "1,5 millones de pesos", "170 mil", "90 dólares"."""
-    word = texts.CURRENCY.get(currency, texts.CURRENCY["MXN"])[lang]
+    word = t.CURRENCY.get(currency, t.CURRENCY["MXN"])[lang]
     if value >= 1_000_000:
         m = value / 1_000_000
-        unit = texts.MILLION[lang][0] if m == 1 else texts.MILLION[lang][1]
+        unit = t.MILLION[lang][0] if m == 1 else t.MILLION[lang][1]
         return f"{m:g}".replace(".", ",") + f" {unit}" + (f" de {word}" if with_currency else "")
     if value >= 1000 and currency != "USD":
         return f"{value / 1000:g}".replace(".", ",") + " mil" + (f" {word}" if with_currency else "")
@@ -119,8 +123,8 @@ def off_by(true: float, lo: float, hi: float, rng: random.Random) -> tuple[float
     return value, round((value - true) / true, 4)
 
 
-def date_text(d: date, lang: str) -> str:
-    return texts.DATE_EXACT[lang].format(d=d.day, month=texts.MONTHS[lang][d.month - 1])
+def date_text(d: date, lang: str, t=texts) -> str:
+    return t.DATE_EXACT[lang].format(d=d.day, month=t.MONTHS[lang][d.month - 1])
 
 
 def shifted(true: date, report: date, rng: random.Random) -> tuple[date, int]:
@@ -132,7 +136,7 @@ def shifted(true: date, report: date, rng: random.Random) -> tuple[date, int]:
     return true + timedelta(days=step * k), step * k
 
 
-def wrong_date_text(true: date, report: date, lang: str, rng: random.Random) -> tuple[str, dict]:
+def wrong_date_text(true: date, report: date, lang: str, rng: random.Random, t=texts) -> tuple[str, dict]:
     when, shift = shifted(true, report, rng)
     age = (report - when).days
     form = rng.choice(("explicit", "explicit", "relative_days", "weekday"))
@@ -141,66 +145,66 @@ def wrong_date_text(true: date, report: date, lang: str, rng: random.Random) -> 
     if form == "relative_days" and age < 2:
         form = "explicit"
     if form == "relative_days":
-        text = rng.choice(texts.DATE_RELATIVE_DAYS[lang]).format(n=age)
+        text = rng.choice(t.DATE_RELATIVE_DAYS[lang]).format(n=age)
     elif form == "weekday":
-        wd = texts.WEEKDAYS[lang][when.weekday()]
-        text = texts.DATE_WEEKDAY["es"].format(weekday=wd) if lang == "es" else texts.DATE_WEEKDAY["pt"][wd]
+        wd = t.WEEKDAYS[lang][when.weekday()]
+        text = t.DATE_WEEKDAY["es"].format(weekday=wd) if lang == "es" else t.DATE_WEEKDAY["pt"][wd]
     else:
-        text = date_text(when, lang)
+        text = date_text(when, lang, t)
     return text, {"stated_date": when.isoformat(), "shift_days": shift, "form": form}
 
 
-def partial_merchant_text(name: str, lang: str, rng: random.Random) -> tuple[str, str]:
+def partial_merchant_text(name: str, lang: str, rng: random.Random, t=texts) -> tuple[str, str]:
     form = rng.choice(("misspelled", "truncated", "generic"))
     if form == "misspelled":
-        return texts.AT[lang] + texts.MERCHANT_MISSPELLED[name], form
+        return t.AT[lang] + t.MERCHANT_MISSPELLED[name], form
     if form == "truncated":
         compact = re.sub(r"[^A-Z]", "", _plain(name).upper())
         cut = compact[:max(3, min(rng.choice((6, 7, 8)), len(compact) - 2))]
-        return rng.choice(texts.MERCHANT_TRUNCATED_FRAME[lang]).format(x=cut), form
-    generic = texts.MERCHANT_GENERIC[name][0 if lang == "es" else 1]
-    return rng.choice(texts.MERCHANT_GENERIC_FRAME[lang]).format(x=generic), form
+        return rng.choice(t.MERCHANT_TRUNCATED_FRAME[lang]).format(x=cut), form
+    generic = t.MERCHANT_GENERIC[name][0 if lang == "es" else 1]
+    return rng.choice(t.MERCHANT_GENERIC_FRAME[lang]).format(x=generic), form
 
 
 class Charge:
-    """The charge the customer means, with its details rendered the clean way."""
+    """The charge the customer means, with its details rendered the clean way from the template module t."""
 
-    def __init__(self, case: dict) -> None:
+    def __init__(self, case: dict, t=texts) -> None:
         tx = target_of(case)
-        self.case, self.tx, self.lang, self.country = case, tx, case["language"], case["country"]
+        self.case, self.tx, self.lang, self.country, self.t = case, tx, case["language"], case["country"], t
         self.date = datetime.fromisoformat(tx["transaction_date"]).date()
         self.report = date.fromisoformat(case["report_date"])
         self.merchant = tx.get("merchant_name")
         hinted = set(case["hints"])
         self.cues = {k for k in ("amount", "date", "merchant", "type", "channel", "city") if k in hinted}
-        if not self.merchant or self.merchant not in texts.MERCHANT_MISSPELLED:
+        if not self.merchant or self.merchant not in t.MERCHANT_MISSPELLED:
             self.cues.discard("merchant")
-        if tx.get("channel") not in texts.CHANNEL[self.lang]:
+        if tx.get("channel") not in t.CHANNEL[self.lang]:
             self.cues.discard("channel")
         if not tx.get("transaction_city"):
             self.cues.discard("city")
 
     def amount(self) -> str:
-        return amount_text(self.tx["amount"], self.tx["currency"], self.lang, self.country)
+        return amount_text(self.tx["amount"], self.tx["currency"], self.lang, self.country, self.t)
 
     def parts(self, extra: tuple[str, ...] = ()) -> dict[str, str]:
-        lang, cues = self.lang, self.cues | set(extra)
+        lang, cues, t = self.lang, self.cues | set(extra), self.t
         out = {}
         if "merchant" in cues:
-            out["merchant"] = texts.AT[lang] + self.merchant
+            out["merchant"] = t.AT[lang] + self.merchant
         if "amount" in cues:
-            out["amount"] = texts.AMOUNT_OF[lang] + self.amount()
+            out["amount"] = t.AMOUNT_OF[lang] + self.amount()
         if "date" in cues:
-            out["date"] = date_text(self.date, lang)
+            out["date"] = date_text(self.date, lang, t)
         if "channel" in cues:
-            out["channel"] = texts.CHANNEL[lang][self.tx["channel"]]
+            out["channel"] = t.CHANNEL[lang][self.tx["channel"]]
         if "city" in cues:
-            out["city"] = texts.AT[lang] + self.tx["transaction_city"]
+            out["city"] = t.AT[lang] + self.tx["transaction_city"]
         return out
 
     def what(self) -> str:
         kind = self.tx.get("transaction_type") if "type" in self.cues else None
-        return texts.WHAT[self.lang].get(kind, texts.WHAT[self.lang][None])
+        return self.t.WHAT[self.lang].get(kind, self.t.WHAT[self.lang][None])
 
     def say(self, templates: dict, parts: dict[str, str], rng: random.Random) -> str:
         cues = "".join(parts[k] for k in CUE_ORDER if k in parts)
@@ -212,67 +216,67 @@ class Charge:
 # for chat_style, every change of register), with where it appears.
 def wrong_date(ch: Charge, rng: random.Random):
     parts = ch.parts(("date",))
-    parts["date"], info = wrong_date_text(ch.date, ch.report, ch.lang, rng)
+    parts["date"], info = wrong_date_text(ch.date, ch.report, ch.lang, rng, ch.t)
     altered = [{"field": "date", "where": ["turn1", "restatement"], "true": ch.date.isoformat(),
                 "stated": parts["date"].strip(), **info}]
-    return [ch.say(texts.OPENERS, parts, rng)], ch.say(texts.RESTATE, parts, rng), altered
+    return [ch.say(ch.t.OPENERS, parts, rng)], ch.say(ch.t.RESTATE, parts, rng), altered
 
 
 def partial_merchant(ch: Charge, rng: random.Random):
     parts = ch.parts(("merchant",))
-    parts["merchant"], form = partial_merchant_text(ch.merchant, ch.lang, rng)
+    parts["merchant"], form = partial_merchant_text(ch.merchant, ch.lang, rng, ch.t)
     altered = [{"field": "merchant", "where": ["turn1", "restatement"], "true": ch.merchant,
                 "stated": parts["merchant"].strip(), "form": form}]
-    return [ch.say(texts.OPENERS, parts, rng)], ch.say(texts.RESTATE, parts, rng), altered
+    return [ch.say(ch.t.OPENERS, parts, rng)], ch.say(ch.t.RESTATE, parts, rng), altered
 
 
 def approx_amount(ch: Charge, rng: random.Random):
     parts = ch.parts(("amount",))
     value, err = off_by(ch.tx["amount"], 0.10, 0.20, rng)
     bare = value >= 1000 and ch.tx["currency"] != "USD" and rng.random() < 0.3  # "como 50 mil", no currency word
-    said = rng.choice(texts.APPROX[ch.lang]).format(x=round_text(value, ch.tx["currency"], ch.lang, not bare))
-    parts["amount"] = texts.AMOUNT_OF[ch.lang] + said
+    said = rng.choice(ch.t.APPROX[ch.lang]).format(x=round_text(value, ch.tx["currency"], ch.lang, not bare, ch.t))
+    parts["amount"] = ch.t.AMOUNT_OF[ch.lang] + said
     altered = [{"field": "amount", "where": ["turn1", "restatement"], "true": ch.amount(), "stated": said,
                 "stated_value": value, "relative_error": err, "currency_word": not bare}]
-    return [ch.say(texts.OPENERS, parts, rng)], ch.say(texts.RESTATE, parts, rng), altered
+    return [ch.say(ch.t.OPENERS, parts, rng)], ch.say(ch.t.RESTATE, parts, rng), altered
 
 
 def self_correction(ch: Charge, rng: random.Random):
-    field = rng.choice(("amount", "date"))
+    t, field = ch.t, rng.choice(("amount", "date"))
     mode = rng.choice(("same_message", "next_message"))
     parts = ch.parts((field,))
     true_part = parts[field]
     if field == "amount":
         value, err = off_by(ch.tx["amount"], 0.25, 0.60, rng)
-        wrong = round_text(value, ch.tx["currency"], ch.lang)
-        wrong_part, info = texts.AMOUNT_OF[ch.lang] + wrong, {"stated_value": value, "relative_error": err}
+        wrong = round_text(value, ch.tx["currency"], ch.lang, t=t)
+        wrong_part, info = t.AMOUNT_OF[ch.lang] + wrong, {"stated_value": value, "relative_error": err}
         true_said = ch.amount()
     else:
         when, shift = shifted(ch.date, ch.report, rng)
-        wrong_part, info = date_text(when, ch.lang), {"stated_date": when.isoformat(), "shift_days": shift}
+        wrong_part, info = date_text(when, ch.lang, t), {"stated_date": when.isoformat(), "shift_days": shift}
         wrong, true_said = wrong_part.strip(), true_part
     if mode == "same_message":
-        parts[field] = wrong_part + rng.choice(texts.CORRECT_INLINE[ch.lang]) + true_part
-        turns = [ch.say(texts.OPENERS, parts, rng)]
+        parts[field] = wrong_part + rng.choice(t.CORRECT_INLINE[ch.lang]) + true_part
+        turns = [ch.say(t.OPENERS, parts, rng)]
     else:
         parts[field] = wrong_part
-        fix = rng.choice(texts.CORRECT_NEXT[ch.lang][field]).format(true=true_said)
-        turns = [ch.say(texts.OPENERS, parts, rng), fix]
+        fix = rng.choice(t.CORRECT_NEXT[ch.lang][field]).format(true=true_said)
+        turns = [ch.say(t.OPENERS, parts, rng), fix]
     altered = [{"field": field, "where": ["turn1"], "mode": mode, "true": true_part.strip(), "stated": wrong,
                 "corrected_to": true_part.strip(), **info}]
-    return turns, ch.say(texts.RESTATE, ch.parts((field,)), rng), altered
+    return turns, ch.say(t.RESTATE, ch.parts((field,)), rng), altered
 
 
 def chat_style(ch: Charge, rng: random.Random):
-    lang, ops = ch.lang, []
+    lang, ops, t = ch.lang, [], ch.t
     parts = ch.parts()
     if "date" in parts:
         d, m = ch.date.day, ch.date.month
         form = rng.choice(("short_month", "slash", "full"))
-        parts["date"] = {"short_month": f" el {d} de {texts.MONTHS_SHORT[lang][m - 1]}" if lang == "es"
-                         else f" dia {d} de {texts.MONTHS_SHORT[lang][m - 1]}",
+        parts["date"] = {"short_month": f" el {d} de {t.MONTHS_SHORT[lang][m - 1]}" if lang == "es"
+                         else f" dia {d} de {t.MONTHS_SHORT[lang][m - 1]}",
                          "slash": f" el {d}/{m}" if lang == "es" else f" dia {d}/{m}",
-                         "full": date_text(ch.date, lang)}[form]
+                         "full": date_text(ch.date, lang, t)}[form]
         ops.append(f"date:{form}")
     if "amount" in parts:
         value, cur = ch.tx["amount"], ch.tx["currency"]
@@ -284,23 +288,23 @@ def chat_style(ch: Charge, rng: random.Random):
             form = rng.choice(("no_separator", "dollar_sign"))
             said = {"no_separator": f"{round(value)} pesos",
                     "dollar_sign": "$" + f"{round(value):,}".replace(",", ".")}[form]
-        parts["amount"] = texts.AMOUNT_OF[lang] + said
+        parts["amount"] = t.AMOUNT_OF[lang] + said
         ops.append(f"amount:{form}")
     protected = set(re.findall(r"[a-z0-9]+", _plain(" ".join([ch.what(), *parts.values()]).lower())))
-    turn, restated = ch.say(texts.OPENERS, parts, rng), ch.say(texts.RESTATE, parts, rng)
-    turn, t_ops = chatify(turn, lang, rng, protected)
-    restated, r_ops = chatify(restated, lang, rng, protected)
+    turn, restated = ch.say(t.OPENERS, parts, rng), ch.say(t.RESTATE, parts, rng)
+    turn, t_ops = chatify(turn, lang, rng, protected, t)
+    restated, r_ops = chatify(restated, lang, rng, protected, t)
     altered = [{"field": "register", "where": ["turn1", "restatement"], "values_unchanged": True,
                 "ops": ops + [f"turn1:{o}" for o in t_ops] + [f"restatement:{o}" for o in r_ops]}]
     return [turn], restated, altered
 
 
-def chatify(text: str, lang: str, rng: random.Random, protected: set[str]) -> tuple[str, list[str]]:
+def chatify(text: str, lang: str, rng: random.Random, protected: set[str], t=texts) -> tuple[str, list[str]]:
     """Whatsapp register: lowercase, no accents or opening marks, abbreviations, one or two typos, no final stop.
     Words that carry the charge's values (protected) are never misspelled."""
     ops = ["lowercase", "no_accents"]
     out = _plain(text.lower()).replace("¿", "").replace("¡", "").rstrip(".")
-    for full, short in texts.CHAT_ABBREV[lang]:
+    for full, short in t.CHAT_ABBREV[lang]:
         pattern = rf"\b{re.escape(_plain(full))}\b"
         if re.search(pattern, out) and rng.random() < 0.7:
             out = re.sub(pattern, short, out)
@@ -313,7 +317,7 @@ def chatify(text: str, lang: str, rng: random.Random, protected: set[str]) -> tu
         words[i] = w[:j] + w[j + 1] + w[j] + w[j + 2:]
         ops.append(f"typo:{w}->{words[i]}")
     out = " ".join(words)
-    lead = rng.choice(texts.CHAT_OPENERS[lang])
+    lead = rng.choice(t.CHAT_OPENERS[lang])
     if lead and not out.startswith(("hola", "ola", "buenas", "oi", "boa")):
         out = lead + out
         ops.append("chat_opener")
@@ -321,30 +325,35 @@ def chatify(text: str, lang: str, rng: random.Random, protected: set[str]) -> tu
 
 
 def wrong_restatement(ch: Charge, rng: random.Random, pool: list[dict]):
-    field = rng.choices(("date", "amount", "merchant"), weights=(4, 4, 2))[0]
+    t, field = ch.t, rng.choices(("date", "amount", "merchant"), weights=(4, 4, 2))[0]
     parts = ch.parts()
     if field == "date":
-        text, info = wrong_date_text(ch.date, ch.report, ch.lang, rng)
+        text, info = wrong_date_text(ch.date, ch.report, ch.lang, rng, t)
         parts["date"] = text
         stated, true = text.strip(), ch.date.isoformat()
     elif field == "amount":
         value, err = off_by(ch.tx["amount"], 0.25, 0.50, rng)
-        stated = round_text(value, ch.tx["currency"], ch.lang)
-        parts["amount"], info, true = texts.AMOUNT_OF[ch.lang] + stated, {"stated_value": value,
-                                                                           "relative_error": err}, ch.amount()
+        stated = round_text(value, ch.tx["currency"], ch.lang, t=t)
+        parts["amount"], info, true = t.AMOUNT_OF[ch.lang] + stated, {"stated_value": value,
+                                                                       "relative_error": err}, ch.amount()
     else:
         others = sorted({c["merchant_name"] for c in pool if c.get("merchant_name")} - {ch.merchant})
         source = "own_pool" if others else "directory"
-        others = others or sorted(set(texts.MERCHANT_MISSPELLED) - {ch.merchant})
+        others = others or sorted(set(t.MERCHANT_MISSPELLED) - {ch.merchant})
         stated = rng.choice(others)
-        parts["merchant"], info, true = texts.AT[ch.lang] + stated, {"source": source}, ch.merchant
+        parts["merchant"], info, true = t.AT[ch.lang] + stated, {"source": source}, ch.merchant
     altered = [{"field": field, "where": ["restatement"], "true": true, "stated": stated,
                 "added": field not in ch.cues, **info}]
-    return [rng.choice(texts.VAGUE_OPENERS[ch.lang])], ch.say(texts.RESTATE, parts, rng), altered
+    return [rng.choice(t.VAGUE_OPENERS[ch.lang])], ch.say(t.RESTATE, parts, rng), altered
 
 
-def noisy_texts(family: str, case: dict, seed: int = SEED) -> tuple[list[str], str, list[dict]]:
-    ch, rng = Charge(case), _rng("noise", family, case["case_id"], seed=seed)
+def templates_for(split: str):
+    """The template module a split's conversations are rendered from: texts for dev, texts_sealed for sealed."""
+    return TEMPLATES[split]
+
+
+def noisy_texts(family: str, case: dict, seed: int = SEED, t=texts) -> tuple[list[str], str, list[dict]]:
+    ch, rng = Charge(case, t), _rng("noise", family, case["case_id"], seed=seed)
     if family == "wrong_restatement":
         return wrong_restatement(ch, rng, case["candidates"])
     return {"wrong_date": wrong_date, "partial_merchant": partial_merchant, "approx_amount": approx_amount,
@@ -393,10 +402,11 @@ def assign(pool: list[dict], per_family: dict[str, int], seed: int = SEED) -> di
 
 def build_suite(world: dict, split: str, seed: int = SEED, per_family: dict[str, int] | None = None) -> list[dict]:
     picked = assign(eligible(world), per_family or PER_FAMILY, seed)
+    t = templates_for(split)
     suite = []
     for family in FAMILIES:
         for case in picked[family]:
-            turns, restated, altered = noisy_texts(family, case, seed)
+            turns, restated, altered = noisy_texts(family, case, seed, t)
             gold = heldout.case_gold(case, world, heldout.clock_start(case))
             conv = heldout.base_conv(case, world, f"nz-{family}-{case['case_id']}", "dispute", family, turns, gold,
                                      seed=seed, tags=[f"noise:{family}", f"family:{case['family']}"],

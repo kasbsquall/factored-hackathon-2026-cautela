@@ -5,10 +5,12 @@ from __future__ import annotations
 
 import re
 from datetime import date, datetime, timedelta
+from string import Formatter
 
 import pytest
 
 from eval.noisy import build as noisy
+from eval.noisy import texts, texts_sealed
 from eval.paths import DISPUTES_DIR, FRESH_SLICE_PATH, NOISY_DEV_DIR, NOISY_SEALED_DIR, SLICE_PATH
 from eval.slice import customer_ref
 
@@ -206,3 +208,105 @@ def test_sealed_split_is_refused_without_the_flag(monkeypatch):
         noisy.check_split("train")
     # the flag is for the post-freeze run only; here it is checked without reading anything
     assert noisy.check_split("test_fresh", allow_sealed=True) == (FRESH_SLICE_PATH, NOISY_SEALED_DIR)
+
+
+# ---- the sealed half's own template set ---------------------------------------------------------------------
+VOCABULARY = {"WHAT", "AT", "AMOUNT_OF", "CURRENCY", "MONTHS", "MONTHS_SHORT", "WEEKDAYS", "MILLION"}
+
+
+def _public(module) -> dict:
+    return {k: v for k, v in vars(module).items() if k.isupper()}
+
+
+def _strings(value) -> list[str]:
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, dict):
+        return [s for v in value.values() for s in _strings(v)]
+    if isinstance(value, (list, tuple)):
+        return [s for v in value for s in _strings(v)]
+    return []
+
+
+def _same_shape(dev, sealed, where: str) -> None:
+    assert type(dev) is type(sealed), where
+    if isinstance(dev, dict):
+        assert set(dev) == set(sealed), where
+        for k in dev:
+            _same_shape(dev[k], sealed[k], f"{where}.{k}")
+    elif isinstance(dev, list):
+        assert len(sealed) >= len(dev), f"{where}: fewer variants than the dev set"
+        slots = {tuple(sorted(f for _, f, _, _ in Formatter().parse(s) if f)) for s in _strings(dev)}
+        for s in _strings(sealed):
+            assert tuple(sorted(f for _, f, _, _ in Formatter().parse(s) if f)) in slots, f"{where}: {s!r}"
+    elif isinstance(dev, str):
+        assert {f for _, f, _, _ in Formatter().parse(dev) if f} == \
+               {f for _, f, _, _ in Formatter().parse(sealed) if f}, where
+
+
+def test_sealed_templates_expose_the_same_api():
+    dev, sealed = _public(texts), _public(texts_sealed)
+    assert set(dev) == set(sealed)
+    for name in dev:
+        if name == "CHAT_ABBREV":
+            assert set(sealed[name]) == set(dev[name]) and all(len(sealed[name][k]) >= len(dev[name][k])
+                                                               for k in dev[name])
+            continue
+        _same_shape(dev[name], sealed[name], name)
+    # the same merchant directory, so the draw of cases does not depend on the template set
+    assert set(texts_sealed.MERCHANT_MISSPELLED) == set(texts.MERCHANT_MISSPELLED) == set(texts_sealed.MERCHANT_GENERIC)
+    assert noisy.templates_for("test") is texts and noisy.templates_for("test_fresh") is texts_sealed
+
+
+def test_no_sealed_template_appears_in_the_dev_set():
+    dev_strings = set(_strings(list(_public(texts).values())))
+    sealed = {k: v for k, v in _public(texts_sealed).items() if k not in VOCABULARY}
+    repeated = sorted({s for s in _strings(list(sealed.values())) if s and s in dev_strings})
+    assert repeated == []
+    for s in _strings(list(_public(texts_sealed).values())):
+        assert chr(0x2014) not in s and s.isprintable()  # no em dash
+
+
+def test_sealed_templates_keep_every_family_constraint(world):
+    t, modes, forms = texts_sealed, set(), set()
+    for case in world["cases"]:
+        lang, true_date = case["language"], noisy.Charge(case, t).date
+        report = date.fromisoformat(case["report_date"])
+        if noisy.fits("wrong_date", case):
+            turns, restated, (a,) = noisy.noisy_texts("wrong_date", case, t=t)
+            text = "\n".join([*turns, restated])
+            assert a["stated_date"] != true_date.isoformat() and 2 <= abs(a["shift_days"]) <= 6
+            assert noisy.date_text(true_date, lang, t).strip() not in text
+            assert f"{true_date.day}/{true_date.month}" not in text
+            assert not re.search(rf"\b{(report - true_date).days} d[ií]as\b", text)
+        turns, restated, (a,) = noisy.noisy_texts("self_correction", case, t=t)
+        modes.add((a["field"], a["mode"]))
+        text = "\n".join(turns)
+        true = a["corrected_to"].removeprefix(t.AMOUNT_OF[lang].strip()).strip()
+        assert a["stated"] != true and a["stated"] in text and text.rindex(true) > text.index(a["stated"])
+        assert true in restated and a["stated"] not in restated
+        turns, restated, (a,) = noisy.noisy_texts("approx_amount", case, t=t)
+        assert 0.05 <= abs(a["relative_error"]) <= 0.3 and a["true"] not in "\n".join([*turns, restated])
+        if noisy.fits("partial_merchant", case):
+            turns, restated, (a,) = noisy.noisy_texts("partial_merchant", case, t=t)
+            forms.add(a["form"])
+            assert noisy._plain(a["true"].lower()) not in noisy._plain("\n".join([*turns, restated]).lower())
+        turns, restated, _ = noisy.noisy_texts("chat_style", case, t=t)
+        for text in (*turns, restated):
+            assert text == text.lower() and text == noisy._plain(text) and not text.endswith(".")
+        turns, restated, (a,) = noisy.noisy_texts("wrong_restatement", case, t=t)
+        assert turns[0] in t.VAGUE_OPENERS[lang] and a["stated"] != a["true"] and a["stated"] in restated
+    assert len(modes) == 4 and forms == {"misspelled", "truncated", "generic"}
+
+
+def test_sealed_split_renders_from_the_sealed_templates(monkeypatch, world):
+    monkeypatch.setattr(noisy.heldout, "load_world", lambda *a: world)  # synthetic world: no sealed data is read
+    monkeypatch.setattr(noisy, "PER_FAMILY", PER_FAMILY)
+    monkeypatch.setattr(noisy, "manifest_for", lambda split, *a, **k: {"split": split})
+    with pytest.raises(noisy.SealedSplitError):
+        noisy.build("test_fresh")
+    sealed, _, _, _ = noisy.build("test_fresh", allow_sealed=True)
+    dev, _, _, _ = noisy.build("test")
+    assert [c["source_case_id"] for c in sealed] == [c["source_case_id"] for c in dev]  # same draw
+    vague = {c["turns"][0] for c in sealed if c["noise"]["family"] == "wrong_restatement"}
+    assert vague and vague <= set(texts_sealed.VAGUE_OPENERS["es"] + texts_sealed.VAGUE_OPENERS["pt"])
