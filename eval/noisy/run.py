@@ -3,6 +3,7 @@
     uv run python -m eval.noisy.run --configs rules,learned       # dev half, no network, no cost
     uv run python -m eval.noisy.run --configs llm                 # gpt-6-luna on its own ledger, USD 1.00 cap
     uv run python -m eval.noisy.run --half sealed --configs rules # after the code freeze only, once per config
+    uv run python -m eval.noisy.run --configs rules --out PATH    # dev half into another results file
 
 Same configurations, harness, judge and metrics as eval/run.py (rules, learned, llm), same compliant customer. Before
 anything runs the suite, gold, policy version and warehouse slice are checked against the half's manifest, and the
@@ -175,10 +176,14 @@ def main() -> None:
     ap.add_argument("--workers", type=int, default=6, help="threads for the LLM configuration")
     ap.add_argument("--cap-usd", type=float, default=CAP_USD, help="hard USD cap of the ledger for paid calls")
     ap.add_argument("--ledger", type=Path, default=LEDGER, help="spend ledger the cap is counted on")
+    ap.add_argument("--out", type=Path, default=None,
+                    help="results file (dev half only; default <half>/results.json, configs already in it are kept)")
     args = ap.parse_args()
     half_dir = HALVES[args.half]
+    if args.out is not None and args.half != "dev":
+        raise SystemExit("--out is for the dev half only: the sealed half keeps one results file")
     manifest, suite, slice_path = check_frozen(half_dir)
-    out = half_dir / "results.json"
+    out = args.out or half_dir / "results.json"
     results = json.loads(out.read_text(encoding="utf-8")) if out.exists() else {}
     names = [c for c in args.configs.split(",") if c]
     unknown = [n for n in names if n not in CONFIGS]
