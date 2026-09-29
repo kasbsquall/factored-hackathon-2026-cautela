@@ -201,6 +201,7 @@ class Orchestrator(RoutingMixin):
                    {"model": disposition.model, "confidence": disposition.confidence, "cues": sorted(cues),
                     "pool_size": len(pool), "probabilities": disposition.probabilities, "note": disposition.note},
                    started=started)
+        disposition = self._without_rejected(turn, disposition)
         if disposition.decision == "resolve":
             self._match_reasons(turn, pool, disposition.top_k[:1])
             self._act_on_transaction(turn, disposition.top_k[0], disposition.confidence, disposition.model)
@@ -221,13 +222,28 @@ class Orchestrator(RoutingMixin):
         listing = "\n".join(f"{o.index}) {fmt.label_text(o.label, state.language)}" for o in state.options)
         self._say(turn, "clarify_options", {"options": listing}, tuple(o.label for o in state.options))
 
+    def _without_rejected(self, turn: Turn, disposition: Disposition) -> Disposition:
+        """Charges the customer answered "none of these" to are never acted on or listed again: a resolve on one
+        becomes an abstention (which may still show other plausible charges), a list keeps only the others."""
+        rejected = {rid for rid, _ in turn.state.rejected}
+        kept = [tid for tid in disposition.top_k if tid not in rejected]
+        if disposition.decision == "escalate" or kept == disposition.top_k:
+            return disposition
+        dropped = disposition.decision == "resolve" or not kept
+        self._step(turn, "decide.rejected", "escalate" if dropped else "filtered",
+                   {"removed": [tid for tid in disposition.top_k if tid in rejected]})
+        if dropped:
+            return replace(disposition, decision="escalate", top_k=[], note="top_rejected")
+        return replace(disposition, top_k=kept)
+
     def _plausible_instead(self, turn: Turn, disposition: Disposition) -> Disposition:
         """An abstention while some charge fits the description on every cue, or on all but one of three or more
         (`disposition.plausible_charges`), shows those charges instead of transferring. The models abstain on
         descriptions that miss their charge on one detail (an amount in another currency, "early this month" for
         the last days of the previous one); asking costs one clarifying round, and only the customer's explicit
         pick followed by "I don't recognize it" leads to a write. Charges the customer already rejected are not
-        shown again."""
+        shown again. With two cues, a charge that fits one and is one misremembered detail off on the other counts
+        too (`ml.recall_bounds`): an exact amount with the date four days off is asked about, not transferred."""
         rejected = {rid for rid, _ in turn.state.rejected}
         unseen = [tid for tid in turn.state.plausible if tid not in rejected]
         self._step(turn, "decide.plausible", "clarify" if unseen else "none",

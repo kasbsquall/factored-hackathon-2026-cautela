@@ -95,10 +95,20 @@ POOL = [charge("TRX-A", 11, 7096.71, "Transfer", "Web"), charge("TRX-B", 12, 448
         charge("TRX-E", 2, 380.00, "Withdrawal", "ATM")]
 
 
-def test_plausible_charges_allow_one_missed_cue_only_when_three_are_read():
+def test_plausible_charges_allow_one_missed_cue_when_three_are_read():
     three_cues = "una transferencia de 4,500 el 11 de marzo que no reconozco"  # amount, date, type
     assert plausible_charges(three_cues, date(2026, 4, 2), {}, POOL) == ["TRX-D", "TRX-A", "TRX-B", "TRX-C"]
-    two_cues = "una transferencia de 4,500 que no reconozco"  # amount, type: every cue must hold
-    assert plausible_charges(two_cues, date(2026, 4, 2), {}, POOL) == ["TRX-C", "TRX-D"]
     one_cue = "un cobro de 4,500 que no reconozco"
     assert plausible_charges(one_cue, date(2026, 4, 2), {}, POOL) == []
+
+
+def test_with_two_cues_one_may_be_off_by_one_misremembered_detail_only():
+    # amount and type: C and D fit both; A is a transfer whose amount is 1.58 times the stated one (within the 1.8
+    # fitted on train, ml/recall_bounds.py); B fits the amount but is a payment, and a type has no "near"; E is a
+    # withdrawal 11.8 times off
+    two_cues = "una transferencia de 4,500 que no reconozco"
+    assert plausible_charges(two_cues, date(2026, 4, 2), {}, POOL) == ["TRX-C", "TRX-D", "TRX-A"]
+    # amount and date: B (the exact amount) and D fit the amount and are 8 and 7 days after the stated day, within
+    # 12; C fits the amount 16 days after; A misses both; E is 2 days off but 11.8 times the amount
+    exact_amount = "un cobro de 4,480 el 4 de marzo que no reconozco"
+    assert plausible_charges(exact_amount, date(2026, 4, 2), {}, POOL) == ["TRX-B", "TRX-D"]

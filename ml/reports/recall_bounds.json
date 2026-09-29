@@ -1,0 +1,17 @@
+{
+ "fitted_on": "train",
+ "date_days": 12.0,
+ "amount_ratio": 1.7991,
+ "n_date": 49,
+ "n_amount": 83,
+ "service_constants": {
+  "date_days": 12,
+  "amount_ratio": 1.8
+ },
+ "val_check": {
+  "recall_error_targets": 41,
+  "within_bound": 40,
+  "no_match_two_cues": 84,
+  "no_match_two_cues_shown_a_charge": 10
+ }
+}
