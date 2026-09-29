@@ -117,12 +117,18 @@ class StepsMixin:
         document = handoffs.assemble(state, trace_id=turn.trace_id, reason_code=reason_code, rule_ids=rule_ids,
                                      now=self.service.clock(), known_names=self._names(turn), topic=topic,
                                      confidence=confidence, extra_questions=questions)
+        queued, state.reopened = state.reopened, None
+        if queued is not None:  # a resumed search ends in a transfer again: the queued handoff is brought up to date
+            document = {**document, "handoff_id": queued["handoff_id"]}
+            queued.clear()
+            queued.update(document)
+            document = queued
         state.handoff, state.stage, state.options, state.pending = document, "handed_off", [], None
         state.recognition = None
         self._step(turn, "escalate", reason_code, {"handoff_id": document["handoff_id"],
                                                    "facts": len(document["verified_facts"]),
                                                    "actions": len(document["actions_taken"])}, rule_ids, started)
-        if self.handoff_sink:
+        if self.handoff_sink and queued is None:
             self.handoff_sink(state, document)
         lang = state.language
         case = replies.CASE_NOTE[lang].format(case_id=state.case_id) if state.case_id else ""

@@ -151,14 +151,14 @@ def from_llm(data: dict[str, Any], message: str, today: date) -> tuple[DisputeIn
     """
     intent = DisputeIntent.model_validate({**data, "source": "llm"})
     bare = without_refs(message)
-    text, parsed = plain(message), parse_description(cue_text(bare, today), today)
+    text, stated = plain(message), stated_values(bare, today)
     digits, words = re.sub(r"\D", "", bare), set(re.findall(r"[a-z0-9]+", text))
     checks = {
         "record_ref": lambda v: v.upper() in message.upper(),
-        "amount": lambda v: abs(parsed.amount - v) <= 0.01 * v if parsed.amount is not None
+        "amount": lambda v: abs(stated.amount - v) <= 0.01 * v if stated.amount is not None
         else str(int(v)) in digits,
         "date": lambda v: v <= today and "date" in text_cues(bare, today) and _agrees(v, bare, today),
-        "currency": lambda v: _currency(bare, parsed.currency) is not None
+        "currency": lambda v: stated.currency is not None
         or bool(words & {"peso", "pesos", "dolar", "dolares", "reais", "real"}),
         "merchant": lambda v: any(w in words for w in re.findall(r"[a-z0-9]+", plain(v)) if len(w) >= 3),
     }
@@ -330,8 +330,13 @@ def _currency(message: str, parsed_currency: str | None) -> str | None:
 
 
 def parsed_date(message: str, today: date) -> tuple[date | None, int]:
-    """The date the deterministic parser reads (explicit day first, then relative ranges) and its tolerance."""
-    message = without_refs(message)
+    """The date the deterministic parser reads (explicit day first, then relative ranges) and its tolerance. A
+    repaired date wins over the one it replaces (see `stated_values`)."""
+    values = stated_values(message, today)
+    return values.date, values.tolerance
+
+
+def _date_of(message: str, today: date) -> tuple[date | None, int]:
     explicit = _explicit_date(plain(message), today)
     if explicit is not None:
         return explicit, 0
@@ -340,6 +345,50 @@ def parsed_date(message: str, today: date) -> tuple[date | None, int]:
         return None, 0
     half = (parsed.date_hi - parsed.date_lo).days // 2
     return parsed.date_lo + timedelta(days=half), min(15, half + 1)
+
+
+# Self-repair markers: what a speaker says to take back a value just stated and give another, in ordinary Spanish
+# and Portuguese. "perdón"/"desculpa" (sorry), "digo", "mejor dicho"/"ou melhor"/"aliás" (rather), "quise
+# decir"/"quis dizer", "quiero decir"/"quer dizer" (I mean), "me equivoqué"/"me enganei"/"errei"/"me confundí"
+# (I got it wrong), "corrijo"/"corrigiendo"/"corrigindo", "corrección"/"correção", "rectifico", "en realidad"/"na
+# verdade"/"na real" (actually), "espera"/"espere"/"pera"/"peraí" (wait). A marker repairs a value only when the same
+# kind of value (an amount, a date) is stated both before and after it: the one after is what the customer means.
+_REPAIR = re.compile(r"\b(?:perdon|disculpa|disculpe|desculpa|desculpe|digo|mejor dicho|ou melhor|alias|"
+                     r"quise decir|quiero decir|quis dizer|quer dizer|me equivoque|me enganei|errei|me confundi|"
+                     r"corrijo|corrigiendo|corrigindo|correccion|correcao|rectifico|en realidad|na verdade|na real|"
+                     r"espera|espere|pera|perai)\b")
+
+
+class StatedValues(BaseModel):
+    amount: float | None = None
+    currency: str | None = None
+    date: _dt.date | None = None
+    tolerance: int = 0
+
+
+def _values(text: str, today: date) -> StatedValues:
+    parsed = parse_description(cue_text(text, today), today)
+    amount = parsed.amount if parsed.amount and parsed.amount > 0 else None
+    when, tolerance = _date_of(text, today)
+    return StatedValues(amount=amount, currency=_currency(text, parsed.currency), date=when, tolerance=tolerance)
+
+
+def stated_values(message: str, today: date) -> StatedValues:
+    """Amount, currency and date the message states, record ids removed. When the message repairs a value
+    ("65 dólares, no, perdón, 50,31"), the value after the last repair marker that restates one replaces the value
+    before it; values the repair does not restate are read from the whole message."""
+    text = plain(without_refs(message))
+    found = _values(text, today)
+    for marker in reversed(list(_REPAIR.finditer(text))):
+        head, tail = _values(text[:marker.start()], today), _values(text[marker.end():], today)
+        update: dict[str, Any] = {}
+        if head.amount is not None and tail.amount is not None:
+            update.update(amount=tail.amount, currency=tail.currency or head.currency)
+        if head.date is not None and tail.date is not None:
+            update.update(date=tail.date, tolerance=tail.tolerance)
+        if update:
+            return found.model_copy(update=update)
+    return found
 
 
 def parse_intent(message: str, today: date, n_options: int = 0, reason: str | None = None) -> DisputeIntent:
@@ -360,13 +409,12 @@ def parse_intent(message: str, today: date, n_options: int = 0, reason: str | No
         return DisputeIntent(intent="block_card", **base)
     bare = without_refs(message)
     parsed = parse_description(cue_text(bare, today), today)
-    when, tolerance = parsed_date(bare, today)
-    amount = parsed.amount if parsed.amount and parsed.amount > 0 else None
-    cued = amount is not None or when is not None or bool(parsed.noun_merchants)
+    values = stated_values(bare, today)
+    cued = values.amount is not None or values.date is not None or bool(parsed.noun_merchants)
     if found := lexicon.out_of_scope_topic(text, has_charge_cue=cued):
         return DisputeIntent(intent="out_of_scope", topic=found[0], **base)
-    return DisputeIntent(intent="dispute_charge", amount=amount, currency=_currency(bare, parsed.currency),
-                         date=when, date_tolerance_days=tolerance, **base)
+    return DisputeIntent(intent="dispute_charge", amount=values.amount, currency=values.currency,
+                         date=values.date, date_tolerance_days=values.tolerance, **base)
 
 
 def text_cues(text: str, today: date) -> set[str]:

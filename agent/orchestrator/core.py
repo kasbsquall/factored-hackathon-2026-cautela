@@ -20,7 +20,7 @@ from dataclasses import dataclass, field, replace
 from typing import Any
 
 from agent.llm.port import LanguageModel
-from agent.orchestrator import evidence, fmt, replies
+from agent.orchestrator import evidence, fmt, handoffs, replies
 from agent.orchestrator import intent as nlu
 from agent.orchestrator.disposition import (Disposition, DispositionModel, load_default, non_disputable_fit,
                                              plausible_charges)
@@ -284,6 +284,12 @@ class Orchestrator(RoutingMixin):
     # ---- finish ----------------------------------------------------------------------------------------------
     def _finish(self, turn: Turn) -> TurnResult:
         state, reply = turn.state, turn.reply or replies.Reply("", "template")
+        if state.reopened is not None and state.stage in FINAL_STAGES:  # a resumed search ended without a transfer
+            case = f", case {state.case_id} filed and verified" if state.case_id else ""
+            handoffs.append_question(state.reopened, f"{handoffs.FOLLOW_UP_PREFIX}corrected a detail and the resumed "
+                                     f"search ended as {state.stage}{case}; nothing is pending from this transfer "
+                                     "unless the customer asks again.", self._names(turn))
+            state.reopened = None
         state.transcript.append(("assistant", reply.text))
         llm = self._llm_usage(turn.trace_id)
         latency = (time.perf_counter() - turn.started) * 1000

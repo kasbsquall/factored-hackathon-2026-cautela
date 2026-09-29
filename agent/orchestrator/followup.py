@@ -30,11 +30,20 @@ def _cue_text(found: nlu.DisputeIntent) -> str:
     return ", ".join(parts) or "no amount, date or merchant read"
 
 
+def corrected_slots(state, found: nlu.DisputeIntent) -> list[str]:
+    """The slots (amount, date, merchant) a later message restates with a different value than the one held."""
+    return [name for name in ("amount", "date", "merchant")
+            if getattr(found, name) is not None and getattr(state.slots, name) is not None
+            and getattr(found, name) != getattr(state.slots, name)]
+
+
 class FollowUpMixin(ActionsMixin):
     def _follow_up(self, turn: Turn, message: str) -> None:
         found = self._understand(turn, message)
         if found.injection:
             self._security(turn, "prompt_injection", "model flag: " + found.injection[:48])
+            return
+        if self._resume_after_correction(turn, found, message):
             return
         note = self._follow_up_note(found, message)
         if note is None:
@@ -50,6 +59,32 @@ class FollowUpMixin(ActionsMixin):
                     "open_questions": len(state.handoff["open_questions"])}, rule_ids)
         request = replies.FOLLOW_UP[state.language][kind]
         self._say(turn, "handoff_follow_up", {"request": request}, (request,))
+
+    def _resume_after_correction(self, turn: Turn, found: nlu.DisputeIntent, message: str) -> bool:
+        """A correction of a detail right after a low_confidence transfer resumes the search, once.
+
+        The transfer said no charge could be identified from the details given; a message that restates one of
+        those details with another value ("the date was the 25th, not the 19th") changes what the search reads, so
+        the corrected slot replaces the old one and decide runs again. Only when nothing was identified, written or
+        flagged, and only once per conversation. The queued handoff gets a note now; if the search ends in another
+        transfer, that same queued handoff is updated in place (steps._escalate), and if it ends any other way,
+        a closing note is added (core._finish)."""
+        state = turn.state
+        if (state.resumed or state.transaction_id or state.actions or state.case_id or found.intent != "dispute_charge"
+                or state.handoff["transfer_reason"]["code"] != "low_confidence"):
+            return False
+        fields = corrected_slots(state, found)
+        if not fields:
+            return False
+        handoffs.append_question(state.handoff, PREFIX + f"corrected the {' and '.join(fields)} ({_cue_text(found)}); "
+                                 "the service resumed the search for the charge.", self._names(turn))
+        self._step(turn, "handoff.resumed", "correction", {"handoff_id": state.handoff["handoff_id"],
+                                                           "corrected": fields})
+        state.reopened, state.handoff, state.resumed, state.stage = state.handoff, None, True, "collecting"
+        state.statements.append(message)
+        state.slots.merge(found)
+        self._decide(turn)
+        return True
 
     def _follow_up_note(self, found: nlu.DisputeIntent, message: str) -> tuple[str, str, list[str]] | None:
         if found.intent == "request_human":
