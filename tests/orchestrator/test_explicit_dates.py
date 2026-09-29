@@ -60,6 +60,7 @@ def test_an_amount_after_a_date_is_not_taken_for_its_year():
     assert (found.amount, found.date) == (30.0, date(2025, 2, 4))
 
 
-def test_the_ranker_text_reads_the_same_day():
-    parsed = parse_description(nlu.cue_text("me cobraron 50 dólares el 4 de feb.", TODAY), TODAY)
-    assert (parsed.amount, parsed.date_lo, parsed.date_hi) == (50.0, date(2026, 2, 4), date(2026, 2, 4))
+def test_the_ranker_text_keeps_no_date_number_or_month_word():
+    text = nlu.cue_text("me cobraron 50 dólares el 4 de mayo en la tienda", TODAY)
+    assert text == "me cobraron 50 dolares el [fecha] en la tienda"
+    assert parse_description(text, TODAY).amount == 50.0

@@ -235,8 +235,6 @@ _CODE = re.compile(r"(?i)(?:\b(USD|MXN|COP|ARS|BRL)\s*\$?\s*\d|\d[\d.,]*\s*(USD|
 # without "de" and a trailing dot ("4 de feb", "4 fev.", "12 set 2025"), a numeric dd/mm or dd/mm/yyyy ("3/2",
 # "03/02/2026"), or ISO. Abbreviations are the ones in ordinary use in both languages; "set" and "setiembre" are the
 # Portuguese and Southern Cone forms of September.
-MONTH_NAMES_ES = ("enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre",
-                  "noviembre", "diciembre")
 MONTH_ABBREVIATIONS = {"ene": 1, "jan": 1, "feb": 2, "fev": 2, "mar": 3, "abr": 4, "may": 5, "mai": 5, "jun": 6,
                        "jul": 7, "ago": 8, "sep": 9, "sept": 9, "set": 9, "oct": 10, "out": 10, "nov": 11, "dic": 12,
                        "dez": 12}
@@ -308,16 +306,19 @@ def _explicit_date(text: str, today: date) -> date | None:
     return spans[0][2] if spans else None
 
 
+DATE_PLACEHOLDER = "[fecha]"
+
+
 def cue_text(text: str, today: date) -> str:
-    """The plain text the ml parser and rankers read: record ids removed and every explicit date rewritten as
-    "el <day> de <month>" (plus the year when stated), a form ml.features.parse reads as that day. Its number is then
-    never taken for an amount, as the day of "del 4 de feb" or "el 3/2" would be. The customer's words are kept
-    as written everywhere else (statements, case text, handoff)."""
+    """The plain text the ml parser, rankers and match reasons read: record ids removed and every explicit date
+    replaced by DATE_PLACEHOLDER. Its day is then never taken for an amount (the 4 of "del 4 de feb", the 3 of
+    "el 3/2"), and no month name is left to look like a merchant word ("mayo", "Plaza Mayor"). The date itself reaches
+    them as the structured date_hint of the slots, which overrides whatever the text says (ml.rankers.protocol).
+    The customer's words are kept as written everywhere else (statements, case text, handoff)."""
     text = plain(without_refs(text))
     out, last = [], 0
-    for start, end, when, has_year in date_spans(text, today):
-        out += [text[last:start], f"el {when.day} de {MONTH_NAMES_ES[when.month - 1]}"
-                + (f" de {when.year}" if has_year else "")]
+    for start, end, _, _ in date_spans(text, today):
+        out += [text[last:start], DATE_PLACEHOLDER]
         last = end
     return "".join(out) + text[last:]
 
