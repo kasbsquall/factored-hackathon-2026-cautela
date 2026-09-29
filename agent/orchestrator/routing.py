@@ -19,7 +19,9 @@ A conversation that already ended (resolved, handed off, closed) still runs the 
 check: a later attempt to reach another customer's records is recorded and re-escalated as security_event, so a
 first-turn low_confidence handoff cannot hide it. After a handoff, a new request (a person, an out-of-scope topic,
 a card block, another charge) is appended to that handoff as an open question and the transfer reason is kept
-(followup.py). Nothing else runs on a closed conversation.
+(followup.py). After a resolution (a case filed and read back, a card block verified), asking for a person creates a
+customer_requested_human handoff that carries the case, its facts and actions. Nothing else runs on a closed
+conversation.
 """
 
 from __future__ import annotations
@@ -140,7 +142,27 @@ class RoutingMixin(FollowUpMixin):
         if turn.state.stage == "handed_off" and turn.state.handoff is not None and message:
             self._follow_up(turn, message)
             return
+        if turn.state.stage == "resolved" and message and self._person_after_resolution(turn, message):
+            return
         self._say(turn, "closed")
+
+    def _person_after_resolution(self, turn: Turn, message: str) -> bool:
+        """A request for a person after the dispute was filed and read back (or the card block verified) is a
+        transfer like any other: the handoff carries the case id, the verified facts and the actions already taken,
+        so the person continues from the filed case instead of starting over. True when the turn was handled."""
+        found = self._understand(turn, message)
+        if found.injection:
+            self._security(turn, "prompt_injection", "model flag: " + found.injection[:48])
+            return True
+        if found.intent != "request_human":
+            return False
+        state = turn.state
+        done = (f"dispute case {state.case_id} was filed and verified" if state.case_id
+                else f"card {state.card_id} was blocked and verified")
+        self._escalate(turn, "customer_requested_human", self._policy_only(human=True).rule_ids,
+                       questions=[f"The customer asked for a person after {done}; continue from it, nothing has to "
+                                  "be filed again."])
+        return True
 
     # ---- route ---------------------------------------------------------------------------------------------
     def _route(self, turn: Turn, message: str) -> None:
