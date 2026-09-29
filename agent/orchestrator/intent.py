@@ -151,7 +151,7 @@ def from_llm(data: dict[str, Any], message: str, today: date) -> tuple[DisputeIn
     """
     intent = DisputeIntent.model_validate({**data, "source": "llm"})
     bare = without_refs(message)
-    text, parsed = plain(message), parse_description(bare, today)
+    text, parsed = plain(message), parse_description(cue_text(bare, today), today)
     digits, words = re.sub(r"\D", "", bare), set(re.findall(r"[a-z0-9]+", text))
     checks = {
         "record_ref": lambda v: v.upper() in message.upper(),
@@ -231,8 +231,24 @@ _ORDINALS = {"primer": 1, "primera": 1, "primero": 1, "primeira": 1, "primeiro":
              "quarta": 4, "quarto": 4}
 _REJECT = re.compile(r"\b(?:ninguna|ninguno|nenhuma|nenhum|ningun|none)\b")
 _CODE = re.compile(r"(?i)(?:\b(USD|MXN|COP|ARS|BRL)\s*\$?\s*\d|\d[\d.,]*\s*(USD|MXN|COP|ARS|BRL)\b|(R\$|US\$)\s*\d)")
-_EXPLICIT_DATE = re.compile(r"\b(\d{1,2}) de (%s)(?: de (\d{4}))?\b" % "|".join(MONTHS))
+# Explicit dates, day first as written in Spanish and Portuguese: a month name or its usual abbreviation, with or
+# without "de" and a trailing dot ("4 de feb", "4 fev.", "12 set 2025"), a numeric dd/mm or dd/mm/yyyy ("3/2",
+# "03/02/2026"), or ISO. Abbreviations are the ones in ordinary use in both languages; "set" and "setiembre" are the
+# Portuguese and Southern Cone forms of September.
+MONTH_NAMES_ES = ("enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre",
+                  "noviembre", "diciembre")
+MONTH_ABBREVIATIONS = {"ene": 1, "jan": 1, "feb": 2, "fev": 2, "mar": 3, "abr": 4, "may": 5, "mai": 5, "jun": 6,
+                       "jul": 7, "ago": 8, "sep": 9, "sept": 9, "set": 9, "oct": 10, "out": 10, "nov": 11, "dic": 12,
+                       "dez": 12}
+MONTH_WORDS = {**MONTHS, "setiembre": 9, **MONTH_ABBREVIATIONS}
+_MONTH_ALT = "|".join(sorted(MONTH_WORDS, key=len, reverse=True))
+# a year only when no amount word follows it: "el 4 de feb de 2000 pesos" states an amount, not the year 2000
+_YEAR = (r"(?:\s*(?:de|del|-)?\s*((?:19|20)\d{2})\b(?![.,]\d)"
+         r"(?!\s*(?:mil|millon|millones|pesos?|dolar|dolares|reais|real|usd|cop|ars|mxn|brl|lucas?|palos?|k)\b))?")
+_NAMED_DATE = re.compile(rf"\b(\d{{1,2}})(?:\s+de|\s*-)?\s*({_MONTH_ALT})\b\.?{_YEAR}")
+_NUMERIC_DATE = re.compile(r"(?<![\d/.,])(\d{1,2})/(\d{1,2})(?:/(\d{4}|\d{2}))?(?![\d/])")
 _ISO_DATE = re.compile(r"\b(\d{4})-(\d{2})-(\d{2})\b")
+YEARS_BACK = 2  # an explicit year further back than this names no charge of a 90-day pool: it is not read as one
 
 
 def pick_option(message: str, n_options: int) -> int | None:
@@ -250,24 +266,60 @@ def pick_option(message: str, n_options: int) -> int | None:
     return None
 
 
-def _explicit_date(text: str, today: date) -> date | None:
-    if m := _ISO_DATE.search(text):
+def _resolve_day(day: int, month: int, year: int | None, today: date) -> date | None:
+    """The date a day and month name, in the stated year or else the latest one not after today."""
+    for candidate_year in ([year] if year is not None else [today.year, today.year - 1]):
         try:
-            return date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+            candidate = date(candidate_year, month, day)
         except ValueError:
             return None
-    if not (m := _EXPLICIT_DATE.search(text)):
-        return None
-    day, month = int(m.group(1)), MONTHS[m.group(2)]
-    years = [int(m.group(3))] if m.group(3) else [today.year, today.year - 1]
-    for year in years:
-        try:
-            candidate = date(year, month, day)
-        except ValueError:
-            return None
-        if candidate <= today or m.group(3):
+        if candidate <= today or year is not None:
             return candidate
     return None
+
+
+def date_spans(text: str, today: date) -> list[tuple[int, int, date, bool]]:
+    """Explicit dates in `text` (plain), in reading order: (start, end, date, year stated). Invalid dates are
+    skipped; a stated year more than YEARS_BACK before today's is not read as a year."""
+    found: list[tuple[int, int, date, bool]] = []
+    for m in _ISO_DATE.finditer(text):
+        try:
+            found.append((m.start(), m.end(), date(int(m.group(1)), int(m.group(2)), int(m.group(3))), True))
+        except ValueError:
+            continue
+    for m in _NAMED_DATE.finditer(text):
+        year = int(m.group(3)) if m.group(3) else None
+        end = m.end()
+        if year is not None and not today.year - YEARS_BACK <= year <= today.year:
+            year, end = None, m.end(2) + (text[m.end(2):m.end(2) + 1] == ".")
+        if when := _resolve_day(int(m.group(1)), MONTH_WORDS[m.group(2)], year, today):
+            found.append((m.start(), end, when, year is not None))
+    for m in _NUMERIC_DATE.finditer(text):
+        day, month = int(m.group(1)), int(m.group(2))
+        year = None if m.group(3) is None else int(m.group(3)) + (2000 if len(m.group(3)) == 2 else 0)
+        if 1 <= month <= 12 and (when := _resolve_day(day, month, year, today)):
+            found.append((m.start(), m.end(), when, year is not None))
+    found.sort()
+    return [s for i, s in enumerate(found) if not any(p[0] <= s[0] < p[1] for p in found[:i])]
+
+
+def _explicit_date(text: str, today: date) -> date | None:
+    spans = date_spans(text, today)
+    return spans[0][2] if spans else None
+
+
+def cue_text(text: str, today: date) -> str:
+    """The plain text the ml parser and rankers read: record ids removed and every explicit date rewritten as
+    "el <day> de <month>" (plus the year when stated), a form ml.features.parse reads as that day. Its number is then
+    never taken for an amount, as the day of "del 4 de feb" or "el 3/2" would be. The customer's words are kept
+    as written everywhere else (statements, case text, handoff)."""
+    text = plain(without_refs(text))
+    out, last = [], 0
+    for start, end, when, has_year in date_spans(text, today):
+        out += [text[last:start], f"el {when.day} de {MONTH_NAMES_ES[when.month - 1]}"
+                + (f" de {when.year}" if has_year else "")]
+        last = end
+    return "".join(out) + text[last:]
 
 
 def _currency(message: str, parsed_currency: str | None) -> str | None:
@@ -307,7 +359,7 @@ def parse_intent(message: str, today: date, n_options: int = 0, reason: str | No
     if _BLOCK.search(text):
         return DisputeIntent(intent="block_card", **base)
     bare = without_refs(message)
-    parsed = parse_description(bare, today)
+    parsed = parse_description(cue_text(bare, today), today)
     when, tolerance = parsed_date(bare, today)
     amount = parsed.amount if parsed.amount and parsed.amount > 0 else None
     cued = amount is not None or when is not None or bool(parsed.noun_merchants)
@@ -321,7 +373,7 @@ def text_cues(text: str, today: date) -> set[str]:
     """Cue kinds the deterministic parser can read in the accumulated text (merchant names are checked later
     against the customer's own charges, since only those can be matched). Record ids are not read."""
     text = without_refs(text)
-    parsed = parse_description(text, today)
+    parsed = parse_description(cue_text(text, today), today)
     found = {"amount"} if parsed.amount else set()
     found |= {"date"} if parsed.date_lo is not None or _explicit_date(plain(text), today) else set()
     found |= {"type"} if parsed.types else set()

@@ -185,7 +185,7 @@ class Orchestrator(RoutingMixin):
         if not state.cued:  # nothing names a charge: never act on one (see actions._act_on_transaction)
             self._clarify_details(turn, cues)
             return
-        started, text = time.perf_counter(), nlu.without_refs(state.text)
+        started, text = time.perf_counter(), nlu.cue_text(state.text, self.service.clock().date())
         state.plausible = plausible_charges(text, self.service.clock().date(), state.slots.overrides(), pool)
         spent = non_disputable_fit(text, self.service.clock().date(), state.slots.overrides(), pool)
         if spent is not None:  # a charge that moved no money: policy explains it, no model is asked
@@ -241,7 +241,8 @@ class Orchestrator(RoutingMixin):
         """Why each charge matched, from the ranker features that fired (agent/orchestrator/evidence.py)."""
         state, started = turn.state, time.perf_counter()
         try:
-            found = evidence.match_reasons(nlu.without_refs(state.text), self.service.clock().date(),
+            found = evidence.match_reasons(nlu.cue_text(state.text, self.service.clock().date()),
+                                           self.service.clock().date(),
                                            state.slots.overrides(), pool,
                                            ids, state.language, POOL_ARGS["window_days"])
         except (KeyError, TypeError, ValueError) as exc:  # a charge the feature code cannot read: show no reasons
