@@ -29,13 +29,60 @@ test("customer picks one of several charges and gets a verified case, in Spanish
 
   const receipt = page.getByRole("region", { name: "Disputa abierta" });
   await expect(receipt).toBeVisible();
-  await expect(receipt.getByText(/^CASE-[0-9A-F]{12}$/)).toBeVisible();
+  await expect(receipt.getByText(/^CASE-[0-9A-F]{12}$/).first()).toBeVisible();
   await expect(receipt.getByText("abierta", { exact: true })).toBeVisible();
   await expect(receipt.getByText("CO-WINDOW-001", { exact: true })).toBeVisible();
+  await expect(receipt.getByRole("region", { name: "Lo que verificamos" }).getByRole("listitem")).toHaveCount(5);
+  await expect(page.getByRole("region", { name: "¿Prefieres hablar con una persona?" })
+    .getByRole("button", { name: "Hablar con una persona" })).toBeVisible();
 
   await receipt.getByRole("link", { name: "Ver registro técnico (en inglés)" }).click();
   await expect(page.getByText("Hash chain intact")).toBeVisible();
   await expect(page.getByText("open_dispute_case").filter({ visible: true }).first()).toBeVisible();
+});
+
+/** A stand-in speechSynthesis with one on-device voice per language; what it is asked to say lands in window.__spoken. */
+function fakeSpeech() {
+  const voices = ["es-MX", "pt-BR", "en-US"].map((lang) => ({ lang, localService: true, name: `Test ${lang}`, default: false, voiceURI: lang }));
+  const spoken: string[] = [];
+  Object.assign(window, { __spoken: spoken });
+  const synth = {
+    getVoices: () => voices,
+    speak: (u: { text: string }) => spoken.push(u.text),
+    cancel: () => undefined, pause: () => undefined, resume: () => undefined,
+    addEventListener: () => undefined, removeEventListener: () => undefined,
+  };
+  Object.defineProperty(window, "speechSynthesis", { value: synth, configurable: true });
+  Object.defineProperty(window, "SpeechSynthesisUtterance", {
+    value: class { voice = null; lang = ""; constructor(public text: string) {} }, configurable: true,
+  });
+}
+
+test("the customer can keep the receipt: copy the case number and hear what was checked", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.addInitScript(fakeSpeech);
+  await page.goto("/customer");
+  await login(page, /Descripción vaga/, "Ingresar");
+
+  await expect(page.getByRole("switch", { name: "Leer respuestas en voz alta" })).toHaveAttribute("aria-checked", "false");
+  await page.getByRole("button", { name: /Me cobraron algo/ }).click();
+  await page.getByRole("button", { name: /MERCANUBE/ }).click();
+  await page.getByRole("button", { name: /No lo reconozco/ }).click();
+  await page.getByRole("button", { name: "Confirmar disputa" }).click();
+
+  const receipt = page.getByRole("region", { name: "Disputa abierta" });
+  const caseId = (await receipt.getByText(/^CASE-[0-9A-F]{12}$/).first().textContent()) ?? "";
+  await receipt.getByRole("button", { name: "Copiar número" }).click();
+  await expect(receipt.getByRole("button", { name: "Copiado" })).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(caseId);
+
+  await receipt.getByRole("button", { name: "Escuchar el comprobante" }).click();
+  await expect(receipt.getByRole("button", { name: "Pausar" })).toBeVisible();
+  const said = await page.evaluate(() => (window as unknown as { __spoken: string[] }).__spoken.at(-1) ?? "");
+  expect(said).toContain("Lo que verificamos");
+  expect(said).toContain("Volvimos a leer el caso en el sistema del banco");
+  expect(said).toContain("tarjeta de débito terminada en 4821");
+  expect(said).not.toContain("Copiar número");
 });
 
 test("a high amount is registered for review and handed to a person, in Portuguese", async ({ page }) => {
