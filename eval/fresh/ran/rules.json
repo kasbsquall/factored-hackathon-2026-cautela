@@ -1,0 +1,18 @@
+{
+  "config": "rules",
+  "run_id": "rules-compliant-fresh-20260929T223453Z",
+  "finished_at": "2026-09-29T22:36:58+00:00",
+  "suite_sha256": "9a1b12fdcee809c49cd8e051fc49bb17f85a882fe79455416424d2d59c604624",
+  "gold_sha256": "fbda05a05034ee34d6868cf635c5834bc677b598c669c01680ecc0af84b15d17",
+  "suite_version": "e2e-fresh-v1",
+  "policy_version": "2026-09-26.2",
+  "git_head": "829a64bc453eda5b647c8131bb3b2e3039b61c52",
+  "agent_api_ml_uncommitted_changes": false,
+  "flags": {
+    "attentive": false,
+    "variance_runs": 0,
+    "workers": 1
+  },
+  "valid": true,
+  "note": "eval_fresh ran once for this configuration. Commit this file with eval/fresh/results.json; eval/fresh/run.py refuses every later run of this configuration."
+}
