@@ -30,6 +30,7 @@ from ml.features.pairwise import candidate_features
 from ml.label_rule import LabelRuleDecider
 from ml.model_lock import COMMITTED_DIR
 from ml.model_lock import verify as verify_committed
+from ml.recall_bounds import one_detail_off
 from ml.rankers.learned import LearnedRanker
 from ml.rankers.protocol import coerce_features
 from ml.rankers.rules import RuleRanker
@@ -148,22 +149,26 @@ def non_disputable_fit(text: str, report_date: date, overrides: Mapping[str, Any
 
 def plausible_charges(text: str, report_date: date, overrides: Mapping[str, Any],
                       pool: Sequence[Mapping[str, Any]]) -> list[str]:
-    """Ids of the charges the description could mean: each satisfies at least MIN_FIT_CUES of the cues read and
-    fails at most one of them (same cue tests and tolerances as the labels, `ml.disposition._cue_hits`), whatever
-    its type or status.
+    """Ids of the charges the description could mean, whatever their type or status: each satisfies at least
+    MIN_FIT_CUES of the cues read and fails at most one of them (same cue tests and tolerances as the labels,
+    `ml.disposition._cue_hits`), or, when exactly two cues were read, fits one and misses the other by no more than
+    one misremembered detail (`ml.recall_bounds.one_detail_off`: a date up to 12 days or an amount up to 1.8 times
+    off, the largest such errors in the train split).
 
-    Every cue when two are read; all but one when three or more are, the "near" fit the disposition model already
-    counts as a feature (`n_near` in ml/disposition.py). One wrong detail is how a description usually misses its
-    charge (an amount in another currency, "early this month" for the last days of the previous one). Empty when
-    fewer than MIN_FIT_CUES cues were read: one cue ("about 4,500") is too little to name a charge.
+    Every cue when two are read, or all but one when three or more are, is the "near" fit the disposition model
+    already counts as a feature (`n_near` in ml/disposition.py). One wrong detail is how a description usually misses
+    its charge (an amount in another currency, "early this month" for the last days of the previous one, an exact
+    amount with the date a few days off). Empty when fewer than MIN_FIT_CUES cues were read: one cue ("about 4,500")
+    is too little to name a charge.
     """
     candidates = [dict(t) for t in pool]
     parsed, report = coerce_features(ranker_input(text, report_date, overrides))
     rows = candidate_features(parsed, candidates, report) if candidates else []
     missed = {}
     for tx, row in zip(candidates, rows):
-        hits = list(_cue_hits(row).values())
-        if hits.count(True) >= MIN_FIT_CUES and hits.count(False) <= 1:
+        cue_hits = _cue_hits(row)
+        hits = list(cue_hits.values())
+        if (hits.count(True) >= MIN_FIT_CUES and hits.count(False) <= 1) or one_detail_off(row, cue_hits):
             missed[tx["transaction_id"]] = hits.count(False)
     return sorted(missed, key=missed.get)  # charges that fit every cue first, then pool order (newest first)
 

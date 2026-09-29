@@ -147,6 +147,8 @@ class ConversationState:
     cards: dict[str, dict[str, str]] | None = None  # product id -> card type and last 4, from the profile tool
     rule_ids: list[str] = field(default_factory=list)
     handoff: dict[str, Any] | None = None
+    reopened: dict[str, Any] | None = None  # the queued handoff a correction resumed (followup.py)
+    resumed: bool = False  # a correction after a low_confidence transfer resumed the search once
     trace_ids: list[str] = field(default_factory=list)
     trail: list[TrailStep] = field(default_factory=list)
     transcript: list[tuple[str, str]] = field(default_factory=list)  # (role, text) for the customer UI only
