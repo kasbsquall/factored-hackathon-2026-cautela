@@ -12,6 +12,7 @@ import { OptionList } from "./option-list";
 import { RecognizeCard } from "./recognize-card";
 import { OutcomeReceipt } from "./outcome-receipt";
 import { MessageTranslation } from "./message-translation";
+import { ReadAloud } from "./read-aloud";
 import styles from "./conversation.module.css";
 
 interface Props {
@@ -29,11 +30,17 @@ interface Props {
   /** The service's demo clock, or null: claim deadlines are counted from its date. */
   demoClock: string | null;
   canAskHuman: boolean;
+  /** expires_at of the session the one-time code opened, for the receipt's identity check. */
+  sessionUntil: string | null;
 }
 
-export function EntryView({ entry, isLast, flow, copy, talk, lang, ui, demoClock, canAskHuman }: Props) {
+export function EntryView({ entry, isLast, flow, copy, talk, lang, ui, demoClock, canAskHuman, sessionUntil }: Props) {
+  // Every assistant message can be read aloud, in the conversation language it is written in.
+  const listen = entry.kind === "system"
+    ? <ReadAloud id={entry.id} text={() => entry.say(talk)} lang={lang} copy={copy} label={copy.listenMessage} />
+    : null;
   const translation = entry.kind === "user" || entry.kind === "system"
-    ? <MessageTranslation entry={entry} talk={lang} translate={flow.translate} conversationId={flow.conversationId} />
+    ? <MessageTranslation entry={entry} talk={lang} translate={flow.translate} conversationId={flow.conversationId} leading={listen} />
     : null;
   switch (entry.kind) {
     case "user":
@@ -65,7 +72,10 @@ export function EntryView({ entry, isLast, flow, copy, talk, lang, ui, demoClock
     case "confirm":
       return <ConfirmCard entry={entry} copy={copy} lang={ui} demoClock={demoClock} onConfirm={() => flow.confirm(entry)} onCancel={() => flow.cancel(entry)} />;
     case "receipt":
-      return <OutcomeReceipt entry={entry} copy={copy} lang={ui} demoClock={demoClock} />;
+      return <OutcomeReceipt entry={entry} copy={copy} lang={ui} demoClock={demoClock} turns={flow.turns.map((t) => t.turn)}
+        sessionUntil={sessionUntil} busy={flow.busy}
+        // Once a person has the case, the offer on the earlier receipt is gone.
+        onAskHuman={flow.turns.some((t) => t.turn.stage === "handed_off") ? undefined : flow.askHuman} />;
     case "error":
       return (
         <Notice tone="error" icon={<WarningOctagon aria-hidden />} title={entry.title?.(copy) ?? copy.loadFailTitle}

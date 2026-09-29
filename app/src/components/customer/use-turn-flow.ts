@@ -78,9 +78,10 @@ export function useTurnFlow({ token, language, copy, onSessionEnd }: TurnFlowOpt
       chargeView.current = turn.confirmation.charge ?? chargeView.current;
       items.push({ id: entryId(), kind: "confirm", confirmation: turn.confirmation, conversationId: turn.conversation_id, state: "pending" });
     }
-    // A turn after a handoff repeats the same handoff id; its receipt is already on screen.
+    // A turn after a handoff repeats the same handoff id; its receipt is already on screen. A handoff comes first: a
+    // person asked for after filing repeats the case id but is a new outcome, with its own confirmation.
     const recognized = turn.stage === "recognized" ? `recognized:${turn.conversation_id}` : null;
-    const outcomeKey = turn.case?.case_id ?? turn.handoff_id ?? recognized;
+    const outcomeKey = turn.handoff_id ?? turn.case?.case_id ?? recognized;
     if (outcomeKey && !shown.current.has(outcomeKey)) {
       shown.current.add(outcomeKey);
       // Read the case back through its own endpoint before calling it registered.

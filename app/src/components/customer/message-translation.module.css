@@ -11,13 +11,32 @@
   align-self: flex-end;
 }
 
+.tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-8);
+}
+
+/* The first tool lines up with the message text: the button's own padding is pulled back. */
+.tools > :first-child {
+  margin-inline-start: calc(var(--s-8) * -1);
+}
+
+.end .tools > :first-child {
+  margin-inline-start: 0;
+}
+
+.end .tools > :last-child {
+  margin-inline-end: calc(var(--s-8) * -1);
+}
+
 .toggle {
   display: inline-flex;
   align-items: center;
   gap: var(--s-6);
   min-height: 32px;
   padding: 0 var(--s-8);
-  margin-inline: calc(var(--s-8) * -1);
   border: 0;
   border-radius: var(--r-btn);
   background: transparent;

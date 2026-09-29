@@ -1,0 +1,28 @@
+.block {
+  display: grid;
+  justify-items: start;
+  gap: var(--s-4);
+}
+
+/* The number a customer writes down or reads to a person: the largest text on the receipt. */
+.id {
+  font-size: var(--t-25);
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-4);
+  margin-inline-start: calc(var(--s-8) * -1);
+}
+
+.failed {
+  font-size: var(--t-12);
+  color: var(--stop);
+}

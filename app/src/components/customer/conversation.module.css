@@ -154,19 +154,32 @@
 .inputRow {
   display: grid;
   grid-template-columns: 1fr auto;
+  align-items: end;
   gap: var(--s-8);
   width: 100%;
 }
 
+/* One line tall like the old pill; it grows with dictated or pasted text where field-sizing is supported. */
 .input {
-  height: 48px;
+  display: block;
+  min-height: 48px;
+  max-height: 144px;
   min-width: 0;
-  padding: 0 var(--s-16);
-  border-radius: var(--r-btn);
+  padding: 12px var(--s-16);
+  border-radius: 24px;
   border: 1px solid var(--btn-s-line);
   background: var(--bg);
+  font-family: inherit;
   font-size: var(--t-16);
+  line-height: 1.4;
+  color: inherit;
+  resize: none;
+  field-sizing: content;
   transition: border-color var(--d-ui) var(--ease-out);
+}
+
+.input::placeholder {
+  color: var(--ink2);
 }
 
 .input:hover {

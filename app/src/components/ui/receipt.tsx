@@ -52,7 +52,8 @@ export function Receipt({ kind, title, rows, foot, children, index = 0 }: Receip
             </div>
           ))}
         </dl>
-        {foot ? <div className={styles.foot}>{foot}</div> : null}
+        {/* Technical references are for the audit view, not for reading aloud. */}
+        {foot ? <div className={styles.foot} data-speech-skip>{foot}</div> : null}
       </div>
     </section>
   );

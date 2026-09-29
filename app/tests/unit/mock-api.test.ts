@@ -66,6 +66,30 @@ describe("MockCautelaApi, same contract as POST /conversations/turn", () => {
     expect(done.case?.claim_window).toEqual({ rule_id: "CO-WINDOW-001", deadline: "2026-09-29" });
   });
 
+  it("hands off with the filed case when a person is asked for after filing, like tests/orchestrator/test_person_after_filing.py", async () => {
+    const api = new MockCautelaApi({ latency: [0, 0] });
+    const { token } = await login(api, "1020000001");
+    const first = await api.turn(token, "No reconozco un cargo", null, "es");
+    const asked = await api.turn(token, "2", first.conversation_id, "es");
+    const picked = await api.recognize(token, asked.conversation_id, asked.recognition!.recognition_id, false);
+    const done = await api.confirm(token, picked.conversation_id, picked.confirmation!.confirmation_id, true);
+    const caseId = done.case!.case_id;
+
+    const small = await api.turn(token, "Muchas gracias por todo", done.conversation_id, "es");
+    expect(small).toMatchObject({ stage: "resolved", handoff_id: null });
+
+    const after = await api.turn(token, "Quiero hablar con una persona.", done.conversation_id, "es");
+    expect(after).toMatchObject({ stage: "handed_off", transfer_reason: "customer_requested_human", case: { case_id: caseId, verified: true } });
+    expect(after.reply).toContain(caseId);
+    const handoff = await api.getHandoff(after.handoff_id!);
+    expect(handoff.transfer_reason).toEqual({ code: "customer_requested_human", rule_ids: ["SYN-HUMAN-001"] });
+    expect(handoff.request.disputed_transaction_ids).toEqual(["TX00004182"]);
+    expect(handoff.actions_taken).toContainEqual({ action: "open_dispute_case", status: "verified", record_id: caseId });
+    expect(handoff.verified_facts.map((f) => f.source)).toEqual(expect.arrayContaining([`get_case_status:${caseId}`, "get_transaction:TX00004182"]));
+    expect(handoff.open_questions.some((q) => q.includes(caseId))).toBe(true);
+    expect((await api.listHandoffs()).filter((h) => h.handoff_id === after.handoff_id)).toHaveLength(1);
+  });
+
   it("refuses a confirmation id it did not issue", async () => {
     const api = new MockCautelaApi({ latency: [0, 0] });
     const { token } = await login(api, "1020000001");

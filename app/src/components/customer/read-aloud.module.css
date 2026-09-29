@@ -1,0 +1,49 @@
+/* Same small mono control as "Show English translation", so the tools under a message read as one row. */
+.group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-6);
+  min-height: 32px;
+  padding: 0 var(--s-8);
+  border: 0;
+  border-radius: var(--r-btn);
+  background: transparent;
+  color: var(--ink2);
+  font-family: var(--f-mono);
+  font-size: var(--t-11);
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: color var(--d-ui) var(--ease-out), background-color var(--d-ui) var(--ease-out), transform var(--d-fast) var(--ease-out);
+}
+
+.btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.btn:hover,
+.btn:focus-visible {
+  color: var(--ink);
+  background: var(--sf2);
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+/* While it plays, the control that started it carries the brass accent. */
+.btn[data-state="speaking"],
+.btn[data-state="paused"] {
+  color: var(--ink);
+  background: color-mix(in oklab, var(--ring) 14%, transparent);
+}
+
+.btn[data-state="speaking"] svg {
+  color: var(--ring);
+}

@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { ArrowUp, ChatCircleText, CheckCircle, UserSwitch } from "@phosphor-icons/react";
 import type { Language, TurnStage } from "@/lib/api/types";
 import type { CustomerCopy, UiLang } from "@/lib/i18n/customer";
+import { speak, stopSpeech, useCanSpeak } from "@/lib/speech";
 import { Button } from "@/components/ui/button";
 import type { Auth, TrailState } from "./customer-app";
 import { stageOf, type Entry } from "./flow-types";
 import { useTurnFlow } from "./use-turn-flow";
 import { EntryView } from "./entry-view";
+import { AutoReadBar, useAutoRead } from "./auto-read";
 import styles from "./conversation.module.css";
 
 interface Props {
@@ -47,6 +49,24 @@ function announcement(entries: Entry[], copy: CustomerCopy, talk: CustomerCopy, 
   return { text: said?.kind === "system" ? said.say(talk) : "", lang };
 }
 
+/**
+ * With "read replies aloud" on, each new assistant message is read once, in the conversation language. Messages that
+ * arrived while it was off are marked as heard, so turning it on never reads the backlog.
+ */
+function useAutoReadReplies(entries: Entry[], on: boolean, lang: Language, talk: CustomerCopy): void {
+  const heard = useRef(new Set<string>());
+  const canSpeak = useCanSpeak(lang);
+  useEffect(() => {
+    const fresh = entries.filter((e): e is Extract<Entry, { kind: "system" }> => e.kind === "system" && !heard.current.has(e.id));
+    fresh.forEach((e) => heard.current.add(e.id));
+    const latest = fresh[fresh.length - 1];
+    if (!on || !canSpeak || !latest) return;
+    speak(`auto-${latest.id}`, fresh.map((e) => e.say(talk)).join("\n"), lang);
+  }, [entries, on, canSpeak, lang, talk]);
+  // Nothing keeps talking after the conversation is gone (logout, session end).
+  useEffect(() => () => stopSpeech(), []);
+}
+
 function scrollBehavior(): ScrollBehavior {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
 }
@@ -69,6 +89,9 @@ export function Conversation({ auth, copy, talk, lang, ui, demoClock, onSessionE
   const closed = !handedOff && stage !== undefined && CLOSED_STAGES.has(stage);
   const suggestion = auth.identity?.messages?.[lang]?.[0] ?? talk.suggestion;
   const spoken = announcement(entries, copy, talk, ui, lang);
+  const hintId = useId();
+  const [autoRead, setAutoRead] = useAutoRead();
+  useAutoReadReplies(entries, autoRead, lang, talk);
 
   const { turns, pending, failed } = flow;
   useEffect(() => onTrail({ turns, pending, failed }), [turns, pending, failed, onTrail]);
@@ -97,16 +120,28 @@ export function Conversation({ auth, copy, talk, lang, ui, demoClock, onSessionE
     log.querySelector<HTMLElement>(`[data-entry="${lastId}"]`)?.focus({ preventScroll: true });
   }, [lastId, lastKind]);
 
-  function submit(event: React.FormEvent) {
-    event.preventDefault();
+  function sendDraft() {
     const text = draft.trim();
     if (!text || flow.busy) return;
     setDraft("");
     flow.send(text);
   }
 
+  function submit(event: React.FormEvent) {
+    event.preventDefault();
+    sendDraft();
+  }
+
+  // Enter sends, Shift+Enter keeps a new line; a key that confirms an IME or dictation composition is left alone.
+  function onKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) return;
+    event.preventDefault();
+    sendDraft();
+  }
+
   return (
     <div className={styles.wrap} ref={wrapRef}>
+      <AutoReadBar on={autoRead} onChange={setAutoRead} lang={lang} copy={copy} />
       <p className="sr-only" role="status" aria-live="polite" lang={spoken.lang}>{spoken.text}</p>
       <ol className={styles.log} ref={logRef}>
         {entries.map((entry, i) => {
@@ -114,7 +149,7 @@ export function Conversation({ auth, copy, talk, lang, ui, demoClock, onSessionE
           return (
             <li key={entry.id} data-entry={entry.id} tabIndex={-1} className={`${styles.item} ${styles[entry.kind] ?? ""} rise`}>
               <EntryView entry={stale ? freeze(entry) : entry} isLast={i === entries.length - 1} flow={stale ? { ...flow, busy: true } : flow}
-                copy={copy} talk={talk} lang={lang} ui={ui} demoClock={demoClock} canAskHuman={!handedOff && !closed} />
+                copy={copy} talk={talk} lang={lang} ui={ui} demoClock={demoClock} canAskHuman={!handedOff && !closed} sessionUntil={auth.expiresAt} />
             </li>
           );
         })}
@@ -140,16 +175,21 @@ export function Conversation({ auth, copy, talk, lang, ui, demoClock, onSessionE
         {!closed ? (
           <div className={styles.inputRow}>
             <label htmlFor="composer" className="sr-only">{copy.composerLabel}</label>
-            <input
+            {/* A plain labelled textarea: OS dictation and screen readers work on it without any custom speech code. */}
+            <textarea
               id="composer"
               lang={lang}
+              rows={1}
               className={styles.input}
               placeholder={handedOff ? copy.handedOffPlaceholder : copy.composerPlaceholder}
               value={draft}
               maxLength={1000}
               autoComplete="off"
+              aria-describedby={hintId}
               onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={onKeyDown}
             />
+            <p id={hintId} className="sr-only">{copy.composerHint}</p>
             <button type="submit" className={styles.send} disabled={!draft.trim() || flow.busy} aria-label={copy.send}>
               <ArrowUp aria-hidden />
             </button>

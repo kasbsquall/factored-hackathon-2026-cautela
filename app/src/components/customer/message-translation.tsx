@@ -83,10 +83,12 @@ interface Props {
   talk: Language;
   translate: (role: "customer" | "assistant", text: string) => Promise<Translation>;
   conversationId: string | null;
+  /** Other tools for the same message (read aloud), on the same row as the toggle. */
+  leading?: React.ReactNode;
 }
 
 /** "Show English translation" under one message, for reviewers. The message itself is never replaced. */
-export function MessageTranslation({ entry, talk, translate, conversationId }: Props) {
+export function MessageTranslation({ entry, talk, translate, conversationId, leading }: Props) {
   const regionId = useId();
   const source = englishSource(entry, talk);
   // A service reply is sent as the service recorded it (options included); the service checks it against the conversation.
@@ -100,7 +102,7 @@ export function MessageTranslation({ entry, talk, translate, conversationId }: P
     return hit ? { status: "done", result: hit } : { status: "idle" };
   });
 
-  if (!source) return null;
+  if (!source) return leading ? <div className={`${styles.wrap} ${entry.kind === "user" ? styles.end : ""}`}><div className={styles.tools}>{leading}</div></div> : null;
 
   function load() {
     // The retry button leaves the page while loading: keep keyboard focus on the toggle instead of losing it.
@@ -124,10 +126,13 @@ export function MessageTranslation({ entry, talk, translate, conversationId }: P
 
   return (
     <div className={`${styles.wrap} ${entry.kind === "user" ? styles.end : ""}`}>
-      <button type="button" ref={toggleRef} className={styles.toggle} aria-expanded={open} aria-controls={regionId} onClick={toggle} lang="en">
-        <Translate aria-hidden />
-        <span>{open ? "Hide English translation" : "Show English translation"}</span>
-      </button>
+      <div className={styles.tools}>
+        {leading}
+        <button type="button" ref={toggleRef} className={styles.toggle} aria-expanded={open} aria-controls={regionId} onClick={toggle} lang="en">
+          <Translate aria-hidden />
+          <span>{open ? "Hide English translation" : "Show English translation"}</span>
+        </button>
+      </div>
       {open ? (
         <div id={regionId} className={styles.panel} aria-live="polite" lang="en">
           {source.kind !== "machine" ? (
