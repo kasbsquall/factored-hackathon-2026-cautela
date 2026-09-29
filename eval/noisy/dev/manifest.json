@@ -1,0 +1,59 @@
+{
+  "version": "noisy-v1",
+  "seed": 20260929,
+  "split": "test",
+  "role": "dev",
+  "suite_sha256": "268e7603daba88490c2d4a0d8cbef29ae035fef7034abe79268982f4633fe18e",
+  "gold_sha256": "a163929a757047a252033eda4626a2a4bff4ee12c44da39fa2039a7b832ad0a9",
+  "generator_sha256": {
+    "eval/noisy/build.py": "8dcbba92409ed7d5da4c766d1cddf644e338d683d9550409f90baaa04402c224",
+    "eval/noisy/texts.py": "f65607e51bb1a3191db3a73c931f80c34e29ba7adbca1536f75d1b75bc6b02fb",
+    "eval/build.py": "b1c8e625c47d0bbdd8e1032ff3b66738f152a55d8a8d0fc0d00f79cc49f68383",
+    "eval/oracle.py": "36c0c6c70c7e81fbcf15041ee5276dbdd9b52e520221cb6ef608245963f9ee3b",
+    "combined": "41822176b1ec3cfd4ec85b87a23bc3227f3fa60e8f2defc14fc6b5051774685c"
+  },
+  "policy_version": "2026-09-26.2",
+  "warehouse_slice_content_hash": "552ab2f435d830823d7815ba68a79e9928da01173f5f1e005828148d1f8e21b0",
+  "sources": {
+    "cases_file": "eval/cases/disputes/test.jsonl",
+    "cases_sha256": "68f99bca2d4ece3062e7c596223359e9e806a6612c6705fd5526bf7f5e30c5e2"
+  },
+  "built_on_commit": "2da6b8d17c261f5488badd8ac8d59d22b0869566",
+  "conversations": 240,
+  "by_family": {
+    "approx_amount": 40,
+    "chat_style": 40,
+    "partial_merchant": 40,
+    "self_correction": 40,
+    "wrong_date": 40,
+    "wrong_restatement": 40
+  },
+  "by_language": {
+    "es": 180,
+    "pt": 60
+  },
+  "by_family_language": {
+    "approx_amount/es": 30,
+    "approx_amount/pt": 10,
+    "chat_style/es": 30,
+    "chat_style/pt": 10,
+    "partial_merchant/es": 30,
+    "partial_merchant/pt": 10,
+    "self_correction/es": 30,
+    "self_correction/pt": 10,
+    "wrong_date/es": 30,
+    "wrong_date/pt": 10,
+    "wrong_restatement/es": 30,
+    "wrong_restatement/pt": 10
+  },
+  "by_gold": {
+    "handoff:amount_above_threshold": 112,
+    "handoff:policy_requires_review": 14,
+    "resolved": 114
+  },
+  "by_label": {
+    "ambiguous": 60,
+    "match": 180
+  },
+  "note": "Written before any configuration runs. suite.jsonl is git-ignored (organizer-derived ids and values); rebuild it with `uv run python -m eval.noisy.build --split test --verify`."
+}
