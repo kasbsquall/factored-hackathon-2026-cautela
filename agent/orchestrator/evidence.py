@@ -152,6 +152,34 @@ def _row_reasons(row: list[float], parsed: Any, overrides: Mapping[str, Any], tx
     return out
 
 
+def fit_strengths(text: str, report_date: date, overrides: Mapping[str, Any],
+                  pool: Sequence[Mapping[str, Any]]) -> dict[str, int]:
+    """How well each charge fits the stated cues: one point per cue it fits within the label tolerances
+    (`_cue_hits`), and one more per cue it fits exactly, as the match reasons say it: the same amount (under
+    EXACT_AMOUNT_PCT), the stated day or inside the stated period, and every merchant, type or channel that fits.
+    A declined charge 15% off the amount and two days off the date scores what an approved charge with the exact
+    amount and a wrong date scores."""
+    candidates = [dict(t) for t in pool if t.get("amount") is not None]
+    if not candidates:
+        return {}
+    parsed, report = coerce_features(ranker_input(text, report_date, overrides))
+    out = {}
+    for tx, row in zip(candidates, candidate_features(parsed, candidates, report)):
+        score = 0
+        for cue, fits in _cue_hits(row).items():
+            if not fits:
+                continue
+            if cue == "amount":
+                exact = abs(float(tx["amount"]) - parsed.amount) / parsed.amount * 100 < EXACT_AMOUNT_PCT
+            elif cue == "date":
+                exact = row[IDX["date_dist"]] == 0
+            else:
+                exact = True
+            score += 1 + exact
+        out[tx["transaction_id"]] = score
+    return out
+
+
 def match_reasons(text: str, report_date: date, overrides: Mapping[str, Any], pool: Sequence[Mapping[str, Any]],
                   ids: Sequence[str], lang: str, window_days: int) -> dict[str, list[dict[str, Any]]]:
     """Reasons for each id in `ids`, from the features computed over the whole pool (ranks depend on it)."""

@@ -22,8 +22,8 @@ from typing import Any
 from agent.llm.port import LanguageModel
 from agent.orchestrator import evidence, fmt, handoffs, replies
 from agent.orchestrator import intent as nlu
-from agent.orchestrator.disposition import (Disposition, DispositionModel, load_default, non_disputable_fit,
-                                             plausible_charges)
+from agent.orchestrator.disposition import (DISPUTABLE_STATUSES, Disposition, DispositionModel, load_default,
+                                             non_disputable_fit, plausible_charges)
 from agent.orchestrator.routing import RoutingMixin, names_a_charge
 from agent.orchestrator.state import FINAL_STAGES, ConversationStore, Option, TrailStep
 from agent.orchestrator.steps import HandoffSink, Turn, tx_label
@@ -188,13 +188,15 @@ class Orchestrator(RoutingMixin):
         started, text = time.perf_counter(), nlu.cue_text(state.text, self.service.clock().date())
         state.plausible = plausible_charges(text, self.service.clock().date(), state.slots.overrides(), pool)
         spent = non_disputable_fit(text, self.service.clock().date(), state.slots.overrides(), pool)
+        rivals = self._money_moved_rivals(turn, pool, spent["transaction_id"]) if spent is not None else []
         if spent is not None:  # a charge that moved no money: policy explains it, no model is asked
-            self._step(turn, "decide.status_check", "fits_non_disputable_charge",
-                       {"status": spent.get("transaction_status"), "cues": sorted(cues), "pool_size": len(pool)},
-                       started=started)
-            self._act_on_transaction(turn, spent["transaction_id"], None,
-                                     "status check (the only charge that fits every cue moved no money)")
-            return
+            self._step(turn, "decide.status_check", "disputable_rival" if rivals else "fits_non_disputable_charge",
+                       {"status": spent.get("transaction_status"), "cues": sorted(cues), "pool_size": len(pool),
+                        "rivals": rivals[:3]}, started=started)
+            if not rivals:
+                self._act_on_transaction(turn, spent["transaction_id"], None,
+                                         "status check (the only charge that fits every cue moved no money)")
+                return
         disposition = self.disposition.decide(text, self.service.clock().date(), state.slots.overrides(), pool)
         state.confidence = disposition.confidence
         self._step(turn, "decide.disposition", disposition.decision,
@@ -202,6 +204,8 @@ class Orchestrator(RoutingMixin):
                     "pool_size": len(pool), "probabilities": disposition.probabilities, "note": disposition.note},
                    started=started)
         disposition = self._without_rejected(turn, disposition)
+        if disposition.decision == "resolve":
+            disposition = self._prefer_money_moved(turn, pool, disposition)
         if disposition.decision == "resolve":
             self._match_reasons(turn, pool, disposition.top_k[:1])
             self._act_on_transaction(turn, disposition.top_k[0], disposition.confidence, disposition.model)
@@ -213,6 +217,8 @@ class Orchestrator(RoutingMixin):
             return
         by_id = {tx["transaction_id"]: tx for tx in pool}
         shown = [tid for tid in disposition.top_k[:3] if tid in by_id]
+        if rivals:  # a declined charge fits every cue: the charges that moved money and fit as well come first
+            shown = list(dict.fromkeys([*rivals[:2], *shown]))[:3]
         reasons, cards = self._match_reasons(turn, pool, shown), self._cards(turn)
         state.options = [Option(i + 1, "transaction", tid, tx_label(by_id[tid]),
                                 evidence.charge_details(by_id[tid], cards), tuple(reasons.get(tid, [])))
@@ -221,6 +227,34 @@ class Orchestrator(RoutingMixin):
         state.stage = "clarifying"
         listing = "\n".join(f"{o.index}) {fmt.label_text(o.label, state.language)}" for o in state.options)
         self._say(turn, "clarify_options", {"options": listing}, tuple(o.label for o in state.options))
+
+    def _money_moved_rivals(self, turn: Turn, pool: list[dict[str, Any]], transaction_id: str) -> list[str]:
+        """Charges that moved money (approved or pending) and match the stated cues at least as well as this one,
+        which did not: plausible (`disposition.plausible_charges`), not rejected, and at least as strong a fit
+        (`evidence.fit_strengths`). Best fit first."""
+        status = {t["transaction_id"]: t.get("transaction_status") for t in pool}
+        rejected = {rid for rid, _ in turn.state.rejected}
+        near = [tid for tid in turn.state.plausible if tid != transaction_id and tid not in rejected
+                and status.get(tid) in DISPUTABLE_STATUSES]
+        if not near:
+            return []
+        state, today = turn.state, self.service.clock().date()
+        strength = evidence.fit_strengths(nlu.cue_text(state.text, today), today, state.slots.overrides(), pool)
+        rivals = [tid for tid in near if strength.get(tid, 0) >= strength.get(transaction_id, 0)]
+        return sorted(rivals, key=lambda tid: -strength[tid])
+
+    def _prefer_money_moved(self, turn: Turn, pool: list[dict[str, Any]], disposition: Disposition) -> Disposition:
+        """Never answer "no money moved" while a charge that moved money matches: a resolve on a declined or reversed
+        charge with such a rival becomes a numbered list, the charges that moved money first."""
+        top = next((t for t in pool if t["transaction_id"] == disposition.top_k[0]), None)
+        if top is None or top.get("transaction_status") in DISPUTABLE_STATUSES:
+            return disposition
+        rivals = self._money_moved_rivals(turn, pool, disposition.top_k[0])
+        if not rivals:
+            return disposition
+        self._step(turn, "decide.status_rival", "clarify", {"resolved": disposition.top_k[0], "rivals": rivals[:2]})
+        return replace(disposition, decision="clarify", top_k=[*rivals[:2], disposition.top_k[0]],
+                       note="money_moved_rival")
 
     def _without_rejected(self, turn: Turn, disposition: Disposition) -> Disposition:
         """Charges the customer answered "none of these" to are never acted on or listed again: a resolve on one
