@@ -46,7 +46,7 @@ The held-out suite's compliant customer, unchanged: it never recognizes the char
 ## Dev and sealed protocol
 
 * Dev half (this directory): built from the `test` split, already used for error analysis of the charge matcher and by the held-out suite. It is used to find and fix agent defects. Its numbers are not an estimate of generalization once a fix has been chosen from them.
-* Sealed half (`eval/noisy/sealed/`, not built yet): built from `test_fresh` by the same generator, frozen with the code, after the code freeze (`python -m eval.noisy.build --split test_fresh --allow-sealed`). The generator refuses that split without the flag, and the runner refuses a sealed half whose generator source differs from the sha256 in its manifest and a configuration that already ran there. It runs once per configuration.
+* Sealed half (`eval/noisy/sealed/`, built and run once per configuration on 2026-09-29, results in `eval/noisy/sealed/results.json`): built from `test_fresh` by the same generator, frozen with the code, after the code freeze (`python -m eval.noisy.build --split test_fresh --allow-sealed`). The generator refuses that split without the flag, and the runner refuses a sealed half whose generator source differs from the sha256 in its manifest and a configuration that already ran there. It runs once per configuration.
 
 Both halves use the same templates, so the sealed half measures new charges, customers and pools, not new phrasings. A fix that adds this file's markers or merchant spellings to a lexicon would raise the sealed numbers without generalizing; fixes should be written from the failure mechanism, not from `eval/noisy/texts.py`.
 
