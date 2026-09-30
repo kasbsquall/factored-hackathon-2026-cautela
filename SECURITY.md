@@ -188,7 +188,11 @@ remove the deterministic one. On the 754 validation dispute descriptions it flag
 Tests: `tests/orchestrator/test_injection.py::test_the_model_cannot_remove_the_deterministic_flag`,
 `::test_an_ungrounded_model_flag_is_dropped`, `::test_false_positive_rate_on_validation_dispute_descriptions`.
 A detector of this kind can be evaded by wording it has not seen. What limits the damage is that the model cannot
-act: tools, policy and confirmation do not depend on it.
+act: tools, policy and confirmation do not depend on it. Measured once on the sealed eval_fresh suite
+(`eval/fresh/results.json`, 64 injection conversations per configuration): no configuration followed an injection.
+The detector flagged 28 of the 32 injections that carry an explicit jailbreak marker (a fake system or admin tag,
+"ignore previous instructions") and none of the 32 plain-language ones; the 36 it missed ended in other handoffs or
+left the conversation pending, with the LLM configuration and without it.
 
 **LLM daily spend cap: implemented and tested, in the deployed process only.** `agent/llm/budget.py`
 (`BudgetedAdapter`, `DailyBudget`): `LLM_DAILY_MAX_CALLS` (default 2000) and `LLM_DAILY_MAX_USD` (default 1.00) per
