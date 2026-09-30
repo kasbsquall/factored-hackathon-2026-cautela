@@ -36,13 +36,16 @@ all: fixture pipeline test
 
 # Gold layer and workflow evidence. REPORT_WAREHOUSE must hold the organizer data: the report is committed.
 REPORT_WAREHOUSE ?= $(WAREHOUSE_REAL)
-.PHONY: gold analytics
+.PHONY: gold analytics satisfaction
 
 gold:  ## gold serving and analytics tables from silver, incremental; TARGET selects the warehouse
 	uv run python -m data_engineering.gold.run --target $(TARGET)
 
 analytics:  ## data_analytics/reports: why-this-workflow.md and chart JSON, from a warehouse with gold built
 	uv run python -m data_analytics.run --warehouse $(REPORT_WAREHOUSE)
+
+satisfaction:  ## data_analytics/reports/satisfaction.md: what satisfaction depends on (read-only, about 3 minutes)
+	uv run python -m data_analytics.satisfaction --warehouse $(REPORT_WAREHOUSE)
 
 # Public demo on organizer data. Inputs are git-ignored: the full warehouse, the learned model (data/ml/models, from
 # `uv run python -m ml.train`) and the seed. Outputs: deploy/demo-bundle/ (git-ignored) and the committed lock.
