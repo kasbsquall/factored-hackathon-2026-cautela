@@ -9,6 +9,8 @@ Factored AI & Data Hackathon 2026. *Cautela* means "caution" in Spanish and Port
 | Who it is for | Bank customers in Mexico, Colombia and Argentina who see a charge they do not recognize, and the bank agent who receives the cases it cannot close |
 | Live app | https://cautela-eight.vercel.app (no account; test customers on the login screen) |
 | Live API | https://cautela.107-172-6-206.sslip.io/health (OpenAPI at `/docs`) |
+| Video, 3 min | https://youtu.be/2t495uAfTak |
+| Deck, 6 slides | [docs/cautela-deck.pdf](docs/cautela-deck.pdf) |
 | Data | LATAM Bank dataset v1.0.0 (organizer-supplied, synthetic) plus team-generated text. Nothing here describes a real bank or customer |
 
 ## Judging in two minutes
