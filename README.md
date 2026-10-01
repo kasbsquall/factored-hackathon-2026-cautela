@@ -474,3 +474,5 @@ External model requests carry masked text only: PII is removed in the LLM port b
 ## License
 
 The code is released under the [MIT License](LICENSE). The license covers the team's code and team-generated texts only. The LATAM Bank dataset belongs to the organizers and follows their data-use terms; it is not committed here and the MIT License does not apply to it.
+
+Commit SHAs cited in files written before publication refer to the pre-publication history; [docs/sha-map.md](docs/sha-map.md) maps each one to its published commit.
